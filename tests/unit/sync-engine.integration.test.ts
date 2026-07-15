@@ -20,7 +20,16 @@ const ready = !!org && !!client;
 async function cleanup() {
   await prisma.processedEvent.deleteMany({ where: { joblogicJobId: JL } });
   const job = await prisma.job.findFirst({ where: { joblogicJobId: JL } });
-  if (job) await prisma.job.delete({ where: { id: job.id } }); // cascades completion/docs/runs/events/exceptions
+  if (job) {
+    // MongoDB has no referential actions — remove children explicitly.
+    const runs = await prisma.syncRun.findMany({ where: { jobId: job.id }, select: { id: true } });
+    await prisma.syncEvent.deleteMany({ where: { syncRunId: { in: runs.map((r) => r.id) } } });
+    await prisma.exception.deleteMany({ where: { jobId: job.id } });
+    await prisma.syncRun.deleteMany({ where: { jobId: job.id } });
+    await prisma.document.deleteMany({ where: { jobId: job.id } });
+    await prisma.jobCompletion.deleteMany({ where: { jobId: job.id } });
+    await prisma.job.delete({ where: { id: job.id } });
+  }
   await prisma.mockConcertoJob.deleteMany({ where: { concertoJobReference: REF } });
 }
 
