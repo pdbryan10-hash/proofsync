@@ -41,3 +41,5 @@ prisma/*.db-journal
 /test-results
 /playwright-report
 /.playwright
+
+.vercel
