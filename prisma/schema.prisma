@@ -1,0 +1,287 @@
+// SEE CAFM Sync — Prisma schema
+// -----------------------------------------------------------------------------
+// Local demo uses SQLite for zero-setup runnability. The schema is deliberately
+// Postgres-portable:
+//   * Enums are modelled as String columns constrained in the app layer
+//     (lib/domain/enums.ts + Zod). SQLite has no native enums; String columns
+//     work identically on PostgreSQL, so promotion is a provider swap only.
+//   * JSON payloads are stored as String (JSON.stringify) for portable, provider-
+//     agnostic behaviour and full audit traceability.
+//
+// To promote to production Postgres (Vercel Postgres / Neon):
+//   1. Change `provider` below to "postgresql".
+//   2. Point DATABASE_URL at the Postgres instance.
+//   3. Run `prisma migrate deploy` (or `prisma db push`).
+// No model changes are required.
+// -----------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // production: "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organisation {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients     Client[]
+  connections IntegrationConnection[]
+  jobs        Job[]
+  mappings    FieldMapping[]
+}
+
+model Client {
+  id                  String   @id @default(cuid())
+  organisationId      String
+  name                String
+  concertoTenantName  String
+  active              Boolean  @default(true)
+  // Client-level sync policy (business rules §12)
+  syncCompletionNotes Boolean  @default(true)
+  syncTimes           Boolean  @default(true)
+  syncCosts           Boolean  @default(false)
+  syncMaterials       Boolean  @default(false)
+  syncDocuments       Boolean  @default(true)
+  syncStatus          Boolean  @default(true)
+  requireApprovalBeforeClose Boolean @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organisation Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  jobs         Job[]
+  mappings     FieldMapping[]
+
+  @@index([organisationId])
+}
+
+/// Represents a configured link to Joblogic or Concerto.
+/// NEVER stores plaintext secrets — credentials live in environment variables.
+model IntegrationConnection {
+  id                    String   @id @default(cuid())
+  organisationId        String
+  provider              String // Provider enum: JOBLOGIC | CONCERTO
+  name                  String
+  status                String   @default("NOT_CONFIGURED") // ConnectionStatus enum
+  environment           String   @default("mock") // "mock" | "live"
+  lastConnectionTestAt  DateTime?
+  lastSuccessfulSyncAt  DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, provider])
+  @@index([organisationId])
+}
+
+model Job {
+  id                   String    @id @default(cuid())
+  organisationId       String
+  clientId             String
+  joblogicJobId        String
+  /// The unique cross-system matching key. Nullable: absence is a first-class
+  /// exception (MISSING_CONCERTO_REFERENCE), never a silent skip.
+  concertoJobReference String?
+  siteName             String
+  siteAddress          String
+  assetReference       String?
+  jobDescription       String
+  engineerName         String?
+  joblogicStatus       String    @default("Complete")
+  concertoStatus       String    @default("In Progress")
+  scheduledDate        DateTime?
+  completedAt          DateTime?
+  lastSyncAt           DateTime?
+  syncStatus           String    @default("PENDING") // SyncStatus enum
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  organisation Organisation   @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  client       Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  completion   JobCompletion?
+  documents    Document[]
+  syncRuns     SyncRun[]
+  exceptions   Exception[]
+
+  @@unique([organisationId, joblogicJobId])
+  @@index([concertoJobReference])
+  @@index([syncStatus])
+  @@index([clientId])
+}
+
+model JobCompletion {
+  id                   String   @id @default(cuid())
+  jobId                String   @unique
+  arrivalTime          DateTime?
+  departureTime        DateTime?
+  timeOnSiteMinutes    Int?
+  workCompleted        String?
+  engineerNotes        String?
+  labourCost           Float?
+  materialsCost        Float?
+  totalCost            Float?
+  followOnWorkRequired Boolean  @default(false)
+  followOnWorkNotes    String?
+  completedAt          DateTime?
+  /// Raw provider payload as JSON string, for full traceability.
+  rawSourcePayload     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id               String   @id @default(cuid())
+  jobId            String
+  sourceSystem     String   @default("JOBLOGIC")
+  sourceDocumentId String?
+  filename         String
+  mimeType         String   @default("application/pdf")
+  documentType     String   @default("OTHER") // DocumentType enum
+  sizeBytes        Int?
+  storageReference String?
+  sourceUrl        String?
+  transferStatus   String   @default("PENDING") // DocumentTransferStatus enum
+  transferredAt    DateTime?
+  /// Demo-only: when true the mock Concerto connector rejects this upload,
+  /// exercising the DOCUMENT_UPLOAD_FAILED / PARTIAL sync path.
+  mockUploadShouldFail Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+}
+
+model FieldMapping {
+  id                 String   @id @default(cuid())
+  organisationId     String
+  clientId           String?
+  sourceProvider     String   @default("JOBLOGIC")
+  targetProvider     String   @default("CONCERTO")
+  sourceField        String
+  targetField        String
+  transformationType String   @default("DIRECT") // TransformationType enum
+  transformConfig    String? // JSON string for STATUS_MAP / CONCATENATE / etc.
+  required           Boolean  @default(false)
+  active             Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([organisationId])
+  @@index([clientId])
+}
+
+model SyncRun {
+  id                 String    @id @default(cuid())
+  jobId              String
+  direction          String    @default("JOBLOGIC_TO_CONCERTO") // SyncDirection enum
+  triggerType        String    @default("MANUAL") // TriggerType enum
+  status             String    @default("QUEUED") // SyncRunStatus enum
+  startedAt          DateTime?
+  completedAt        DateTime?
+  attemptNumber      Int       @default(1)
+  durationMs         Int?
+  fieldsUpdated      Int       @default(0)
+  documentsTransferred Int     @default(0)
+  /// JSON strings for traceability
+  sourcePayload      String?
+  transformedPayload String?
+  targetResponse     String?
+  errorCode          String?
+  errorMessage       String?
+  /// Idempotency key derived from source event id / job id / completion version.
+  idempotencyKey     String?
+  createdAt          DateTime  @default(now())
+
+  job        Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  events     SyncEvent[]
+  exceptions Exception[]
+
+  @@index([jobId])
+  @@index([idempotencyKey])
+  @@index([status])
+}
+
+model SyncEvent {
+  id        String   @id @default(cuid())
+  syncRunId String
+  stage     String   // SyncRunStatus-aligned stage label
+  level     String   @default("INFO") // EventLevel enum
+  message   String
+  metadata  String? // JSON string
+  createdAt DateTime @default(now())
+
+  syncRun SyncRun @relation(fields: [syncRunId], references: [id], onDelete: Cascade)
+
+  @@index([syncRunId])
+}
+
+model Exception {
+  id              String   @id @default(cuid())
+  jobId           String
+  syncRunId       String?
+  type            String // ExceptionType enum
+  severity        String   @default("MEDIUM") // ExceptionSeverity enum
+  title           String
+  description     String
+  status          String   @default("OPEN") // ExceptionStatus enum
+  resolutionNotes String?
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  syncRun SyncRun? @relation(fields: [syncRunId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([status])
+}
+
+/// Demo-only representation of the TARGET Concerto job record.
+///
+/// In mock mode this table *is* the mock Concerto system: the sync engine reads
+/// its fields before a sync and writes real values into them during a sync, so
+/// "inspect target before / run sync / inspect target after" shows genuine data
+/// changes rather than a cosmetic toast. In live mode this table is unused —
+/// the Concerto connector talks to the real API instead.
+model MockConcertoJob {
+  id                   String   @id @default(cuid())
+  concertoJobReference String   @unique
+  status               String   @default("In Progress")
+  /// Target field values as a JSON string (initially some blank, some populated).
+  fields               String   @default("{}")
+  /// Demo-only: simulate a transient API outage on the next update attempt.
+  mockUpdateShouldFail Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([concertoJobReference])
+}
+
+/// Idempotency ledger: records every processed inbound completion event so the
+/// same Joblogic event can never update Concerto twice.
+model ProcessedEvent {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique
+  sourceEventId  String?
+  joblogicJobId  String
+  eventType      String
+  syncRunId      String?
+  processedAt    DateTime @default(now())
+
+  @@index([joblogicJobId])
+}
