@@ -31,7 +31,31 @@ export interface TickResult {
   durationMs?: number;
 }
 
+/**
+ * In-process guard against overlapping beats.
+ *
+ * The Mongo claim stops two beats being *due* at once, but `force` deliberately
+ * bypasses it — and the browser transport drives ONE shared Chromium page, which
+ * a second concurrent beat would navigate out from under the first (the
+ * "Target page has been closed" crash). This serialises beats within the
+ * process: while one is running, every other caller — forced or not — is turned
+ * away with `busy` rather than launching a colliding drive.
+ */
+const runningTick = globalThis as unknown as { demoTickInFlight?: boolean };
+
 export async function runTick(options: { force?: boolean } = {}): Promise<TickResult> {
+  if (runningTick.demoTickInFlight) {
+    return { ran: false, reason: 'busy', tickCount: 0, nextTickInMs: 0 };
+  }
+  runningTick.demoTickInFlight = true;
+  try {
+    return await runTickInner(options);
+  } finally {
+    runningTick.demoTickInFlight = false;
+  }
+}
+
+async function runTickInner(options: { force?: boolean }): Promise<TickResult> {
   const startedAt = Date.now();
   const tickSeconds = getTickSeconds();
   const control = await demoControl();

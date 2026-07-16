@@ -120,20 +120,31 @@ const ENGINEERS = [
 ];
 
 /**
- * Seeded fault rates. Tuned to be visible within a few minutes of watching
- * without swamping the success path.
+ * Seeded fault rates.
+ *
+ * Tuned DOWN for a clean demo recording: the success path should dominate, with
+ * one instructive exception type (a missing client reference — "it refuses to
+ * guess") showing up occasionally rather than six different failures at once,
+ * which reads as chaos instead of control. Override any of them by env, e.g.
+ * DEMO_FAULT_MISSING_REF=0.2, to dial the drama up for a specific audience.
  */
+function faultRate(envKey: string, fallback: number): number {
+  const raw = Number(process.env[envKey]);
+  return Number.isFinite(raw) && raw >= 0 && raw <= 1 ? raw : fallback;
+}
+
 const FAULT_RATES = {
-  /** Engineer left the client's order reference blank. The commonest failure. */
-  missingReference: 0.1,
+  /** Engineer left the client's order reference blank. The one we keep visible. */
+  missingReference: faultRate('DEMO_FAULT_MISSING_REF', 0.08),
   /** Reference typed in a format Concerto never issues. */
-  malformedReference: 0.06,
+  malformedReference: faultRate('DEMO_FAULT_MALFORMED_REF', 0.03),
   /** Reference looks right but no such work order exists in the client's system. */
-  targetNotFound: 0.05,
-  /** Concerto rejects the first write with a 503; a retry succeeds. */
-  transientTargetOutage: 0.08,
+  targetNotFound: faultRate('DEMO_FAULT_TARGET_MISSING', 0.02),
+  /** Concerto rejects the first write with a 503. Rare — it reads as FAILED
+   *  until an operator retries, so a little goes a long way on camera. */
+  transientTargetOutage: faultRate('DEMO_FAULT_OUTAGE', 0.03),
   /** One attachment is rejected — core data syncs, document doesn't (PARTIAL). */
-  documentRejected: 0.07,
+  documentRejected: faultRate('DEMO_FAULT_DOC_REJECT', 0.04),
 };
 
 const pick = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
