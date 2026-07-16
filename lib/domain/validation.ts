@@ -83,8 +83,10 @@ export const enquirySchema = z.object({
   jobsPerMonth: z.string().trim().max(40).optional(),
   message: z.string().trim().max(2000).optional(),
   pageSource: z.string().trim().max(80).optional(),
-  /// Honeypot — must stay empty. Bots fill it; humans never see it.
-  website: z.string().max(0).optional(),
+  /// Honeypot — humans never see it, so anything here means a bot. Deliberately
+  /// permissive at parse time so the route can accept-and-discard silently; a
+  /// validation error would tell the bot the field matters.
+  website: z.string().max(200).optional(),
 });
 export type EnquiryInput = z.infer<typeof enquirySchema>;
 

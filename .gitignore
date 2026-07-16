@@ -43,3 +43,6 @@ prisma/*.db-journal
 /.playwright
 
 .vercel
+
+# local screenshot helper
+shot.mjs
