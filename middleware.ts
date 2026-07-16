@@ -17,7 +17,11 @@ export function middleware(req: NextRequest) {
   if (isAppHost && req.nextUrl.pathname === '/') {
     const url = req.nextUrl.clone();
     url.pathname = '/dashboard';
-    return NextResponse.rewrite(url);
+    // REDIRECT, not rewrite. The marketing `/` is statically generated, so both
+    // hosts share one edge-cache entry for that path — a rewrite gets served the
+    // cached sales page at random. A redirect changes the URL and sidesteps the
+    // shared cache entirely.
+    return NextResponse.redirect(url, 307);
   }
 
   return NextResponse.next();
