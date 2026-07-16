@@ -35,12 +35,22 @@ export function ProofSyncMark({ className }: { className?: string }) {
   );
 }
 
-/** Full ProofSync wordmark lockup. */
-export function ProofSyncLogo({ className, subdued = false }: { className?: string; subdued?: boolean }) {
+/** Full ProofSync wordmark lockup. `size` scales the whole lockup together. */
+export function ProofSyncLogo({
+  className,
+  subdued = false,
+  size = 'md',
+}: {
+  className?: string;
+  subdued?: boolean;
+  size?: 'md' | 'lg';
+}) {
+  const mark = size === 'lg' ? 'h-11 w-auto shrink-0' : 'h-8 w-auto shrink-0';
+  const word = size === 'lg' ? 'text-3xl font-bold tracking-tight' : 'text-xl font-bold tracking-tight';
   return (
-    <div className={cn('flex items-center gap-2.5', className)}>
-      <ProofSyncMark className="h-8 w-auto shrink-0" />
-      <span className={cn('text-xl font-bold tracking-tight', subdued ? 'text-white' : 'text-navy-800')}>
+    <div className={cn('flex items-center', size === 'lg' ? 'gap-3' : 'gap-2.5', className)}>
+      <ProofSyncMark className={mark} />
+      <span className={cn(word, subdued ? 'text-white' : 'text-navy-800')}>
         Proof<span className={subdued ? 'text-[#4ade80]' : 'text-success'}>Sync</span>
       </span>
     </div>

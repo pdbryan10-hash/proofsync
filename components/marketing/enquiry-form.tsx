@@ -56,12 +56,12 @@ export function EnquiryForm({ pageSource = 'sales' }: { pageSource?: string }) {
       });
       const json = await res.json();
       if (!json.ok) {
-        setError(json.error ?? 'Something went wrong — try hello@proofsync.co.uk');
+        setError(json.error ?? 'Something went wrong — try info@proof-works.co.uk');
         return;
       }
       setDone(true);
     } catch {
-      setError('Could not send — please email hello@proofsync.co.uk');
+      setError('Could not send — please email info@proof-works.co.uk');
     } finally {
       setBusy(false);
     }
@@ -74,7 +74,7 @@ export function EnquiryForm({ pageSource = 'sales' }: { pageSource?: string }) {
         <p className="mt-4 text-xl font-bold text-white">Got it — thank you.</p>
         <p className="mx-auto mt-2 max-w-md text-white/60">
           We&apos;ll come back to you within one working day. If it&apos;s urgent,{' '}
-          <a href="mailto:hello@proofsync.co.uk" className="text-success underline">hello@proofsync.co.uk</a>.
+          <a href="mailto:info@proof-works.co.uk" className="text-success underline">info@proof-works.co.uk</a>.
         </p>
       </div>
     );

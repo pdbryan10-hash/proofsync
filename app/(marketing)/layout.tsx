@@ -9,9 +9,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen flex-col bg-navy-900 text-white">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-navy-900/85 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5">
           <Link href="/" aria-label="ProofSync home">
-            <ProofSyncLogo subdued />
+            <ProofSyncLogo subdued size="lg" />
           </Link>
           <nav className="flex items-center gap-2 sm:gap-5">
             <Link href="/how-it-works" className="hidden text-sm text-white/70 transition-colors hover:text-white sm:block">
@@ -38,7 +38,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
             <Link href="/how-it-works" className="hover:text-white">How it works</Link>
             <Link href="/dashboard" className="hover:text-white">Live demonstration</Link>
-            <a href="mailto:hello@proofsync.co.uk" className="hover:text-white">hello@proofsync.co.uk</a>
+            <a href="mailto:info@proof-works.co.uk" className="hover:text-white">info@proof-works.co.uk</a>
           </div>
         </div>
       </footer>
