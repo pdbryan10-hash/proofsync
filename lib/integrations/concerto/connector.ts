@@ -1,10 +1,18 @@
 import type { ConcertoConnector } from '@/lib/integrations/types';
-import { isMockMode } from '@/lib/config';
+import { getIntegrationMode } from '@/lib/config';
 import { MockConcertoConnector } from './mock';
+import { DemoConcertoConnector } from './demo';
 import { LiveConcertoConnector } from './live';
 
 export function createConcertoConnector(): ConcertoConnector {
-  return isMockMode() ? new MockConcertoConnector() : new LiveConcertoConnector();
+  switch (getIntegrationMode()) {
+    case 'live':
+      return new LiveConcertoConnector();
+    case 'demo':
+      return new DemoConcertoConnector();
+    default:
+      return new MockConcertoConnector();
+  }
 }
 
 export type { ConcertoConnector };

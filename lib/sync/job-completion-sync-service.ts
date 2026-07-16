@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { isMockMode } from '@/lib/config';
+import { usesSimulatedTransport } from '@/lib/config';
 import {
   SyncRunStatus,
   SyncStatus,
@@ -34,8 +34,12 @@ import {
 import { buildIdempotencyKey, isAlreadyProcessed, markProcessed } from './idempotency';
 import type { SyncDispatchRequest, SyncDispatchResult } from './dispatcher';
 
-/** Modest, controlled per-stage delay so the demo shows realistic timing. */
-const STAGE_DELAY_MS = isMockMode() ? 450 : 0;
+/**
+ * Modest, controlled per-stage delay so a sync is legible to someone watching it
+ * happen. Applied whenever the systems on the far side are stand-ins (mock or
+ * demo) and never against live APIs, where the real latency is the truth.
+ */
+const STAGE_DELAY_MS = usesSimulatedTransport() ? 450 : 0;
 const sleep = (ms: number) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve());
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 

@@ -1,15 +1,24 @@
 import type { JoblogicConnector } from '@/lib/integrations/types';
-import { isMockMode } from '@/lib/config';
+import { getIntegrationMode } from '@/lib/config';
 import { MockJoblogicConnector } from './mock';
+import { DemoJoblogicConnector } from './demo';
 import { LiveJoblogicConnector } from './live';
 
 /**
  * Factory for the Joblogic connector. All provider-specific logic lives in the
- * mock/live implementations; the rest of the app depends only on the
- * `JoblogicConnector` interface.
+ * mock/demo/live implementations; the rest of the app depends only on the
+ * `JoblogicConnector` interface — which is what lets the live-sync demo run the
+ * real engine against a stand-in system without the engine knowing.
  */
 export function createJoblogicConnector(): JoblogicConnector {
-  return isMockMode() ? new MockJoblogicConnector() : new LiveJoblogicConnector();
+  switch (getIntegrationMode()) {
+    case 'live':
+      return new LiveJoblogicConnector();
+    case 'demo':
+      return new DemoJoblogicConnector();
+    default:
+      return new MockJoblogicConnector();
+  }
 }
 
 export type { JoblogicConnector };

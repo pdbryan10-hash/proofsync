@@ -5,7 +5,14 @@ import { TestConnectionButton } from '@/components/integrations/test-connection-
 import { PollNowButton } from '@/components/integrations/poll-now-button';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { prisma } from '@/lib/db/prisma';
-import { getIntegrationMode } from '@/lib/config';
+import { getIntegrationMode, type IntegrationMode } from '@/lib/config';
+
+/** Named separately so "demo" is never quietly displayed as if it were mock. */
+const MODE_LABEL: Record<IntegrationMode, string> = {
+  mock: 'Demo / Mock',
+  demo: 'Live demo — two stand-in systems',
+  live: 'Live',
+};
 import { timeAgo } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -124,7 +131,7 @@ function IntegrationCard({
   name: string;
   role: string;
   status: string;
-  mode: 'mock' | 'live';
+  mode: IntegrationMode;
   lastTest: Date | null;
   capabilities: { icon: typeof Info; label: string }[];
   provider: 'joblogic' | 'concerto';
@@ -145,7 +152,7 @@ function IntegrationCard({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Mode</p>
-            <p className="font-medium text-navy-800">{mode === 'live' ? 'Live' : 'Demo / Mock'}</p>
+            <p className="font-medium text-navy-800">{MODE_LABEL[mode]}</p>
           </div>
           <div>
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Last connection test</p>

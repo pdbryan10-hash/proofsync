@@ -59,7 +59,7 @@ export interface DownloadedDocument {
 export interface ConnectionTestResult {
   ok: boolean;
   provider: 'JOBLOGIC' | 'CONCERTO';
-  mode: 'mock' | 'live';
+  mode: 'mock' | 'demo' | 'live';
   message: string;
   latencyMs: number;
   checkedAt: string; // ISO
@@ -100,7 +100,7 @@ export interface WebhookVerificationInput {
 
 export interface JoblogicConnector {
   readonly provider: 'JOBLOGIC';
-  readonly mode: 'mock' | 'live';
+  readonly mode: 'mock' | 'demo' | 'live';
   testConnection(): Promise<ConnectionTestResult>;
   getJob(joblogicJobId: string): Promise<NormalisedJob | null>;
   getCompletedJobs(since: Date): Promise<NormalisedJob[]>;
@@ -114,7 +114,7 @@ export interface JoblogicConnector {
 
 export interface ConcertoConnector {
   readonly provider: 'CONCERTO';
-  readonly mode: 'mock' | 'live';
+  readonly mode: 'mock' | 'demo' | 'live';
   testConnection(): Promise<ConnectionTestResult>;
   /** Returns all jobs matching a reference. 0 → not found, >1 → ambiguous. */
   findJobByReference(concertoJobReference: string): Promise<ConcertoTargetJob[]>;

@@ -1,0 +1,35 @@
+import type { NextRequest } from 'next/server';
+import { ok, handleRouteError } from '@/lib/http';
+import { runTick } from '@/lib/demo/tick';
+import { demoGuard } from '../_guard';
+
+export const dynamic = 'force-dynamic';
+// A beat completes several syncs, each paced through seven stages.
+export const maxDuration = 60;
+
+/**
+ * Advance the demo by one beat, if one is due.
+ *
+ * Safe to call as often as you like — the beat is claimed atomically inside
+ * runTick(), so callers arriving early are told how long is left and nothing
+ * happens. That is why the console can ping this every few seconds and still
+ * produce an exactly-30-second cadence.
+ *
+ * `?force=1` runs a beat immediately regardless of the interval — the console's
+ * "Force a beat" button, for when you are demonstrating and do not want to wait.
+ */
+async function run(req: NextRequest) {
+  const blocked = demoGuard(req);
+  if (blocked) return blocked;
+
+  try {
+    const force = new URL(req.url).searchParams.get('force') === '1';
+    const result = await runTick({ force });
+    return ok(result);
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+
+export const GET = run;
+export const POST = run;

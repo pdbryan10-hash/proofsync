@@ -3,14 +3,44 @@
  * nothing secret is ever exported to the client bundle.
  */
 
-export type IntegrationMode = 'mock' | 'live';
+/**
+ * How the connectors reach the source and target systems.
+ *
+ *   mock — the application's own database stands in for both systems. Cheapest;
+ *          used by the seeded product tour.
+ *   demo — two SEPARATE databases stand in for two SEPARATE systems, reached
+ *          through a simulated login/session. Proves the pipeline end to end.
+ *          See docs/DEMO.md for what this does and does not prove.
+ *   live — the real provider APIs.
+ */
+export type IntegrationMode = 'mock' | 'demo' | 'live';
 
 export function getIntegrationMode(): IntegrationMode {
-  return process.env.INTEGRATION_MODE === 'live' ? 'live' : 'mock';
+  const raw = process.env.INTEGRATION_MODE;
+  if (raw === 'live') return 'live';
+  if (raw === 'demo') return 'demo';
+  return 'mock';
 }
 
 export function isMockMode(): boolean {
   return getIntegrationMode() === 'mock';
+}
+
+export function isDemoMode(): boolean {
+  return getIntegrationMode() === 'demo';
+}
+
+export function isLiveMode(): boolean {
+  return getIntegrationMode() === 'live';
+}
+
+/**
+ * True whenever the systems on the other side of a connector are stand-ins
+ * rather than real providers. Drives the deliberate per-stage pacing that makes
+ * a sync legible to a human watching it — never applied against live APIs.
+ */
+export function usesSimulatedTransport(): boolean {
+  return !isLiveMode();
 }
 
 /** Estimated minutes of duplicated admin removed per successfully synced job. */

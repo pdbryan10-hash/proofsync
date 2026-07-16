@@ -127,6 +127,11 @@ model JobCompletion {
   followOnWorkRequired Boolean   @default(false)
   followOnWorkNotes    String?
   completedAt          DateTime?
+  /// The source system's own version/revision of this completion sheet.
+  /// Drives the idempotency key: an unchanged sheet re-polled yields the same
+  /// key and is ignored, while a genuine engineer edit produces a new one and
+  /// syncs again. Nullable for records ingested before this was captured.
+  sourceCompletionVersion String?
   /// Raw provider payload as JSON string, for full traceability.
   rawSourcePayload String?
   createdAt        DateTime @default(now())
