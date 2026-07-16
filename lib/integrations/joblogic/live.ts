@@ -20,8 +20,8 @@ const REQUEST_TIMEOUT_MS = 15_000;
  * LIVE Joblogic connector — production scaffold.
  *
  * ⚠️  DO NOT INVENT ENDPOINTS. Every `TODO(joblogic)` below marks a value that
- *     must be supplied from SEE's Joblogic account and confirmed against the
- *     official Joblogic API documentation (see docs/integration-checklist.md).
+ *     must be supplied from the contractor's Joblogic account and confirmed
+ *     against official Joblogic API docs (see docs/integration-checklist.md).
  *
  * The shape of each method mirrors MockJoblogicConnector so switching
  * INTEGRATION_MODE=live changes behaviour without touching the sync engine.

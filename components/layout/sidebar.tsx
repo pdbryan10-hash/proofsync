@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { ProductLockup } from '@/components/brand/proofsync-logo';
 
 const NAV = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/jobs', label: 'Jobs', icon: ListChecks },
   { href: '/exceptions', label: 'Exceptions', icon: TriangleAlert },
   { href: '/integrations', label: 'Integrations', icon: PlugZap },

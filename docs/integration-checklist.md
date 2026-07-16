@@ -1,15 +1,15 @@
 # Live Integration Checklist
 
-Everything required from **SEE Services** and the **client (Concerto owner)** before
+Everything required from the **contractor** and the **client (CAFM owner)** before
 ProofSync can move from `INTEGRATION_MODE=mock` to `live`. Until each item is
 confirmed, the corresponding `TODO(joblogic)` / `TODO(concerto)` in
 `lib/integrations/*/live.ts` must remain unimplemented — **do not invent endpoints.**
 
 ---
 
-## A. Joblogic (source system) — from SEE
+## A. Joblogic (source system) — from the contractor
 
-- [ ] **API credentials** — API key / OAuth client for SEE's Joblogic account.
+- [ ] **API credentials** — API key / OAuth client for the contractor's Joblogic account.
 - [ ] **Tenant / account details** — tenant id and the correct base URL/region.
 - [ ] **Authentication method** — API key header vs Bearer vs OAuth2
       client-credentials (and token endpoint if OAuth).
@@ -50,7 +50,7 @@ confirmed, the corresponding `TODO(joblogic)` / `TODO(concerto)` in
 - [ ] **Service account permissions** — the integration account's scope.
 - [ ] **Sample anonymised job payload** and **rate limits**.
 
-## C. Business mapping workshop — SEE + client
+## C. Business mapping workshop — contractor + client
 
 Confirm and record decisions for each client:
 

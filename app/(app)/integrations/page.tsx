@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TestConnectionButton } from '@/components/integrations/test-connection-button';
 import { PollNowButton } from '@/components/integrations/poll-now-button';
-import { SeeCustomerBadge } from '@/components/brand/see-logo';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { prisma } from '@/lib/db/prisma';
 import { getIntegrationMode } from '@/lib/config';
@@ -37,7 +36,7 @@ export default async function IntegrationsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-navy-800">Integrations</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Connections between SEE&apos;s Joblogic and the client&apos;s Concerto CAFM platform.
+          Connections between your job-management system and the client&apos;s CAFM platform.
         </p>
       </div>
 
@@ -95,20 +94,18 @@ export default async function IntegrationsPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               This demonstration currently uses representative integration adapters. Production deployment requires
               authorised API access and field mapping for the specific Concerto environment. See the integration
-              checklist for everything required from SEE and the client before go-live.
+              checklist for everything required from the contractor and the client before go-live.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex flex-col items-center justify-between gap-6 rounded-lg border border-border bg-card p-6 sm:flex-row">
+      <div className="flex flex-col items-center justify-center gap-6 rounded-lg border border-border bg-card p-6 sm:flex-row">
         <ProofSyncLogo />
         <div className="hidden h-10 w-px bg-border sm:block" />
-        <SeeCustomerBadge />
-        <div className="hidden h-10 w-px bg-border lg:block" />
-        <p className="max-w-xs text-center text-xs text-muted-foreground sm:text-left">
-          ProofSync is a ProofWorks product. Deterministic operational automation — built and proven with
-          SEE Services, designed to work with any job-management and CAFM pairing.
+        <p className="max-w-md text-center text-xs text-muted-foreground sm:text-left">
+          ProofSync is a ProofWorks product. Deterministic operational automation, designed to work with any
+          job-management and CAFM pairing — API or not.
         </p>
       </div>
     </div>

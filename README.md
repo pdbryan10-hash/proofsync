@@ -1,7 +1,7 @@
 # ProofSync
 
 **Verified job-completion sync between a contractor's job-management system and the client's CAFM.**
-A ProofWorks product. Launch customer: **SEE Services** (Joblogic → Concerto).
+A ProofWorks product. Launch customer engagement: Joblogic → Concerto.
 
 > **Complete once. Sync automatically. Review only the exceptions.**
 
@@ -217,6 +217,9 @@ full audit record.
 
 ## Branding note
 
-**ProofSync** is the product and the only brand in the UI chrome. **SEE Services** is
-the named launch customer and appears as attribution only — never as the product's own
-identity. See [`components/brand/`](components/brand/).
+**ProofSync** is the product and the only brand in the UI chrome.
+
+**No customer is named anywhere in the public build, the sales pages, or the demo
+data** until they have signed and explicitly agreed to be named. Demo data uses
+fictional organisations throughout (e.g. "Meridian Facilities Group"). Describe the
+pain, never the client. See [`components/brand/`](components/brand/).

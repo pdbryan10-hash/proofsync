@@ -47,7 +47,7 @@ async function main() {
   console.log('Seeding ProofSync demo data…');
   await reset();
 
-  const org = await prisma.organisation.create({ data: { name: 'SEE Services' } });
+  const org = await prisma.organisation.create({ data: { name: 'Meridian Facilities Group' } });
 
   const client = await prisma.client.create({
     data: {
@@ -72,7 +72,7 @@ async function main() {
       {
         organisationId: org.id,
         provider: 'JOBLOGIC',
-        name: 'SEE Services — Joblogic',
+        name: 'Meridian Facilities Group — Joblogic',
         status: 'CONNECTED',
         environment: 'mock',
         lastConnectionTestAt: minsAfter(now, -3),
