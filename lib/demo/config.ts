@@ -30,6 +30,58 @@ export function getDripPerTick(): number {
 }
 
 /**
+ * How the connectors reach the two stand-in systems.
+ *
+ *   direct  — read and write their databases. Fast, robust, runs anywhere.
+ *             Models the session lifecycle but does not prove the access method.
+ *   browser — drive a real Chromium: fill the login form, read the rendered job
+ *             list, type into the target's form, click Save, re-read the page.
+ *             This is the real proof for a vendor with no API.
+ *
+ * IMPORTANT: `browser` CANNOT run on Vercel. There is no Chromium binary in the
+ * serverless runtime and the function size limits fight you. It is a local
+ * (or containerised worker) transport. A Vercel deployment must stay on `direct`.
+ */
+export type DemoTransport = 'direct' | 'browser';
+
+export function getDemoTransport(): DemoTransport {
+  return process.env.DEMO_TRANSPORT === 'browser' ? 'browser' : 'direct';
+}
+
+export function isBrowserTransport(): boolean {
+  return getDemoTransport() === 'browser';
+}
+
+/**
+ * Where the stand-in systems' own web UIs are served from. The browser transport
+ * points Chromium at these, so it must be an address the machine running the
+ * browser can actually reach.
+ */
+export function getDemoBaseUrl(): string {
+  return process.env.DEMO_BASE_URL || 'http://localhost:3000';
+}
+
+/**
+ * Show the browser window. Headed is the point of a live demo — a prospect
+ * watching Chromium type into the client's system is the whole argument. Set
+ * DEMO_HEADLESS=1 to run it invisibly (the screenshots still land in the ledger).
+ */
+export function isHeadedBrowser(): boolean {
+  return process.env.DEMO_HEADLESS !== '1';
+}
+
+/**
+ * Driving a browser costs roughly 10–20s per job against ~4.5s for a direct
+ * write, so a beat has to attempt far fewer of them or the route's 60s budget
+ * is gone. Overflow stays PENDING for the next beat.
+ */
+export function getMaxDispatchesPerTick(): number {
+  const raw = Number(process.env.DEMO_MAX_SYNCS_PER_TICK);
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return isBrowserTransport() ? 2 : 8;
+}
+
+/**
  * Swap the database name on a Mongo connection string, preserving credentials
  * and options verbatim.
  *

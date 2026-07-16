@@ -1,7 +1,9 @@
 import type { ConcertoConnector } from '@/lib/integrations/types';
 import { getIntegrationMode } from '@/lib/config';
+import { isBrowserTransport } from '@/lib/demo/config';
 import { MockConcertoConnector } from './mock';
 import { DemoConcertoConnector } from './demo';
+import { BrowserConcertoConnector } from './browser';
 import { LiveConcertoConnector } from './live';
 
 export function createConcertoConnector(): ConcertoConnector {
@@ -9,7 +11,7 @@ export function createConcertoConnector(): ConcertoConnector {
     case 'live':
       return new LiveConcertoConnector();
     case 'demo':
-      return new DemoConcertoConnector();
+      return isBrowserTransport() ? new BrowserConcertoConnector() : new DemoConcertoConnector();
     default:
       return new MockConcertoConnector();
   }

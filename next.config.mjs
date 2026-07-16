@@ -16,7 +16,12 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   // Keep the Prisma client external to the server bundle.
-  serverExternalPackages: ['@prisma/client', 'prisma'],
+  //
+  // Playwright is here for the demo's browser transport. It is a devDependency,
+  // imported dynamically, and only ever loaded when DEMO_TRANSPORT=browser — a
+  // production deployment never touches that path. Marking it external stops the
+  // bundler trying to trace a package that will not be installed there.
+  serverExternalPackages: ['@prisma/client', 'prisma', 'playwright', 'playwright-core'],
 };
 
 export default nextConfig;

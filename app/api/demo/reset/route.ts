@@ -3,6 +3,8 @@ import { ok, fail, handleRouteError } from '@/lib/http';
 import { seedDemoSystems } from '@/lib/demo/seeder';
 import { ensureDemoOrg, resetDemoLedger } from '@/lib/demo/org';
 import { clearSessions } from '@/lib/demo/session';
+import { clearShots } from '@/lib/demo/screenshots';
+import { isBrowserTransport } from '@/lib/demo/config';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -25,8 +27,17 @@ export async function POST(req: NextRequest) {
   try {
     const { organisationId } = await ensureDemoOrg();
     await resetDemoLedger(organisationId);
+    await clearShots();
     const seeded = await seedDemoSystems();
     clearSessions();
+
+    if (isBrowserTransport()) {
+      // The browser holds cookies for users that no longer exist after a reseed.
+      // Drop it so the next beat signs in again — and so the audience actually
+      // sees the login happen rather than a context silently carrying over.
+      const { closeBrowser } = await import('@/lib/demo/browser');
+      await closeBrowser();
+    }
 
     return ok({
       reset: true,

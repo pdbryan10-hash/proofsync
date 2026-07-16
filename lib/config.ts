@@ -35,12 +35,20 @@ export function isLiveMode(): boolean {
 }
 
 /**
- * True whenever the systems on the other side of a connector are stand-ins
- * rather than real providers. Drives the deliberate per-stage pacing that makes
- * a sync legible to a human watching it — never applied against live APIs.
+ * True when a sync needs artificial pacing to be legible to someone watching.
+ *
+ * Only the transports with no real latency of their own: a mock or a direct
+ * database write returns in a millisecond, and seven instant stages read as a
+ * fake. Excluded are live APIs — where the real latency is the truth — and the
+ * browser transport, which is already visibly slow because a browser is actually
+ * doing the work. Padding that would be inventing delay on top of real delay.
  */
 export function usesSimulatedTransport(): boolean {
-  return !isLiveMode();
+  if (isLiveMode()) return false;
+  // Deferred require-style import: lib/demo owns transport, and importing it at
+  // module scope here would invert the dependency between config and its demo.
+  if (isDemoMode() && process.env.DEMO_TRANSPORT === 'browser') return false;
+  return true;
 }
 
 /** Estimated minutes of duplicated admin removed per successfully synced job. */

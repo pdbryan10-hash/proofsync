@@ -3,8 +3,15 @@ import { getEstimatedManualMinutesPerJob } from '@/lib/config';
 import { sourceJobs, targetWorkOrders } from './mongo';
 import { peekSession } from './session';
 import { timeToNextTick } from './tick';
-import { getTickSeconds, getSourceDbName, getTargetDbName } from './config';
+import {
+  getTickSeconds,
+  getSourceDbName,
+  getTargetDbName,
+  getDemoTransport,
+  type DemoTransport,
+} from './config';
 import { ensureDemoOrg } from './org';
+import { shotsForSubjects, type ShotSummary } from './screenshots';
 import { TARGET_FIELD_LABELS, targetFieldLabel } from '@/lib/domain/field-labels';
 
 /**
@@ -43,6 +50,8 @@ export interface LedgerRow {
   errorMessage: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  /** Browser-transport evidence: what was on screen when this run happened. */
+  shots: ShotSummary[];
 }
 
 export interface TargetRow {
@@ -58,8 +67,10 @@ export interface TargetRow {
 }
 
 export interface DemoState {
-  transport: 'simulated';
+  transport: DemoTransport;
   databases: { source: string; target: string; ledger: string };
+  /** Where the stand-in systems' own UIs live, so the console can link to them. */
+  systemUrls: { source: string; target: string };
   tick: { lastTickAt: string | null; nextTickInMs: number; tickCount: number; tickSeconds: number };
   sessions: {
     joblogic: { username: string; expiresAt: string } | null;
@@ -137,12 +148,22 @@ export async function getDemoState(): Promise<DemoState> {
     lastUpdatedBy: { $ne: null },
   });
 
+  // Evidence is keyed by whatever the connector could name at the time — a job
+  // number in the source, a work-order reference in the target — so a ledger row
+  // collects shots under either of its two identities.
+  const shotSubjects = runs.flatMap((r) => [r.job.joblogicJobId, r.job.concertoJobReference ?? '']);
+  const shotsBySubject = await shotsForSubjects(shotSubjects.filter(Boolean));
+
   return {
-    transport: 'simulated',
+    transport: getDemoTransport(),
     databases: {
       source: getSourceDbName(),
       target: getTargetDbName(),
       ledger: 'see_cafm_sync',
+    },
+    systemUrls: {
+      source: '/systems/joblogic/jobs',
+      target: '/systems/concerto/work-orders',
     },
     tick: {
       lastTickAt: iso(tick.lastTickAt),
@@ -178,6 +199,10 @@ export async function getDemoState(): Promise<DemoState> {
       errorMessage: r.errorMessage,
       startedAt: iso(r.startedAt),
       completedAt: iso(r.completedAt),
+      shots: [
+        ...(shotsBySubject[r.job.joblogicJobId] ?? []),
+        ...(r.job.concertoJobReference ? shotsBySubject[r.job.concertoJobReference] ?? [] : []),
+      ].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt)),
     })),
     target: targetDocs.map((w) => {
       const attributes = w.attributes ?? {};

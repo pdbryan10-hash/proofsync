@@ -3,18 +3,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
+  Camera,
   CheckCircle2,
+  Chrome,
   Database,
+  ExternalLink,
   FileWarning,
   Loader2,
   Lock,
   RotateCcw,
+  X,
   Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn, formatDuration, timeAgo } from '@/lib/utils';
+import { cn, formatDuration, formatTime, timeAgo } from '@/lib/utils';
 import type { DemoState, LedgerRow, SourceRow, TargetRow } from '@/lib/demo/state';
+import type { ShotSummary } from '@/lib/demo/screenshots';
 import { useChangedRows, useDemoState } from './use-demo-state';
 
 /**
@@ -68,12 +73,24 @@ export function DemoConsole() {
         )}
 
         <div className="grid gap-4 lg:grid-cols-3">
-          <SourcePanel rows={state.source} session={state.sessions.joblogic} db={state.databases.source} />
+          <SourcePanel
+            rows={state.source}
+            session={state.sessions.joblogic}
+            db={state.databases.source}
+            systemUrl={state.systemUrls.source}
+            transport={state.transport}
+          />
           <LedgerPanel rows={state.ledger} db={state.databases.ledger} />
-          <TargetPanel rows={state.target} session={state.sessions.concerto} db={state.databases.target} />
+          <TargetPanel
+            rows={state.target}
+            session={state.sessions.concerto}
+            db={state.databases.target}
+            systemUrl={state.systemUrls.target}
+            transport={state.transport}
+          />
         </div>
 
-        <HonestyNote />
+        <HonestyNote transport={state.transport} />
       </div>
     </div>
   );
@@ -107,10 +124,12 @@ function ConsoleHeader({
             <span className="font-normal text-muted-foreground">Concerto</span>
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Two separate databases. ProofSync&rsquo;s real sync engine between them, every{' '}
+            Two separate systems. ProofSync&rsquo;s real sync engine between them, every{' '}
             {state.tick.tickSeconds} seconds.
           </p>
         </div>
+
+        <TransportBadge transport={state.transport} />
 
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Next beat</span>
@@ -139,6 +158,31 @@ function ConsoleHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * States the access method in the header, permanently.
+ *
+ * The two transports prove very different things, and the difference is
+ * invisible from the panels alone — the records move identically either way.
+ * Anyone reading this screen is entitled to know which one they are watching
+ * without having to ask.
+ */
+function TransportBadge({ transport }: { transport: DemoState['transport'] }) {
+  if (transport === 'browser') {
+    return (
+      <Badge tone="success" className="gap-1.5">
+        <Chrome className="size-3" />
+        Browser — signing in and typing into both systems
+      </Badge>
+    );
+  }
+  return (
+    <Badge tone="neutral" className="gap-1.5">
+      <Database className="size-3" />
+      Direct — database transport, login simulated
+    </Badge>
   );
 }
 
@@ -212,6 +256,7 @@ function Panel({
   db,
   session,
   accent,
+  systemUrl,
   children,
 }: {
   title: string;
@@ -219,6 +264,8 @@ function Panel({
   db: string;
   session?: { username: string } | null;
   accent: 'source' | 'engine' | 'target';
+  /** Link to the stand-in system's own UI — the screen the browser drives. */
+  systemUrl?: string;
   children: React.ReactNode;
 }) {
   const accentClass = {
@@ -245,6 +292,18 @@ function Panel({
               {session ? `signed in — ${session.username}` : 'not signed in'}
             </span>
           )}
+          {systemUrl && (
+            // Let anyone doubting the demo go and look at the system themselves.
+            <a
+              href={systemUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-info-text hover:underline"
+            >
+              <ExternalLink className="size-3" />
+              open the system
+            </a>
+          )}
         </div>
       </div>
       <div className="max-h-[62vh] divide-y divide-border overflow-y-auto">{children}</div>
@@ -269,10 +328,14 @@ function SourcePanel({
   rows,
   session,
   db,
+  systemUrl,
+  transport,
 }: {
   rows: SourceRow[];
   session: { username: string } | null;
   db: string;
+  systemUrl: string;
+  transport: DemoState['transport'];
 }) {
   const versions = useMemo(
     () => Object.fromEntries(rows.map((r) => [r.jobNumber, `${r.status}:${r.revision}:${r.updatedAt}`])),
@@ -285,7 +348,11 @@ function SourcePanel({
       title="Joblogic"
       subtitle="contractor's system"
       db={db}
-      session={session}
+      // In browser mode the session shown in the header belongs to Chromium, not
+      // to this simulated store — so don't display a session that isn't the one
+      // doing the work.
+      session={transport === 'browser' ? undefined : session}
+      systemUrl={systemUrl}
       accent="source"
     >
       {rows.length === 0 && <EmptyRow>No jobs yet.</EmptyRow>}
@@ -334,8 +401,9 @@ const RUN_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'dan
 };
 
 function LedgerPanel({ rows, db }: { rows: LedgerRow[]; db: string }) {
+  const [lightbox, setLightbox] = useState<ShotSummary | null>(null);
   const versions = useMemo(
-    () => Object.fromEntries(rows.map((r) => [r.id, `${r.status}:${r.completedAt ?? ''}`])),
+    () => Object.fromEntries(rows.map((r) => [r.id, `${r.status}:${r.completedAt ?? ''}:${r.shots.length}`])),
     [rows],
   );
   const changed = useChangedRows(versions);
@@ -387,10 +455,99 @@ function LedgerPanel({ rows, db }: { rows: LedgerRow[]; db: string }) {
                 {row.errorMessage}
               </p>
             )}
+
+            {row.shots.length > 0 && <Evidence shots={row.shots} onOpen={setLightbox} />}
           </div>
         );
       })}
+
+      {lightbox && <Lightbox shot={lightbox} onClose={() => setLightbox(null)} />}
     </Panel>
+  );
+}
+
+/**
+ * Screenshot evidence for one sync.
+ *
+ * A headed browser is persuasive in the room and gone when the window closes.
+ * This is what survives: the actual pixels of the client's system at the moment
+ * ProofSync wrote to it. It is the difference between "we did this" and "here,
+ * look".
+ */
+function Evidence({ shots, onOpen }: { shots: ShotSummary[]; onOpen: (s: ShotSummary) => void }) {
+  return (
+    <div className="mt-2">
+      <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <Camera className="size-3" />
+        what was on screen
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {shots.map((shot) => (
+          <button
+            key={shot.id}
+            type="button"
+            onClick={() => onOpen(shot)}
+            title={shot.caption}
+            className="group relative overflow-hidden rounded border border-border transition-colors hover:border-info"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/demo/shot/${shot.id}`}
+              alt={shot.caption}
+              loading="lazy"
+              className="h-12 w-20 object-cover object-top"
+            />
+            <span className="absolute inset-x-0 bottom-0 bg-navy-900/75 px-1 py-0.5 text-[8px] leading-tight text-white">
+              {shot.stage.replace(/-/g, ' ')}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Lightbox({ shot, onClose }: { shot: ShotSummary; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={shot.caption}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/80 p-6"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-full w-full max-w-5xl overflow-hidden rounded-lg bg-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3 border-b border-border px-4 py-2.5">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-navy-800">{shot.caption}</p>
+            <p className="truncate font-mono text-[11px] text-muted-foreground">{shot.url}</p>
+          </div>
+          <span className="ml-auto whitespace-nowrap text-[11px] text-muted-foreground">
+            {formatTime(shot.capturedAt)}
+          </span>
+          <button type="button" onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-foreground">
+            <X className="size-4" />
+          </button>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/api/demo/shot/${shot.id}`}
+          alt={shot.caption}
+          className="max-h-[75vh] w-full object-contain"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -407,10 +564,14 @@ function TargetPanel({
   rows,
   session,
   db,
+  systemUrl,
+  transport,
 }: {
   rows: TargetRow[];
   session: { username: string } | null;
   db: string;
+  systemUrl: string;
+  transport: DemoState['transport'];
 }) {
   const versions = useMemo(
     () =>
@@ -422,7 +583,14 @@ function TargetPanel({
   const changed = useChangedRows(versions);
 
   return (
-    <Panel title="Concerto" subtitle="client's system" db={db} session={session} accent="target">
+    <Panel
+      title="Concerto"
+      subtitle="client's system"
+      db={db}
+      session={transport === 'browser' ? undefined : session}
+      systemUrl={systemUrl}
+      accent="target"
+    >
       {rows.length === 0 && <EmptyRow>No work orders yet.</EmptyRow>}
       {rows.map((row) => (
         <div
@@ -471,11 +639,39 @@ function TargetPanel({
 // --- Honesty -----------------------------------------------------------------
 
 /**
- * Non-negotiable. The demo proves a great deal and it is tempting to let a
- * viewer assume it proves the rest. This states the boundary on the same screen
- * as the claim, so nobody has to be told later that they misunderstood.
+ * Non-negotiable, and different per transport.
+ *
+ * The two transports prove genuinely different things, and the panels look
+ * identical either way — so a note that didn't change with the transport would
+ * be worse than none at all. This states the real boundary on the same screen as
+ * the claim, so nobody has to be told later that they misunderstood.
  */
-function HonestyNote() {
+function HonestyNote({ transport }: { transport: DemoState['transport'] }) {
+  if (transport === 'browser') {
+    return (
+      <div className="mt-6 rounded-lg border border-border bg-card px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        <p>
+          <strong className="text-foreground">What this proves.</strong> Two separate systems, each
+          with its own database, its own login and its own web interface. ProofSync reaches both the
+          way a person does and nothing else: a real Chromium signs in at each login form, reads the
+          completed job off the rendered page, opens the client&rsquo;s work order, types into the
+          form, clicks Save, and re-reads the page to confirm what actually stuck. No API is
+          involved anywhere. Between those screens sits ProofSync&rsquo;s production engine —
+          the same field mapping, client rules, idempotency ledger, retry policy and audit trail a
+          live deployment runs. The screenshots are the evidence, taken at the moment of each write.
+        </p>
+        <p className="mt-2">
+          <strong className="text-foreground">What it does not prove.</strong> The two systems are
+          stand-ins we built, so their screens behave. It does not prove that the real Joblogic or
+          Concerto can be driven this way — nor that doing so is permitted by their terms, survives
+          MFA, or withstands a UI redesign. Document upload is the one step still not done through
+          the screen. And this transport cannot run on Vercel: it needs a real browser, so it is a
+          local or containerised-worker capability, not something the hosted demo does.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 rounded-lg border border-border bg-card px-4 py-3 text-xs leading-relaxed text-muted-foreground">
       <p>
@@ -488,9 +684,8 @@ function HonestyNote() {
       <p className="mt-2">
         <strong className="text-foreground">What it does not prove.</strong> The connectors reach
         those databases directly. The sign-in you can see is a modelled session, not a browser
-        driving a real Joblogic or Concerto login. Where a vendor exposes no API, that access method
-        is the remaining piece of work — it swaps in behind the same connector interface, without
-        changing anything you are watching here.
+        driving a real login. Set <code className="font-mono">DEMO_TRANSPORT=browser</code> to watch
+        it do the whole thing through the screens instead.
       </p>
     </div>
   );

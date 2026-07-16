@@ -4,6 +4,7 @@ import { createJoblogicConnector } from '@/lib/integrations/joblogic/connector';
 import { getSyncDispatcher } from '@/lib/sync/dispatcher';
 import { buildIdempotencyKey } from '@/lib/sync/idempotency';
 import { ensureDemoOrg } from './org';
+import { getMaxDispatchesPerTick } from './config';
 import type { NormalisedJob, NormalisedCompletion } from '@/lib/integrations/types';
 
 /**
@@ -43,16 +44,15 @@ export interface IngestResult {
 const LOOKBACK_MINUTES = 60 * 24;
 
 /**
- * Most syncs a single beat will execute.
+ * Most syncs a single beat will execute — see getMaxDispatchesPerTick().
  *
- * A sync takes roughly 4.5s (seven paced stages), and the route's maxDuration is
- * 60s — so an unbounded beat clearing a backlog would be killed mid-flight,
- * leaving a job marked SYNCING forever. Anything over the cap simply stays
- * PENDING and is picked up by the next beat, which is the correct behaviour
- * regardless: work is deferred, never dropped. `deferred` is reported rather
- * than swallowed, so a beat that truncates says so.
+ * A direct sync takes ~4.5s; a browser-driven one 10–20s. The route's
+ * maxDuration is 60s, so an unbounded beat clearing a backlog would be killed
+ * mid-flight, leaving a job marked SYNCING forever. Anything over the cap stays
+ * PENDING for the next beat, which is the right behaviour regardless: work is
+ * deferred, never dropped. `deferred` is reported rather than swallowed, so a
+ * beat that truncates says so.
  */
-const MAX_DISPATCHES_PER_TICK = 8;
 
 export async function ingestAndSync(): Promise<IngestResult> {
   const { organisationId, clientId } = await ensureDemoOrg();
@@ -87,7 +87,7 @@ export async function ingestAndSync(): Promise<IngestResult> {
     if (isNew) result.ingested += 1;
     else if (revisionChanged) result.updated += 1;
 
-    await mirrorDocuments(jobId, joblogic, remote.joblogicJobId);
+    await mirrorDocuments(jobId, joblogic, remote.joblogicJobId, completion);
 
     const job = await prisma.job.findUnique({ where: { id: jobId } });
     if (!job) continue;
@@ -98,7 +98,7 @@ export async function ingestAndSync(): Promise<IngestResult> {
 
     // Leave the overflow PENDING for the next beat rather than risk the function
     // being killed mid-sync with a job stuck in SYNCING.
-    if (result.dispatched >= MAX_DISPATCHES_PER_TICK) {
+    if (result.dispatched >= getMaxDispatchesPerTick()) {
       result.deferred += 1;
       continue;
     }
@@ -213,6 +213,7 @@ async function mirrorDocuments(
   jobId: string,
   joblogic: ReturnType<typeof createJoblogicConnector>,
   joblogicJobId: string,
+  completion: NormalisedCompletion,
 ): Promise<void> {
   const remoteDocs = await joblogic.getJobDocuments(joblogicJobId);
   if (remoteDocs.length === 0) return;
@@ -220,9 +221,15 @@ async function mirrorDocuments(
   const existing = await prisma.document.findMany({ where: { jobId } });
   const known = new Set(existing.map((d) => d.sourceDocumentId).filter(Boolean));
 
-  const raw = await joblogic.getJobCompletion(joblogicJobId);
-  const rawAttachments = Array.isArray((raw?.raw as Record<string, unknown> | undefined)?.attachments)
-    ? ((raw!.raw as Record<string, unknown>).attachments as Array<Record<string, unknown>>)
+  // Reuse the completion we already fetched. Re-asking the connector costs a
+  // whole page load under the browser transport, for data we are holding.
+  //
+  // Note the browser transport's raw payload has no attachment list — the screen
+  // never renders the "this upload will fail" flag, because no real system would.
+  // So document-rejection faults simply don't arise there, which is honest: an
+  // access method that cannot see something should not act on it.
+  const rawAttachments = Array.isArray((completion.raw as Record<string, unknown>)?.attachments)
+    ? ((completion.raw as Record<string, unknown>).attachments as Array<Record<string, unknown>>)
     : [];
 
   for (const doc of remoteDocs) {
