@@ -268,6 +268,34 @@ model MockConcertoJob {
   updatedAt            DateTime @updatedAt
 }
 
+/// Inbound enquiry from the sales pages.
+///
+/// This is a CAPTURE tool, not a contact form: every submission is a validation
+/// datapoint. `targetSystems` (which client CAFMs they re-key into) is the whole
+/// point — it is the demand signal that ranks the connector roadmap, and the one
+/// thing no vendor marketing or analyst report will tell us honestly.
+model Enquiry {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String
+  company       String?
+  /// JSON string array — contractor-side systems they complete jobs in.
+  sourceSystems String   @default("[]")
+  /// JSON string array — the client CAFMs they are re-keying into. THE signal.
+  targetSystems String   @default("[]")
+  /// Anything they typed that wasn't on the list — new platforms surface here.
+  otherSystems  String?
+  jobsPerMonth  String?
+  message       String?
+  /// Which page/CTA produced it, for attribution.
+  pageSource    String?
+  status        String   @default("NEW") // NEW | CONTACTED | QUALIFIED | CLOSED
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+}
+
 /// Idempotency ledger: records every processed inbound completion event so the
 /// same Joblogic event can never update Concerto twice.
 model ProcessedEvent {

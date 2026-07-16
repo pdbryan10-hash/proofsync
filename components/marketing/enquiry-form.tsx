@@ -1,0 +1,197 @@
+'use client';
+
+import { useState } from 'react';
+import { Loader2, ArrowRight, CheckCircle2, TriangleAlert } from 'lucide-react';
+
+/**
+ * The capture tool.
+ *
+ * This is NOT a contact form. The point of every submission is the answer to
+ * "which client systems are you re-keying into?" — captured as structured chips
+ * so it aggregates into a demand signal that ranks the connector roadmap. A
+ * beautiful page that tells us nothing about who bit would be a wasted asset.
+ */
+
+const TARGETS = [
+  'Concerto', 'Planon', 'Concept Evolution', 'QFM', 'MRI Evolution',
+  'IBM Maximo', 'Elogbooks', 'Corrigo', 'ServiceChannel', 'Ostara',
+  'Micad', 'CAFM Explorer', 'Civica', 'ServiceNow', 'Archibus',
+];
+const SOURCES = ['Joblogic', 'Simpro', 'BigChange', 'Commusoft', 'Protean', 'Klipboard', 'In-house'];
+const VOLUMES = ['Under 250', '250–1,000', '1,000–5,000', '5,000+'];
+
+export function EnquiryForm({ pageSource = 'sales' }: { pageSource?: string }) {
+  const [targets, setTargets] = useState<string[]>([]);
+  const [sources, setSources] = useState<string[]>([]);
+  const [volume, setVolume] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle(list: string[], set: (v: string[]) => void, v: string) {
+    set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+  }
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    try {
+      const res = await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fd.get('name'),
+          email: fd.get('email'),
+          company: fd.get('company') || undefined,
+          otherSystems: fd.get('otherSystems') || undefined,
+          message: fd.get('message') || undefined,
+          website: fd.get('website') || undefined, // honeypot
+          sourceSystems: sources,
+          targetSystems: targets,
+          jobsPerMonth: volume || undefined,
+          pageSource,
+        }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setError(json.error ?? 'Something went wrong — try hello@proofsync.co.uk');
+        return;
+      }
+      setDone(true);
+    } catch {
+      setError('Could not send — please email hello@proofsync.co.uk');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="rounded-xl border border-success/40 bg-success/[0.08] p-8 text-center">
+        <CheckCircle2 className="mx-auto size-8 text-success" />
+        <p className="mt-4 text-xl font-bold text-white">Got it — thank you.</p>
+        <p className="mx-auto mt-2 max-w-md text-white/60">
+          We&apos;ll come back to you within one working day. If it&apos;s urgent,{' '}
+          <a href="mailto:hello@proofsync.co.uk" className="text-success underline">hello@proofsync.co.uk</a>.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="rounded-xl border border-white/10 bg-navy-900/60 p-6 text-left lg:p-8">
+      {/* THE question — first, because it's the one that matters */}
+      <fieldset>
+        <legend className="text-sm font-semibold text-white">
+          Which client systems are you re-keying into?
+        </legend>
+        <p className="mt-1 text-xs text-white/45">Pick any that apply — this tells us exactly what to connect you to.</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {TARGETS.map((t) => (
+            <Chip key={t} label={t} active={targets.includes(t)} onClick={() => toggle(targets, setTargets, t)} />
+          ))}
+        </div>
+        <input
+          name="otherSystems"
+          placeholder="Something else? Name it here…"
+          maxLength={300}
+          className="mt-3 w-full rounded-md border border-white/10 bg-navy-800/60 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-success/50 focus:outline-none"
+        />
+      </fieldset>
+
+      <fieldset className="mt-6">
+        <legend className="text-sm font-semibold text-white">Where do your engineers complete jobs?</legend>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {SOURCES.map((s) => (
+            <Chip key={s} label={s} active={sources.includes(s)} onClick={() => toggle(sources, setSources, s)} />
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="mt-6">
+        <legend className="text-sm font-semibold text-white">Completed jobs a month?</legend>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {VOLUMES.map((v) => (
+            <Chip key={v} label={v} active={volume === v} onClick={() => setVolume(volume === v ? '' : v)} />
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <Field name="name" placeholder="Your name" required />
+        <Field name="email" placeholder="Work email" type="email" required />
+        <Field name="company" placeholder="Company" />
+      </div>
+
+      <textarea
+        name="message"
+        rows={2}
+        maxLength={2000}
+        placeholder="Anything else we should know? (optional)"
+        className="mt-3 w-full rounded-md border border-white/10 bg-navy-800/60 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-success/50 focus:outline-none"
+      />
+
+      {/* Honeypot — hidden from humans, catnip to bots */}
+      <input
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="absolute left-[-9999px] h-0 w-0 opacity-0"
+      />
+
+      {error && (
+        <p className="mt-4 flex items-center gap-2 rounded-md bg-warning-soft/20 px-3 py-2 text-sm text-warning">
+          <TriangleAlert className="size-4" />
+          {error}
+        </p>
+      )}
+
+      <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3 font-semibold text-white transition-colors hover:bg-success-text disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
+          Prove it on our data
+        </button>
+        <p className="text-xs text-white/40">
+          We&apos;ll only use this to talk to you about ProofSync. No list, no newsletter.
+        </p>
+      </div>
+    </form>
+  );
+}
+
+function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded border px-2.5 py-1.5 font-mono text-[11px] transition-colors ${
+        active
+          ? 'border-success bg-success/20 text-white'
+          : 'border-white/10 bg-white/[0.04] text-white/60 hover:border-white/25 hover:text-white'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Field({ name, placeholder, type = 'text', required }: { name: string; placeholder: string; type?: string; required?: boolean }) {
+  return (
+    <input
+      name={name}
+      type={type}
+      required={required}
+      placeholder={placeholder + (required ? ' *' : '')}
+      maxLength={200}
+      className="w-full rounded-md border border-white/10 bg-navy-800/60 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-success/50 focus:outline-none"
+    />
+  );
+}

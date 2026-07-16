@@ -68,6 +68,26 @@ export const mappingUpdateSchema = z.object({
   required: z.boolean().optional(),
 });
 
+/**
+ * Sales-page enquiry capture. Deliberately structured (arrays, not prose) so
+ * "which client systems are you re-keying into?" aggregates into a demand signal
+ * that ranks the connector roadmap.
+ */
+export const enquirySchema = z.object({
+  name: z.string().trim().min(1, 'Please give your name').max(120),
+  email: z.string().trim().email('Please give a valid work email').max(200),
+  company: z.string().trim().max(160).optional(),
+  sourceSystems: z.array(z.string().max(60)).max(20).default([]),
+  targetSystems: z.array(z.string().max(60)).max(30).default([]),
+  otherSystems: z.string().trim().max(300).optional(),
+  jobsPerMonth: z.string().trim().max(40).optional(),
+  message: z.string().trim().max(2000).optional(),
+  pageSource: z.string().trim().max(80).optional(),
+  /// Honeypot — must stay empty. Bots fill it; humans never see it.
+  website: z.string().max(0).optional(),
+});
+export type EnquiryInput = z.infer<typeof enquirySchema>;
+
 // --- File-transfer safety limits --------------------------------------------
 
 export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024; // 25 MB

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ListChecks, TriangleAlert, PlugZap, SlidersHorizontal } from 'lucide-react';
+import { LayoutDashboard, ListChecks, TriangleAlert, PlugZap, SlidersHorizontal, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProductLockup } from '@/components/brand/proofsync-logo';
 
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/jobs', label: 'Jobs', icon: ListChecks },
   { href: '/exceptions', label: 'Exceptions', icon: TriangleAlert },
+  { href: '/enquiries', label: 'Enquiries', icon: Inbox },
   { href: '/integrations', label: 'Integrations', icon: PlugZap },
   { href: '/settings/mappings', label: 'Settings', icon: SlidersHorizontal },
 ];

@@ -240,7 +240,7 @@ export default function HowItWorksPage() {
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href="mailto:hello@proofsync.co.uk?subject=ProofSync%20%E2%80%94%20technical%20questions"
+            href="/#prove-it"
             className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3 font-semibold text-white transition-colors hover:bg-success-text"
           >
             Start the conversation
