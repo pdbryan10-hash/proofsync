@@ -268,13 +268,18 @@ export default function SalesPage() {
             <RouteCard
               icon={MonitorSmartphone}
               title="No interface at all"
-              body="We securely operate the system as a person would — with your client’s written authorisation and their own service account."
+              body="Where your client authorises it in writing and issues a service account of their own, we can automate the update directly. Their permission is the starting point, not a footnote."
               accent
             />
           </div>
 
           <p className="mt-7 max-w-3xl text-lg font-semibold text-white">
-            You never have to tell a client &ldquo;we can&apos;t automate yours.&rdquo;
+            So the awkward account stops being the one you can&apos;t help.
+          </p>
+          <p className="mt-3 max-w-3xl text-sm text-white/45">
+            We work within what each client permits. If a system can&apos;t be automated within their rules, we
+            tell you that plainly rather than sell you a workaround — and we never touch a system we haven&apos;t
+            been invited into.
           </p>
         </div>
       </section>

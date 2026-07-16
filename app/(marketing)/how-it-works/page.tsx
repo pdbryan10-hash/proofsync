@@ -22,7 +22,7 @@ const LADDER = [
   { rung: '2', route: 'Scheduled file import (SFTP/CSV/XML)', pref: 'Good', body: 'Many CAFM platforms accept batch job-update imports. Supported, contractual, robust — and more common than people assume.' },
   { rung: '3', route: 'Contractor portal upload', pref: 'Workable', body: 'A supported human path, driven reliably. Slower, but sanctioned.' },
   { rung: '4', route: 'Internal endpoints', pref: 'Case-by-case', body: "The interfaces the client system's own web app uses. More stable than screen automation. Requires permission." },
-  { rung: '5', route: 'Browser automation', pref: 'Last resort', body: 'Where nothing else exists. Runs on a dedicated worker under a client-issued service account, with written authorisation. Verified by reading the record back.' },
+  { rung: '5', route: 'Direct automation', pref: 'Last resort', body: 'Only where nothing else exists AND the client authorises it in writing on an account they issue and control. Runs on a dedicated worker, scoped to the job-update task, and still verified by reading the record back. If their terms or security model don’t allow it, this rung is simply closed — and we say so.' },
 ];
 
 export default function HowItWorksPage() {
@@ -179,11 +179,13 @@ export default function HowItWorksPage() {
           ))}
         </div>
         <Callout>
-          <strong className="text-white">On browser automation.</strong> It is the last rung deliberately. It only
-          ever runs with the client&apos;s written authorisation, under a service account they issue and can
-          revoke, on a dedicated worker — never against a person&apos;s login. And it is still verified: the record
-          is re-read and compared, exactly as the API route is. We will tell you honestly when a client system is
-          a rung-5 case, because that changes the risk and the maintenance, and you should know before you buy.
+          <strong className="text-white">On the last rung.</strong> It is last deliberately, and it is gated on
+          the client — not on us. It runs only where that client has authorised it in writing, on a service
+          account they issue, scope and can revoke at any moment; never against a person&apos;s login, and never
+          on a system we haven&apos;t been invited into. It is still verified — the record is re-read and compared,
+          exactly as the API route is. And where a client&apos;s terms, security model or MFA mean the answer is
+          no, the answer is no: we will tell you that rather than engineer around it. A capability you can&apos;t
+          defend in front of the client isn&apos;t a capability, it&apos;s a liability.
         </Callout>
       </Section>
 
