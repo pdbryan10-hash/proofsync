@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, ListChecks, TriangleAlert, PlugZap, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ProductLockup } from '@/components/brand/see-logo';
+import { ProductLockup } from '@/components/brand/proofsync-logo';
 
 const NAV = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },

@@ -1,6 +1,6 @@
 # Architecture
 
-SEE CAFM Sync is a Next.js (App Router) application with a clean separation between
+ProofSync is a Next.js (App Router) application with a clean separation between
 **presentation** (server/client components), **application services**, a
 **deterministic sync engine**, and **provider connectors**. Provider-specific logic
 is confined to `lib/integrations/`; nothing above that layer knows how Joblogic or
@@ -13,7 +13,7 @@ flowchart TB
   subgraph Sources
     JL["Joblogic (source of truth)\nengineer completes job"]
   end
-  subgraph SEE_CAFM_SYNC["SEE CAFM Sync"]
+  subgraph PROOFSYNC["ProofSync"]
     direction TB
     WH["/api/webhooks/joblogic\n(real-time)"]
     CRON["/api/cron/poll-completions\n(every 30 min · safety net)"]
@@ -23,7 +23,7 @@ flowchart TB
       JLC["JoblogicConnector\nMock | Live"]
       CC["ConcertoConnector\nMock | Live"]
     end
-    DB[("PostgreSQL / SQLite\nvia Prisma")]
+    DB[("MongoDB (Atlas)\nvia Prisma")]
     UI["App Router UI\nDashboard · Jobs · Exceptions · Integrations · Settings"]
   end
   subgraph Targets
@@ -43,7 +43,7 @@ flowchart TB
   UI <--> DB
 ```
 
-Mock mode short-circuits the connectors to the local database (the `Job` /
+Mock mode short-circuits the connectors to the application database (the `Job` /
 `JobCompletion` / `Document` tables stand in for Joblogic; the `MockConcertoJob`
 table *is* the Concerto target), so the entire flow runs with no external services.
 

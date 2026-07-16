@@ -18,8 +18,8 @@ What is production-grade in this build, and what to harden before a live go-live
   boundary; webhook signature abstraction; audit metadata redaction; safe API error
   messages; mutating routes funnel through a role gate; API timeouts on live calls;
   document type/size validation.
-- **Portable persistence** — Prisma schema runs on SQLite (demo) and PostgreSQL
-  (production) with no model changes.
+- **Single persistence layer** — Prisma on MongoDB (Atlas), matching the wider ProofWorks
+  stack; one provider across local and production.
 - **Scheduled safety net** — 30-minute completion poller via Vercel Cron, protected
   by `CRON_SECRET`.
 
@@ -35,7 +35,9 @@ What is production-grade in this build, and what to harden before a live go-live
 | **Automatic retries** | Manual retry + retry policy present | Enqueue retryable failures on the backoff schedule via the queue |
 | **Observability** | `console` + audit trail | Structured logging + Sentry/OTel; alert on exception spikes |
 | **Multi-tenant** | Single org/client seeded | Enforce org scoping on every query; per-tenant credentials |
-| **Migrations** | `prisma db push` for demo | `prisma migrate` with reviewed migration history |
+| **Schema changes** | `prisma db push` | MongoDB has no migration history — version schema changes deliberately; review index changes before applying |
+| **Referential integrity** | Explicit ordered deletes (Mongo has no cascade) | Keep deletes centralised; add orphan-sweep job |
+| **New system pairings** | Joblogic → Concerto | Add a connector per system (Simpro/BigChange · Planon/QFM/Maximo); engine unchanged |
 | **Live connectors** | `TODO`-marked scaffolds | Implement against confirmed endpoints (see integration checklist) |
 | **Backups/retention** | — | DB backups; audit-retention policy per client |
 

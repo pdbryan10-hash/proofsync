@@ -1,8 +1,8 @@
 {
-  "name": "see-cafm-sync",
+  "name": "proofsync",
   "version": "0.1.0",
   "private": true,
-  "description": "SEE CAFM Sync — automated Joblogic → Concerto job completion integration. Powered by ProofWorks.",
+  "description": "ProofSync — verified job completion sync between a contractor job-management system and the client CAFM. Powered by ProofWorks.",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

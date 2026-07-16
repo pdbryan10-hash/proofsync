@@ -4,7 +4,7 @@
  */
 export function makePlaceholderPdf(title: string): Buffer {
   const text = title.replace(/[()\\]/g, '').slice(0, 80);
-  const body = `BT /F1 18 Tf 60 760 Td (SEE CAFM Sync - demo document) Tj 0 -28 Td /F1 12 Tf (${text}) Tj ET`;
+  const body = `BT /F1 18 Tf 60 760 Td (ProofSync - demo document) Tj 0 -28 Td /F1 12 Tf (${text}) Tj ET`;
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',

@@ -5,9 +5,9 @@ import { ModeBadge } from '@/components/layout/demo-badge';
 import { APP_NAME } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'SEE CAFM Sync — Joblogic → Concerto automation',
+  title: 'ProofSync — verified job completion sync between field and client CAFM',
   description:
-    'Automatically transfer completed job information, attendance data and certificates from Joblogic into the correct Concerto job. Powered by ProofWorks.',
+    'Complete once. Sync automatically. Review only the exceptions. ProofSync transfers completed job information, attendance data and certificates from your job-management system into the correct job in the client\'s CAFM — verified and audited. Powered by ProofWorks.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {APP_NAME}
                 </p>
                 <p className="truncate text-sm font-semibold text-navy-800">
-                  Joblogic → Concerto job completion automation
+                  Joblogic → Concerto job completion automation · SEE Services
                 </p>
               </div>
               <ModeBadge />
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="mx-auto w-full max-w-7xl">{children}</div>
             </main>
             <footer className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground lg:px-8">
-              SEE CAFM Sync · Powered by ProofWorks · Representative integration adapters — demonstration build
+              ProofSync · Powered by ProofWorks · Representative integration adapters — demonstration build
             </footer>
           </div>
         </div>

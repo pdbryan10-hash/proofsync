@@ -19,8 +19,10 @@ export function getEstimatedManualMinutesPerJob(): number {
   return Number.isFinite(raw) && raw > 0 ? raw : 15;
 }
 
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'SEE CAFM Sync';
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'ProofSync';
 export const APP_TAGLINE = 'Powered by ProofWorks';
+/** Named launch customer — attribution only; never the product's own identity. */
+export const LAUNCH_CUSTOMER = 'SEE Services';
 
 /**
  * Server-only provider credentials. Returned as a typed bag so live connectors

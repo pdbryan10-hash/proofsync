@@ -1,14 +1,16 @@
 import { cn } from '@/lib/utils';
 
 /**
- * SEE Services brand mark, recreated as resolution-independent SVG so it renders
- * crisply everywhere and needs no binary asset. The design echoes the official
- * logo: a six-blade colour "aperture" orbited by a slate swoosh, the navy "SEE"
- * wordmark, and the "Comply · Maintain · Sustain" strapline.
+ * SEE Services brand mark — CUSTOMER attribution only.
  *
- * To use the official raster/vector instead, drop it at /public/see-logo.svg and
- * swap <SeeMark/> for an <img> — the lockup spacing here is kept deliberately
- * simple to make that substitution trivial.
+ * ProofSync is the product (see proofsync-logo.tsx); SEE Services is the launch
+ * customer. This mark must therefore only ever appear as "built for / trusted by"
+ * attribution — never as the product's own identity, since it is not our brand.
+ *
+ * Recreated as resolution-independent SVG echoing the official logo: a six-blade
+ * colour "aperture" orbited by a slate swoosh, the navy "SEE" wordmark, and the
+ * "Comply · Maintain · Sustain" strapline. To use the official asset instead, drop
+ * it at /public/see-logo.svg and swap <SeeMark/> for an <img>.
  */
 
 const BLADES = [
@@ -64,18 +66,14 @@ export function SeeLogoFull({ className }: { className?: string }) {
   );
 }
 
-/** Compact product lockup for the sidebar / headers. */
-export function ProductLockup({ className, subdued = false }: { className?: string; subdued?: boolean }) {
+/** Customer attribution lockup: "Built for SEE Services". */
+export function SeeCustomerBadge({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <SeeMark className="h-9 w-auto shrink-0" />
+      <SeeMark className="h-10 w-auto shrink-0" />
       <div className="leading-tight">
-        <div className={cn('text-sm font-semibold tracking-tight', subdued ? 'text-white' : 'text-navy-800')}>
-          SEE CAFM Sync
-        </div>
-        <div className={cn('text-[11px]', subdued ? 'text-white/60' : 'text-muted-foreground')}>
-          Powered by ProofWorks
-        </div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Launch customer</div>
+        <div className="text-sm font-semibold text-navy-800">SEE Services</div>
       </div>
     </div>
   );

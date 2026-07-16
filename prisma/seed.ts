@@ -44,7 +44,7 @@ const T = {
 };
 
 async function main() {
-  console.log('Seeding SEE CAFM Sync demo data…');
+  console.log('Seeding ProofSync demo data…');
   await reset();
 
   const org = await prisma.organisation.create({ data: { name: 'SEE Services' } });

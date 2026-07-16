@@ -1,6 +1,6 @@
-// SEE CAFM Sync — Prisma schema (MongoDB)
+// ProofSync — Prisma schema (MongoDB)
 // -----------------------------------------------------------------------------
-// Runs on MongoDB (Atlas), matching the wider SEE / ProofWorks stack.
+// Runs on MongoDB (Atlas), matching the wider ProofWorks stack.
 //   * Ids are Mongo ObjectIds (`@db.ObjectId`, mapped to `_id`).
 //   * Enums are modelled as String fields constrained in the app layer
 //     (lib/domain/enums.ts + Zod) — portable and provider-agnostic.

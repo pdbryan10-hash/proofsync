@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * SEE CAFM Sync design tokens.
+ * ProofSync design tokens.
  * Enterprise SaaS palette: light surfaces, navy/slate typography,
  * restrained semantic colours for sync outcomes.
  */
@@ -33,7 +33,7 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // SEE brand navy/indigo (matched to the SEE Services logo wordmark)
+        // ProofSync brand navy/indigo
         navy: {
           DEFAULT: '#262a63',
           50: '#f1f2f9',

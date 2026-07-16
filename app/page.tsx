@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { SyncActivityChart } from '@/components/dashboard/sync-activity-chart';
 import { WorkflowStrip } from '@/components/dashboard/workflow-strip';
+import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { RunStatusBadge } from '@/components/ui/status-badge';
 import { getDashboardMetrics, getSyncActivity, getRecentSyncs } from '@/lib/services/metrics';
 import { prisma } from '@/lib/db/prisma';
@@ -46,8 +47,8 @@ export default async function DashboardPage() {
       <section className="overflow-hidden rounded-xl border border-navy-900/30 bg-navy-800 text-white">
         <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] lg:p-8">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">SEE CAFM Sync</p>
-            <h1 className="mt-3 text-3xl font-bold leading-tight lg:text-4xl">
+            <ProofSyncLogo subdued />
+            <h1 className="mt-4 text-3xl font-bold leading-tight lg:text-4xl">
               Complete once.
               <br />
               Sync automatically.

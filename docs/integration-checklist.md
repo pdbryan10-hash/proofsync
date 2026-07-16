@@ -1,7 +1,7 @@
 # Live Integration Checklist
 
 Everything required from **SEE Services** and the **client (Concerto owner)** before
-SEE CAFM Sync can move from `INTEGRATION_MODE=mock` to `live`. Until each item is
+ProofSync can move from `INTEGRATION_MODE=mock` to `live`. Until each item is
 confirmed, the corresponding `TODO(joblogic)` / `TODO(concerto)` in
 `lib/integrations/*/live.ts` must remain unimplemented — **do not invent endpoints.**
 

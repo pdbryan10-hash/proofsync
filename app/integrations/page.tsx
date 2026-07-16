@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TestConnectionButton } from '@/components/integrations/test-connection-button';
 import { PollNowButton } from '@/components/integrations/poll-now-button';
-import { SeeLogoFull } from '@/components/brand/see-logo';
+import { SeeCustomerBadge } from '@/components/brand/see-logo';
+import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { prisma } from '@/lib/db/prisma';
 import { getIntegrationMode } from '@/lib/config';
 import { timeAgo } from '@/lib/utils';
@@ -100,14 +101,15 @@ export default async function IntegrationsPage() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-center gap-6 rounded-lg border border-border bg-card p-6">
-        <div className="text-center">
-          <SeeLogoFull />
-        </div>
-        <div className="hidden text-sm text-muted-foreground sm:block">
-          <p className="font-semibold text-navy-800">Built for SEE Services</p>
-          <p>by ProofWorks — deterministic operational automation, not an AI dashboard.</p>
-        </div>
+      <div className="flex flex-col items-center justify-between gap-6 rounded-lg border border-border bg-card p-6 sm:flex-row">
+        <ProofSyncLogo />
+        <div className="hidden h-10 w-px bg-border sm:block" />
+        <SeeCustomerBadge />
+        <div className="hidden h-10 w-px bg-border lg:block" />
+        <p className="max-w-xs text-center text-xs text-muted-foreground sm:text-left">
+          ProofSync is a ProofWorks product. Deterministic operational automation — built and proven with
+          SEE Services, designed to work with any job-management and CAFM pairing.
+        </p>
       </div>
     </div>
   );
