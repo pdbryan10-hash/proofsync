@@ -4,7 +4,7 @@ import { createJoblogicConnector } from '@/lib/integrations/joblogic/connector';
 import { getSyncDispatcher } from '@/lib/sync/dispatcher';
 import { buildIdempotencyKey } from '@/lib/sync/idempotency';
 import { ensureDemoOrg } from './org';
-import { getMaxDispatchesPerTick, isBrowserTransport } from './config';
+import { getMaxDispatchesPerTick } from './config';
 import type { NormalisedJob, NormalisedCompletion } from '@/lib/integrations/types';
 
 /**
@@ -131,12 +131,10 @@ export async function ingestAndSync(opts: { maxDispatches?: number } = {}): Prom
     else result.exceptions += 1;
   };
 
-  if (isBrowserTransport()) {
-    for (const p of pending) tally(await runOne(p).catch(() => null));
-  } else {
-    const settled = await Promise.all(pending.map((p) => runOne(p).catch(() => null)));
-    for (const d of settled) tally(d);
-  }
+  // Sequential, always. Running the demo connectors concurrently produced zero
+  // syncs and no runs on the shared cluster (they share a session/dispatch path),
+  // so this is dispatched one at a time — correctness over the small speed win.
+  for (const p of pending) tally(await runOne(p).catch(() => null));
 
   await prisma.integrationConnection.updateMany({
     where: { organisationId },
