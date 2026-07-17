@@ -3,6 +3,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DemoState } from '@/lib/demo/state';
 
+export interface ActivityLine {
+  id: number;
+  time: string;
+  text: string;
+  tone: 'ok' | 'flag' | 'idle';
+}
+
+/**
+ * Turn one sync's raw result into a plain-English sentence a stranger can follow.
+ * Returns null when nothing worth narrating happened, so the log doesn't fill
+ * with "checked, nothing new" every 30 seconds.
+ */
+function narrate(data: {
+  drip?: { completed?: number };
+  sync?: { synced?: number; partial?: number; exceptions?: number };
+}): { text: string; tone: ActivityLine['tone'] } | null {
+  const completed = data.drip?.completed ?? 0;
+  const synced = data.sync?.synced ?? 0;
+  const partial = data.sync?.partial ?? 0;
+  const exceptions = data.sync?.exceptions ?? 0;
+
+  if (completed === 0 && synced === 0 && partial === 0 && exceptions === 0) return null;
+
+  const parts: string[] = [];
+  if (completed > 0) parts.push(`${completed} job${completed === 1 ? '' : 's'} just finished on site`);
+  if (synced > 0) parts.push(`copied ${synced} into Concerto and verified ${synced === 1 ? 'it' : 'them'}`);
+  if (partial > 0) parts.push(`${partial} copied with a document still to follow`);
+  if (exceptions > 0)
+    parts.push(`${exceptions} sent to a person to check (usually a missing client reference)`);
+
+  const tone: ActivityLine['tone'] = exceptions > 0 && synced === 0 ? 'flag' : 'ok';
+  return { text: `Checked Joblogic — ${parts.join('; ')}.`, tone };
+}
+
 /**
  * Drives the live console.
  *
@@ -21,7 +55,18 @@ export function useDemoState() {
   const [state, setState] = useState<DemoState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [activity, setActivity] = useState<ActivityLine[]>([]);
   const mounted = useRef(true);
+  const lineId = useRef(0);
+
+  const pushActivity = useCallback((line: { text: string; tone: ActivityLine['tone'] }) => {
+    const time = new Date().toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    setActivity((prev) => [{ id: lineId.current++, time, ...line }, ...prev].slice(0, 8));
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -47,14 +92,18 @@ export function useDemoState() {
           cache: 'no-store',
         });
         const body = await res.json();
-        // A beat that actually ran changed data — read it back immediately
-        // rather than waiting for the next poll, so the console reacts on the beat.
-        if (body?.ok && body.data?.ran) await refresh();
+        // A sync that actually ran changed data — read it back immediately rather
+        // than waiting for the next poll, and narrate what it did in plain English.
+        if (body?.ok && body.data?.ran) {
+          const line = narrate(body.data);
+          if (line) pushActivity(line);
+          await refresh();
+        }
       } catch {
         // Silent: the read loop already surfaces connectivity problems.
       }
     },
-    [refresh],
+    [refresh, pushActivity],
   );
 
   const reset = useCallback(async () => {
@@ -80,7 +129,10 @@ export function useDemoState() {
   useEffect(() => {
     mounted.current = true;
     void refresh();
-    void tick();
+    // Run a sync the moment the page opens, so a visitor sees something happen
+    // within a second or two rather than waiting up to 30s for the next one. The
+    // server serialises syncs, so this can't collide with the background cadence.
+    void tick(true);
     const readLoop = setInterval(() => void refresh(), 2_000);
     const tickLoop = setInterval(() => void tick(), 5_000);
     return () => {
@@ -90,7 +142,7 @@ export function useDemoState() {
     };
   }, [refresh, tick]);
 
-  return { state, error, busy, refresh, reset, forceTick };
+  return { state, error, busy, activity, refresh, reset, forceTick };
 }
 
 /**

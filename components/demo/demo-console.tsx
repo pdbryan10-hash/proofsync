@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { cn, formatDuration, formatTime, timeAgo } from '@/lib/utils';
 import type { DemoState, LedgerRow, SourceRow, TargetRow } from '@/lib/demo/state';
 import type { ShotSummary } from '@/lib/demo/screenshots';
-import { useChangedRows, useDemoState } from './use-demo-state';
+import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-state';
 
 /**
  * The live sync console.
@@ -32,7 +32,7 @@ import { useChangedRows, useDemoState } from './use-demo-state';
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, reset, forceTick } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick } = useDemoState();
 
   if (error && !state) {
     return (
@@ -63,12 +63,14 @@ export function DemoConsole() {
       <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
+        <Explainer tickSeconds={state.tick.tickSeconds} />
+        <ActivityFeed activity={activity} />
         <StatsRow state={state} />
 
         {!state.seeded && (
           <div className="mb-4 rounded-lg border border-warning-soft bg-warning-soft p-4 text-sm text-warning-text">
-            Both systems are empty. Press <strong>Reset &amp; seed</strong> to lay down a starting
-            state and the beat will begin.
+            Both systems are empty. Press <strong>Start over</strong> to lay down a fresh set of
+            jobs, and the syncing will begin.
           </div>
         )}
 
@@ -90,9 +92,76 @@ export function DemoConsole() {
           />
         </div>
 
-        <HonestyNote transport={state.transport} />
+        {/* The "what this does / doesn't prove" note is only shown in the local
+            browser-drive mode, where that distinction matters to whoever is
+            running it. The public hosted demo (direct) leads with the plain
+            explainer above instead. */}
+        {state.transport === 'browser' && <HonestyNote transport={state.transport} />}
       </div>
     </div>
+  );
+}
+
+/**
+ * Plain-English "what am I looking at". A stranger should understand the whole
+ * demo from this one paragraph, without knowing anything about the product.
+ */
+function Explainer({ tickSeconds }: { tickSeconds: number }) {
+  return (
+    <section className="my-4 rounded-lg border border-border bg-card px-5 py-4">
+      <h2 className="text-sm font-semibold text-navy-800">What you&rsquo;re watching</h2>
+      <p className="mt-1.5 max-w-4xl text-sm leading-relaxed text-muted-foreground">
+        A live demonstration. On the <strong className="text-foreground">left</strong> is a
+        contractor&rsquo;s job system, where engineers record the work they&rsquo;ve finished. On the{' '}
+        <strong className="text-foreground">right</strong> is their client&rsquo;s facilities system,
+        which needs those same details. The two don&rsquo;t talk to each other. Every {tickSeconds}{' '}
+        seconds, <strong className="text-foreground">ProofSync</strong> (the middle column) checks the
+        left system for newly-completed jobs and copies each one into the right system &mdash; filling
+        in the details, checking its own work, and setting aside anything that needs a person. It runs
+        on its own; just watch a job cross.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * A running commentary of what each sync just did, in words. Without this the
+ * panels merely "change"; with it, a viewer can see the story.
+ */
+function ActivityFeed({ activity }: { activity: ActivityLine[] }) {
+  return (
+    <section className="mb-4 rounded-lg border border-border bg-card">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
+          <span className="relative inline-flex size-2 rounded-full bg-success" />
+        </span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Live activity
+        </span>
+      </div>
+      <ul className="divide-y divide-border">
+        {activity.length === 0 && (
+          <li className="px-4 py-3 text-sm text-muted-foreground">
+            Watching the contractor&rsquo;s system for completed jobs&hellip;
+          </li>
+        )}
+        {activity.map((line, i) => (
+          <li
+            key={line.id}
+            className={cn(
+              'flex items-baseline gap-3 px-4 py-2.5 text-sm transition-colors',
+              i === 0 && 'bg-info-soft/40',
+            )}
+          >
+            <span className="font-mono text-xs text-muted-foreground tabular-nums">{line.time}</span>
+            <span className={cn(line.tone === 'flag' ? 'text-warning-text' : 'text-foreground')}>
+              {line.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -124,15 +193,14 @@ function ConsoleHeader({
             <span className="font-normal text-muted-foreground">Concerto</span>
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Two separate systems. ProofSync&rsquo;s real sync engine between them, every{' '}
-            {state.tick.tickSeconds} seconds.
+            Two separate systems, checked and kept in step every {state.tick.tickSeconds} seconds.
           </p>
         </div>
 
-        <TransportBadge transport={state.transport} />
+        {state.transport === 'browser' && <TransportBadge transport={state.transport} />}
 
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Next beat</span>
+          <span className="text-muted-foreground">Next check</span>
           <span
             className={cn(
               'inline-flex h-7 min-w-[3.25rem] items-center justify-center rounded-full px-2 font-mono text-sm tabular-nums',
@@ -141,19 +209,16 @@ function ConsoleHeader({
           >
             {seconds}s
           </span>
-          <span className="hidden text-xs text-muted-foreground sm:inline">
-            beat {state.tick.tickCount}
-          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={onForce} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" /> : <Zap />}
-            Force a beat
+            Run a sync now
           </Button>
           <Button size="sm" variant="ghost" onClick={onReset} disabled={busy}>
             <RotateCcw />
-            Reset &amp; seed
+            Start over
           </Button>
         </div>
       </div>
