@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   ArrowRight,
+  CalendarClock,
   Check,
   ShieldCheck,
   FileCheck2,
@@ -11,6 +12,8 @@ import {
   MonitorSmartphone,
   Plug,
 } from 'lucide-react';
+
+const CALENDLY_URL = 'https://calendly.com/bidengine/proofworks-discovery';
 import { ProcessMap } from '@/components/marketing/process-map';
 import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
@@ -89,12 +92,15 @@ export default function SalesPage() {
               Watch it sync — live
               <ArrowRight className="size-4" />
             </a>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/5 hover:text-white"
+            <a
+              href={CALENDLY_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white ring-1 ring-success/50 transition-colors hover:bg-success/10"
             >
-              See it work
-            </Link>
+              <CalendarClock className="size-4 text-success" />
+              Book a discovery tour
+            </a>
             <Link
               href="/how-it-works"
               className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/5 hover:text-white"

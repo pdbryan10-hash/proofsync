@@ -133,6 +133,9 @@ export interface DemoState {
     /** Totals for the applause screen — real, across the whole batch. */
     fieldsWritten: number;
     certificatesUploaded: number;
+    /** ProofSync's own machine time: total across all syncs, and the average. */
+    totalSyncMs: number;
+    avgSyncMs: number;
   };
   seeded: boolean;
 }
@@ -250,6 +253,19 @@ export async function getDemoState(): Promise<DemoState> {
     0,
   );
   const certificatesUploaded = populatedWos.reduce((n, w) => n + (w.documents?.length ?? 0), 0);
+
+  // ProofSync's own machine time across every completed sync.
+  const syncAgg = await prisma.syncRun.aggregate({
+    where: {
+      job: { organisationId },
+      status: { in: ['SUCCESS', 'PARTIAL'] },
+      durationMs: { not: null },
+    },
+    _sum: { durationMs: true },
+    _avg: { durationMs: true },
+  });
+  const totalSyncMs = syncAgg._sum.durationMs ?? 0;
+  const avgSyncMs = Math.round(syncAgg._avg.durationMs ?? 0);
 
   // Backfill the target panel with a few still-empty work orders if there aren't
   // yet enough filled ones — so early on it isn't blank, but filled rows lead.
@@ -412,6 +428,8 @@ export async function getDemoState(): Promise<DemoState> {
       adminMinutesSaved: (synced + partial) * getEstimatedManualMinutesPerJob(),
       fieldsWritten,
       certificatesUploaded,
+      totalSyncMs,
+      avgSyncMs,
     },
     seeded: sourceTotal > 0,
   };

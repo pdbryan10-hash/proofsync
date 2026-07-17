@@ -59,6 +59,8 @@ export function DemoConsole() {
     fields: number;
     certs: number;
     minutes: number;
+    avgSyncMs: number;
+    totalSyncMs: number;
   } | null>(null);
 
   if (error && !state) {
@@ -99,6 +101,8 @@ export function DemoConsole() {
       fields: state.stats.fieldsWritten,
       certs: state.stats.certificatesUploaded,
       minutes: state.stats.adminMinutesSaved,
+      avgSyncMs: state.stats.avgSyncMs,
+      totalSyncMs: state.stats.totalSyncMs,
     });
 
   return (
@@ -935,7 +939,7 @@ function FinaleCard({
   data,
   onClose,
 }: {
-  data: { jobs: number; fields: number; certs: number; minutes: number };
+  data: { jobs: number; fields: number; certs: number; minutes: number; avgSyncMs: number; totalSyncMs: number };
   onClose: () => void;
 }) {
   const rows = [
@@ -944,6 +948,8 @@ function FinaleCard({
     { to: data.certs, label: 'documents uploaded', tone: 'text-white' },
     { to: data.minutes, label: 'minutes of re-keying returned', tone: 'text-emerald-400' },
   ];
+  const avgSec = (data.avgSyncMs / 1000).toFixed(1);
+  const totalSec = (data.totalSyncMs / 1000).toFixed(1);
   return (
     <div
       role="dialog"
@@ -979,7 +985,18 @@ function FinaleCard({
           ))}
         </div>
 
-        <div className="mt-7 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
+            <div className="text-xl font-bold tabular-nums text-white">{avgSec}s</div>
+            <div className="text-[11px] text-white/55">avg per job synced</div>
+          </div>
+          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
+            <div className="text-xl font-bold tabular-nums text-white">{totalSec}s</div>
+            <div className="text-[11px] text-white/55">total machine time</div>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
           <div className="text-3xl font-black text-emerald-300">0</div>
           <div className="text-sm text-white/70">minutes of admin intervention</div>
         </div>
@@ -1097,6 +1114,11 @@ function BrowserTheatre({
   const winId = useRef(0);
   const slotIx = useRef(0);
   const workerIx = useRef(0);
+  // Jobs waiting to be shown. Filling this from ledger transitions and RELEASING
+  // it on a steady timer is what keeps the stage consistently populated: a burst
+  // of jobs completing between two polls no longer flashes past or gets dropped —
+  // each one is queued and paraded in turn.
+  const queue = useRef<LedgerRow[]>([]);
 
   // Tell the other panels which jobs a worker is driving right now, so the SAME
   // record lights up across all three views as the worker moves through it.
@@ -1105,11 +1127,32 @@ function BrowserTheatre({
     onActive(new Set(windows.filter((w) => w.reference).map((w) => w.reference!)));
   }, [windows, onActive]);
 
+  // Enqueue every job as it crosses the finish line (deduped via the seen map).
+  useEffect(() => {
+    const first = seen.current === null;
+    const prev = seen.current ?? new Map<string, string>();
+    const next = new Map<string, string>();
+    const fresh: LedgerRow[] = [];
+    for (const r of ledger) {
+      next.set(r.id, r.status);
+      if (TERMINAL.includes(r.status) && !TERMINAL.includes(prev.get(r.id) ?? '')) fresh.push(r);
+    }
+    seen.current = next;
+    if (first) {
+      queue.current.push(
+        ...ledger.filter((r) => TERMINAL.includes(r.status)).slice(0, 8).reverse(),
+      );
+    } else if (fresh.length) {
+      queue.current.push(...fresh);
+    }
+    if (queue.current.length > 14) queue.current = queue.current.slice(-14);
+  }, [ledger]);
+
+  // Release the parade at a steady pace — up to two workers on stage at once.
   useEffect(() => {
     const makeWin = (r: LedgerRow): TheatreWindow => {
       const steps = buildSteps(r);
       const ok = r.status === 'SUCCESS' || r.status === 'PARTIAL';
-      const lifeMs = Math.round(700 + steps.length * STEP_GAP_MS + 1300);
       return {
         id: winId.current++,
         workerNo: (workerIx.current++ % 5) + 1,
@@ -1119,43 +1162,22 @@ function BrowserTheatre({
         steps,
         slot: slotIx.current++ % THEATRE_SLOTS.length,
         stepMs: STEP_GAP_MS,
-        lifeMs,
+        lifeMs: Math.round(700 + steps.length * STEP_GAP_MS + 1300),
       };
     };
-    const removeAfter = (win: TheatreWindow) => {
-      setTimeout(() => setWindows((w) => w.filter((x) => x.id !== win.id)), win.lifeMs + 200);
-    };
-
-    const first = seen.current === null;
-    const prev = seen.current ?? new Map<string, string>();
-    const next = new Map<string, string>();
-    const fresh: TheatreWindow[] = [];
-
-    for (const r of ledger) {
-      next.set(r.id, r.status);
-      const wasTerminal = TERMINAL.includes(prev.get(r.id) ?? '');
-      const isTerminal = TERMINAL.includes(r.status);
-      if (!first && isTerminal && !wasTerminal) fresh.push(makeWin(r));
-    }
-    seen.current = next;
-
-    if (first) {
-      // Open already busy: dispatch a couple of workers for the most recent jobs
-      // rather than showing "waiting…".
-      const recent = ledger.filter((r) => TERMINAL.includes(r.status)).slice(0, 2);
-      const initial = recent.map(makeWin);
-      if (initial.length) {
-        setWindows(initial);
-        initial.forEach(removeAfter);
-      }
-      return;
-    }
-
-    if (fresh.length) {
-      setWindows((w) => [...w, ...fresh].slice(-2));
-      fresh.forEach(removeAfter);
-    }
-  }, [ledger]);
+    const id = setInterval(() => {
+      if (queue.current.length === 0) return;
+      setWindows((w) => {
+        if (w.length >= 2) return w;
+        const r = queue.current.shift();
+        if (!r) return w;
+        const win = makeWin(r);
+        setTimeout(() => setWindows((x) => x.filter((y) => y.id !== win.id)), win.lifeMs + 200);
+        return [...w, win];
+      });
+    }, 850);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <section className="relative mb-4 overflow-hidden rounded-xl border border-navy-900/40 bg-[radial-gradient(120%_120%_at_50%_-10%,#2a2f6e_0%,#1b1e49_45%,#12142f_100%)] shadow-inner">
