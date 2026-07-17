@@ -34,6 +34,9 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  */
 export function DemoConsole() {
   const { state, error, busy, activity, reset, forceTick } = useDemoState();
+  // Work orders a worker is filling right now (from the theatre), so the Concerto
+  // panel can highlight the SAME job the card is processing.
+  const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
 
   if (error && !state) {
     return (
@@ -65,7 +68,7 @@ export function DemoConsole() {
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <Explainer tickSeconds={state.tick.tickSeconds} busy={busy} onForce={forceTick} />
-        <BrowserTheatre ledger={state.ledger} target={state.target} />
+        <BrowserTheatre ledger={state.ledger} target={state.target} onActive={setActiveRefs} />
         <ActivityFeed activity={activity} />
         <StatsRow state={state} />
 
@@ -91,6 +94,7 @@ export function DemoConsole() {
             db={state.databases.target}
             systemUrl={state.systemUrls.target}
             transport={state.transport}
+            activeRefs={activeRefs}
           />
         </div>
 
@@ -214,12 +218,27 @@ interface TheatreWindow {
   lifeMs: number;
 }
 
-function BrowserTheatre({ ledger, target }: { ledger: LedgerRow[]; target: TargetRow[] }) {
+function BrowserTheatre({
+  ledger,
+  target,
+  onActive,
+}: {
+  ledger: LedgerRow[];
+  target: TargetRow[];
+  onActive?: (refs: Set<string>) => void;
+}) {
   const [windows, setWindows] = useState<TheatreWindow[]>([]);
   const seen = useRef<Map<string, string> | null>(null);
   const winId = useRef(0);
   const slotIx = useRef(0);
   const fullShown = useRef(0);
+
+  // Tell the Concerto panel which work orders a worker is filling right now, so
+  // it can light up the SAME job — you can follow one record across the screen.
+  useEffect(() => {
+    if (!onActive) return;
+    onActive(new Set(windows.filter((w) => w.kind === 'ok' && w.reference).map((w) => w.reference!)));
+  }, [windows, onActive]);
 
   useEffect(() => {
     // The real field values written to this job's work order — so the window
@@ -607,20 +626,21 @@ function Panel({
   systemUrl?: string;
   children: React.ReactNode;
 }) {
-  const accentClass = {
-    source: 'border-t-navy-800',
-    engine: 'border-t-info',
-    target: 'border-t-success',
+  const A = {
+    source: { head: 'from-slate-800 to-navy-900', ring: 'ring-navy-800/30' },
+    engine: { head: 'from-indigo-600 to-blue-700', ring: 'ring-indigo-500/30' },
+    target: { head: 'from-emerald-600 to-teal-700', ring: 'ring-emerald-500/30' },
   }[accent];
 
   return (
-    <section className={cn('flex flex-col rounded-lg border border-t-4 border-border bg-card', accentClass)}>
-      <div className="border-b border-border px-4 py-3">
+    <section className={cn('flex flex-col overflow-hidden rounded-xl bg-card shadow-lg ring-1', A.ring)}>
+      {/* bold coloured header so each system reads at a glance and the page has depth */}
+      <div className={cn('bg-gradient-to-br px-4 py-3 text-white', A.head)}>
         <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-navy-800">{title}</h2>
-          <span className="text-xs text-muted-foreground">{subtitle}</span>
+          <h2 className="text-sm font-bold tracking-tight">{title}</h2>
+          <span className="text-[11px] font-medium text-white/70">{subtitle}</span>
         </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/70">
           <span className="inline-flex items-center gap-1 font-mono">
             <Database className="size-3" />
             {db}
@@ -632,12 +652,11 @@ function Panel({
             </span>
           )}
           {systemUrl && (
-            // Let anyone doubting the demo go and look at the system themselves.
             <a
               href={systemUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-info-text hover:underline"
+              className="inline-flex items-center gap-1 text-white/90 underline-offset-2 hover:underline"
             >
               <ExternalLink className="size-3" />
               open the system
@@ -905,12 +924,14 @@ function TargetPanel({
   db,
   systemUrl,
   transport,
+  activeRefs,
 }: {
   rows: TargetRow[];
   session: { username: string } | null;
   db: string;
   systemUrl: string;
   transport: DemoState['transport'];
+  activeRefs: Set<string>;
 }) {
   const versions = useMemo(
     () =>
@@ -931,18 +952,30 @@ function TargetPanel({
       accent="target"
     >
       {rows.length === 0 && <EmptyRow>No work orders yet.</EmptyRow>}
-      {rows.map((row) => (
+      {rows.map((row) => {
+        const isActive = activeRefs.has(row.reference);
+        return (
         <div
           key={row.reference}
           className={cn(
             'px-4 py-3 transition-colors duration-700',
             changed.has(row.reference) && 'bg-success-soft',
+            isActive &&
+              'bg-teal-50 shadow-[inset_3px_0_0_0_rgb(20_184_166)] ring-1 ring-inset ring-teal-400/60',
           )}
         >
           <div className="flex items-start justify-between gap-2">
-            <span className="font-mono text-xs font-medium text-navy-800">{row.reference}</span>
-            <Badge tone={TARGET_TONE[row.status] ?? 'neutral'} dot>
-              {row.status}
+            <span className="flex items-center gap-1.5 font-mono text-xs font-medium text-navy-800">
+              {isActive && (
+                <span
+                  className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-teal-500"
+                  aria-hidden
+                />
+              )}
+              {row.reference}
+            </span>
+            <Badge tone={isActive ? 'info' : (TARGET_TONE[row.status] ?? 'neutral')} dot>
+              {isActive ? 'writing now' : row.status}
             </Badge>
           </div>
           <p className="mt-1 text-sm leading-snug text-foreground">{row.summary}</p>
@@ -970,7 +1003,8 @@ function TargetPanel({
             <span>{timeAgo(row.updatedAt)}</span>
           </div>
         </div>
-      ))}
+        );
+      })}
     </Panel>
   );
 }
