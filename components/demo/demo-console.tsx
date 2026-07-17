@@ -65,7 +65,7 @@ export function DemoConsole() {
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <Explainer tickSeconds={state.tick.tickSeconds} busy={busy} onForce={forceTick} />
-        <FlowDeck ledger={state.ledger} />
+        <BrowserTheatre ledger={state.ledger} target={state.target} />
         <ActivityFeed activity={activity} />
         <StatsRow state={state} />
 
@@ -166,143 +166,190 @@ function Explainer({
 }
 
 /**
- * The visual centrepiece: jobs fly across as chips.
+ * The visual centrepiece: browser windows pop open and do the work.
  *
- * Every job that finishes a sync launches a chip that travels from the Joblogic
- * side, through the ProofSync hub, into Concerto — turning "some rows changed"
- * into a thing you can watch move. Jobs that fail veer to the hub and drop out,
- * so an exception reads as "it didn't make it across" at a glance.
+ * Every job that finishes a sync pops a little browser window that signs in to
+ * the client's system, types the job's REAL field values into the form, saves,
+ * and closes — the way a person would where there is no API. Jobs that fail pop
+ * a window that can't complete and flags for a human. This visualises ProofSync's
+ * browser-login method (built and verified for real) using the actual data;
+ * the live Chromium itself only pops when the demo is run on a local machine.
  */
-const FLOW_KEYFRAMES = `
-@keyframes psFly {
-  0%   { left: 4%;  opacity: 0; }
-  10%  { opacity: 1; }
-  50%  { transform: translate(-50%, -16px) scale(1.06); }
-  90%  { opacity: 1; }
-  100% { left: 94%; opacity: 0; }
+const THEATRE_KEYFRAMES = `
+@keyframes psWinLife {
+  0%   { transform: translateY(12px) scale(.92); opacity: 0; }
+  5%   { opacity: 1; }
+  9%   { transform: translateY(0) scale(1); opacity: 1; }
+  91%  { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-10px) scale(.96); opacity: 0; }
 }
-@keyframes psFlag {
-  0%   { left: 4%;  top: var(--lane); opacity: 0; }
-  12%  { opacity: 1; }
-  50%  { left: 49%; top: var(--lane); opacity: 1; transform: translate(-50%, 0) scale(1.06); }
-  100% { left: 49%; top: 150%; opacity: 0; transform: translate(-50%, 0) scale(0.8); }
-}
+@keyframes psRowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+@keyframes psSignOff { 0%,14%{opacity:1;} 22%,100%{opacity:0;} }
 @keyframes psGear { to { transform: rotate(360deg); } }
-@keyframes psHubPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(29,78,216,.35); } 50% { box-shadow: 0 0 0 10px rgba(29,78,216,0); } }
-.ps-chip { animation-timing-function: cubic-bezier(.55,.1,.45,.9); animation-fill-mode: forwards; }
+.ps-win { animation: psWinLife 3.6s ease forwards; }
+.ps-row { opacity: 0; animation: psRowIn .3s ease forwards; }
 @media (prefers-reduced-motion: reduce) {
-  .ps-chip { animation-duration: 1ms !important; }
+  .ps-win, .ps-row { animation-duration: 1ms !important; }
   .ps-gear { animation: none !important; }
 }
 `;
 
-interface FlowChip {
+const TERMINAL = ['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'];
+const THEATRE_SLOTS = ['2%', '35%', '68%'];
+
+interface TheatreWindow {
   id: number;
-  label: string;
-  kind: 'ok' | 'flag';
-  lane: number;
+  jobNumber: string;
+  reference: string | null;
+  kind: 'ok' | 'fail';
+  fields: { label: string; value: string }[];
+  slot: number;
 }
 
-const TERMINAL = ['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'];
-const LANES = [26, 58, 90]; // px from the top of the band, three lanes
-
-function FlowDeck({ ledger }: { ledger: LedgerRow[] }) {
-  const [chips, setChips] = useState<FlowChip[]>([]);
-  const [active, setActive] = useState(false);
+function BrowserTheatre({ ledger, target }: { ledger: LedgerRow[]; target: TargetRow[] }) {
+  const [windows, setWindows] = useState<TheatreWindow[]>([]);
   const seen = useRef<Map<string, string> | null>(null);
-  const chipId = useRef(0);
-  const laneIx = useRef(0);
-  const activeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const winId = useRef(0);
+  const slotIx = useRef(0);
 
   useEffect(() => {
+    // Look up a work order's real, just-written field values by its reference.
+    const fieldsFor = (reference: string | null) => {
+      if (!reference) return [];
+      const row = target.find((t) => t.reference === reference);
+      return (row?.populatedFields ?? []).slice(0, 5).map((f) => ({ label: f.label, value: f.preview }));
+    };
+
     const first = seen.current === null;
     const prev = seen.current ?? new Map<string, string>();
     const next = new Map<string, string>();
-    const fresh: FlowChip[] = [];
+    const fresh: TheatreWindow[] = [];
 
     for (const r of ledger) {
       next.set(r.id, r.status);
       const wasTerminal = TERMINAL.includes(prev.get(r.id) ?? '');
       const isTerminal = TERMINAL.includes(r.status);
-      // A job that has just reached a terminal state is a job that just crossed
-      // (or just failed). First render seeds the set without launching anything,
-      // so opening the page doesn't fire a chip for every historic row.
       if (!first && isTerminal && !wasTerminal) {
+        const ok = r.status === 'SUCCESS' || r.status === 'PARTIAL';
         fresh.push({
-          id: chipId.current++,
-          label: r.reference ? `${r.jobNumber} → ${r.reference}` : r.jobNumber,
-          kind: r.status === 'SUCCESS' || r.status === 'PARTIAL' ? 'ok' : 'flag',
-          lane: LANES[laneIx.current++ % LANES.length]!,
+          id: winId.current++,
+          jobNumber: r.jobNumber,
+          reference: r.reference,
+          kind: ok ? 'ok' : 'fail',
+          fields: ok ? fieldsFor(r.reference) : [],
+          slot: slotIx.current++ % THEATRE_SLOTS.length,
         });
       }
     }
     seen.current = next;
 
     if (fresh.length) {
-      setChips((c) => [...c, ...fresh]);
-      setActive(true);
-      if (activeTimer.current) clearTimeout(activeTimer.current);
-      activeTimer.current = setTimeout(() => setActive(false), 1900);
-      for (const ch of fresh) {
-        setTimeout(() => setChips((c) => c.filter((x) => x.id !== ch.id)), 2000);
+      // Cap concurrent windows so a burst doesn't stack twenty at once.
+      setWindows((w) => [...w, ...fresh].slice(-3));
+      for (const win of fresh) {
+        setTimeout(() => setWindows((w) => w.filter((x) => x.id !== win.id)), 3600);
       }
     }
-  }, [ledger]);
+  }, [ledger, target]);
 
   return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-gradient-to-b from-card to-muted/30">
-      <style>{FLOW_KEYFRAMES}</style>
-      <div className="relative h-[132px]">
-        {/* the connecting track */}
-        <div className="absolute inset-x-[6%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-navy-200 via-info/40 to-success/50" />
+    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-gradient-to-b from-navy-900 to-navy-800">
+      <style>{THEATRE_KEYFRAMES}</style>
+      <div className="flex items-center gap-2 px-4 py-2 text-white/70">
+        <Cog className="ps-gear size-3.5" style={{ animation: 'psGear 3s linear infinite' }} />
+        <span className="text-[11px] font-semibold uppercase tracking-wide">
+          ProofSync signing in &amp; filling the client&rsquo;s system
+        </span>
+        <span className="ml-auto text-[10px] text-white/40">the way a person would — where there&rsquo;s no API</span>
+      </div>
 
-        {/* end zones + hub */}
-        <div className="absolute left-4 top-3 text-[11px] font-semibold uppercase tracking-wide text-navy-700">
-          Joblogic
-          <div className="mt-0.5 text-[10px] font-normal normal-case text-muted-foreground">contractor · jobs done</div>
-        </div>
-        <div className="absolute right-4 top-3 text-right text-[11px] font-semibold uppercase tracking-wide text-success-text">
-          Concerto
-          <div className="mt-0.5 text-[10px] font-normal normal-case text-muted-foreground">client · updated</div>
-        </div>
-
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-          <div
-            className="flex size-12 items-center justify-center rounded-full border border-info/30 bg-card"
-            style={{ animation: active ? 'psHubPulse 1s ease-out infinite' : undefined }}
-          >
-            <Cog
-              className="ps-gear size-6 text-info"
-              style={{ animation: `psGear ${active ? '1.1s' : '4s'} linear infinite` }}
-            />
+      <div className="relative h-[210px] px-3 pb-3">
+        {windows.length === 0 && (
+          <div className="flex h-full items-center justify-center text-xs text-white/30">
+            waiting for the next completed job&hellip;
           </div>
-          <span className="mt-1.5 text-[11px] font-semibold text-navy-800">ProofSync</span>
-        </div>
-
-        {/* flying chips */}
-        {chips.map((ch) => (
-          <span
-            key={ch.id}
-            className={cn(
-              'ps-chip pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold shadow-lg',
-              ch.kind === 'ok'
-                ? 'bg-info text-white shadow-info/30'
-                : 'bg-warning text-white shadow-warning/30',
-            )}
-            style={
-              {
-                top: ch.kind === 'ok' ? `${ch.lane}px` : undefined,
-                ['--lane' as string]: `${ch.lane}px`,
-                animation: `${ch.kind === 'ok' ? 'psFly' : 'psFlag'} ${ch.kind === 'ok' ? '1.9s' : '1.6s'}`,
-              } as React.CSSProperties
-            }
-          >
-            {ch.kind === 'flag' && <FileWarning className="mr-1 inline size-3 align-[-2px]" />}
-            {ch.label}
-          </span>
+        )}
+        {windows.map((win) => (
+          <BrowserWindow key={win.id} win={win} />
         ))}
       </div>
     </section>
+  );
+}
+
+/** One pop-open browser window that signs in, types the fields, saves, closes. */
+function BrowserWindow({ win }: { win: TheatreWindow }) {
+  const savedDelay = 0.7 + win.fields.length * 0.25 + 0.15;
+  return (
+    <div
+      className="ps-win absolute w-[30%] min-w-[230px] overflow-hidden rounded-lg border border-black/20 bg-white shadow-2xl"
+      style={{ left: THEATRE_SLOTS[win.slot], top: `${8 + win.slot * 6}px` }}
+    >
+      {/* browser chrome */}
+      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-3 py-1.5">
+        <span className="size-2 rounded-full bg-red-400" />
+        <span className="size-2 rounded-full bg-amber-400" />
+        <span className="size-2 rounded-full bg-emerald-400" />
+        <span className="ml-2 flex-1 truncate rounded bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500">
+          concerto&thinsp;·&thinsp;{win.reference ?? 'work order'}
+        </span>
+      </div>
+
+      {/* page body */}
+      <div className="relative p-3">
+        {/* signing-in flash */}
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center bg-white text-xs font-medium text-slate-500"
+          style={{ animation: 'psSignOff 3.6s ease forwards' }}
+        >
+          <Lock className="mr-1.5 size-3.5 text-slate-400" />
+          Signing in&hellip;
+        </div>
+
+        {win.kind === 'ok' ? (
+          <>
+            <p className="mb-2 text-[11px] font-semibold text-slate-700">
+              Work order {win.reference}
+            </p>
+            <dl className="space-y-1.5">
+              {win.fields.length === 0 && (
+                <div className="ps-row text-[11px] text-slate-500" style={{ animationDelay: '0.7s' }}>
+                  Updating fields&hellip;
+                </div>
+              )}
+              {win.fields.map((f, i) => (
+                <div
+                  key={f.label}
+                  className="ps-row flex items-baseline justify-between gap-2 border-b border-slate-100 pb-1"
+                  style={{ animationDelay: `${0.7 + i * 0.25}s` }}
+                >
+                  <dt className="text-[10px] uppercase tracking-wide text-slate-400">{f.label}</dt>
+                  <dd className="max-w-[60%] truncate text-[11px] font-medium text-slate-700">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div
+              className="ps-row mt-2 flex items-center gap-1.5 rounded bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700"
+              style={{ animationDelay: `${savedDelay}s` }}
+            >
+              <CheckCircle2 className="size-3.5" />
+              Saved to Concerto
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mb-2 text-[11px] font-semibold text-slate-700">Work order {win.jobNumber}</p>
+            <div
+              className="ps-row flex items-start gap-1.5 rounded bg-amber-50 px-2 py-1.5 text-[11px] font-medium text-amber-800"
+              style={{ animationDelay: '0.9s' }}
+            >
+              <FileWarning className="mt-0.5 size-3.5 shrink-0" />
+              Can&rsquo;t complete — no matching client reference. Flagged for a person.
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
