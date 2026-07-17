@@ -12,6 +12,7 @@ import {
   FileWarning,
   Loader2,
   Lock,
+  Rocket,
   RotateCcw,
   X,
   Zap,
@@ -44,14 +45,12 @@ export function DemoConsole() {
   // understands exactly what happens. Act 2 reveals the same thing running flat
   // out across the whole floor — the "oh, it's doing that to all of them" moment.
   const [act, setAct] = useState<'human' | 'machine'>('human');
-  // Snapshot taken when the machine floor opens, so the finale can state the REAL
-  // delta over the exact window the viewer watched — nothing invented.
-  const [baseline, setBaseline] = useState<{ done: number; minutes: number; at: number } | null>(
-    null,
-  );
-  const [finale, setFinale] = useState<{ jobs: number; minutes: number; seconds: number } | null>(
-    null,
-  );
+  const [finale, setFinale] = useState<{
+    jobs: number;
+    fields: number;
+    certs: number;
+    minutes: number;
+  } | null>(null);
 
   // The hero job for Act 1: the most recent real sync that actually wrote fields
   // into the client's work order. The ledger row now carries those fields itself,
@@ -101,23 +100,16 @@ export function DemoConsole() {
     );
   }
 
-  const enterMachine = () => {
-    setBaseline({
-      done: state.stats.synced + state.stats.partial,
-      minutes: state.stats.adminMinutesSaved,
-      at: Date.now(),
-    });
-    setAct('machine');
-  };
+  const enterMachine = () => setAct('machine');
 
-  const freeze = () => {
-    if (!baseline) return;
+  // The applause screen states the batch result — all real, straight from state.
+  const freeze = () =>
     setFinale({
-      jobs: Math.max(0, state.stats.synced + state.stats.partial - baseline.done),
-      minutes: Math.max(0, state.stats.adminMinutesSaved - baseline.minutes),
-      seconds: Math.max(1, Math.round((Date.now() - baseline.at) / 1000)),
+      jobs: state.stats.synced + state.stats.partial,
+      fields: state.stats.fieldsWritten,
+      certs: state.stats.certificatesUploaded,
+      minutes: state.stats.adminMinutesSaved,
     });
-  };
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -575,7 +567,7 @@ function MachineFloor({
           systemUrl={state.systemUrls.source}
           transport={state.transport}
         />
-        <LedgerPanel rows={state.ledger} db={state.databases.ledger} />
+        <LedgerPanel rows={state.ledger} db={state.databases.ledger} activeRefs={activeRefs} />
         <TargetPanel
           rows={state.target}
           session={state.sessions.concerto}
@@ -871,9 +863,15 @@ function FinaleCard({
   data,
   onClose,
 }: {
-  data: { jobs: number; minutes: number; seconds: number };
+  data: { jobs: number; fields: number; certs: number; minutes: number };
   onClose: () => void;
 }) {
+  const rows = [
+    { to: data.jobs, label: 'jobs completed into Concerto', tone: 'text-white' },
+    { to: data.fields, label: 'fields updated', tone: 'text-white' },
+    { to: data.certs, label: 'documents uploaded', tone: 'text-white' },
+    { to: data.minutes, label: 'minutes of re-keying returned', tone: 'text-emerald-400' },
+  ];
   return (
     <div
       role="dialog"
@@ -895,31 +893,28 @@ function FinaleCard({
         </button>
 
         <p className="text-[11px] font-bold uppercase tracking-widest text-info-soft">
-          While you watched — {data.seconds}s
+          While you watched
         </p>
 
-        <div className="mt-6 space-y-5">
-          <div>
-            <div className="text-5xl font-black text-white">
-              <BigCount to={data.jobs} />
+        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5">
+          {rows.map((r) => (
+            <div key={r.label}>
+              <div className={cn('text-4xl font-black sm:text-5xl', r.tone)}>
+                <BigCount to={r.to} />
+              </div>
+              <div className="mt-1 text-xs text-white/60 sm:text-sm">{r.label}</div>
             </div>
-            <div className="mt-1 text-sm text-white/60">jobs synced into Concerto</div>
-          </div>
-          <div>
-            <div className="text-5xl font-black text-emerald-400">
-              <BigCount to={data.minutes} />
-            </div>
-            <div className="mt-1 text-sm text-white/60">minutes of re-keying returned</div>
-          </div>
-          <div>
-            <div className="text-5xl font-black text-white">0</div>
-            <div className="mt-1 text-sm text-white/60">minutes anyone spent doing it</div>
-          </div>
+          ))}
         </div>
 
-        <p className="mt-7 text-sm text-white/70">
-          No admin intervention. Nothing typed twice. This was the real engine over two real,
-          separate systems — the whole time.
+        <div className="mt-7 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
+          <div className="text-3xl font-black text-emerald-300">0</div>
+          <div className="text-sm text-white/70">minutes of admin intervention</div>
+        </div>
+
+        <p className="mt-5 text-2xl">👏</p>
+        <p className="mt-1 text-sm text-white/70">
+          The real engine, signing into a real, separate client system by itself — the whole time.
         </p>
 
         <button
@@ -970,22 +965,55 @@ const THEATRE_KEYFRAMES = `
 `;
 
 const TERMINAL = ['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'];
-const THEATRE_SLOTS = ['2%', '35%', '68%'];
+// Two BIG slots side by side: the browser is the thing people remember, so it's
+// large and central — but two at a time still reads as "a fleet of workers".
+const THEATRE_SLOTS = ['3%', '51%'];
+
+interface TheatreStep {
+  label: string;
+  tone: 'ok' | 'fail' | 'gold';
+}
 
 interface TheatreWindow {
   id: number;
+  workerNo: number;
   jobNumber: string;
   reference: string | null;
   kind: 'ok' | 'fail';
-  fields: { label: string; value: string }[];
+  steps: TheatreStep[];
   slot: number;
-  detail: 'full' | 'brief';
+  stepMs: number;
   lifeMs: number;
+}
+
+const STEP_GAP_MS = 360;
+
+/** Build the worker's step list — honest to the engine's real stages. */
+function buildSteps(r: LedgerRow): TheatreStep[] {
+  const ref = r.reference ?? 'the work order';
+  const ok = r.status === 'SUCCESS' || r.status === 'PARTIAL';
+  const fields = r.targetFields.length || r.fieldsUpdated;
+  const docs = r.documentsTransferred;
+
+  const steps: TheatreStep[] = [
+    { label: 'Logging in to Concerto', tone: 'ok' },
+    { label: `Finding ${ref}`, tone: 'ok' },
+    { label: 'Reading the completed job', tone: 'ok' },
+  ];
+  if (!ok) {
+    steps.push({ label: 'Concerto refused the save — set aside for a person', tone: 'fail' });
+    return steps;
+  }
+  steps.push({ label: `Updating ${fields} field${fields === 1 ? '' : 's'}`, tone: 'ok' });
+  if (docs > 0) steps.push({ label: `Uploading ${docs} document${docs === 1 ? '' : 's'}`, tone: 'ok' });
+  steps.push({ label: 'Saving', tone: 'ok' });
+  steps.push({ label: 'Verifying', tone: 'ok' });
+  steps.push({ label: 'Complete', tone: 'gold' });
+  return steps;
 }
 
 function BrowserTheatre({
   ledger,
-  target,
   onActive,
 }: {
   ledger: LedgerRow[];
@@ -996,37 +1024,30 @@ function BrowserTheatre({
   const seen = useRef<Map<string, string> | null>(null);
   const winId = useRef(0);
   const slotIx = useRef(0);
-  const fullShown = useRef(0);
+  const workerIx = useRef(0);
 
-  // Tell the Concerto panel which work orders a worker is filling right now, so
-  // it can light up the SAME job — you can follow one record across the screen.
+  // Tell the other panels which jobs a worker is driving right now, so the SAME
+  // record lights up across all three views as the worker moves through it.
   useEffect(() => {
     if (!onActive) return;
-    onActive(new Set(windows.filter((w) => w.kind === 'ok' && w.reference).map((w) => w.reference!)));
+    onActive(new Set(windows.filter((w) => w.reference).map((w) => w.reference!)));
   }, [windows, onActive]);
 
   useEffect(() => {
-    // The real field values written to this job's work order — so the window
-    // shows the actual data being entered, the manual re-keying we automate.
-    const fieldsFor = (reference: string | null) => {
-      if (!reference) return [];
-      const row = target.find((t) => t.reference === reference);
-      return (row?.populatedFields ?? []).map((f) => ({ label: f.label, value: f.preview }));
-    };
-    const makeWin = (r: LedgerRow, detail: 'full' | 'brief'): TheatreWindow => {
+    const makeWin = (r: LedgerRow): TheatreWindow => {
+      const steps = buildSteps(r);
       const ok = r.status === 'SUCCESS' || r.status === 'PARTIAL';
-      const fields = ok ? fieldsFor(r.reference) : [];
-      const gap = detail === 'brief' ? 0.16 : 0.22;
-      const life = ok ? 0.5 + fields.length * gap + (detail === 'brief' ? 0.9 : 1.2) : 2.8;
+      const lifeMs = Math.round(700 + steps.length * STEP_GAP_MS + 1300);
       return {
         id: winId.current++,
+        workerNo: (workerIx.current++ % 5) + 1,
         jobNumber: r.jobNumber,
         reference: r.reference,
         kind: ok ? 'ok' : 'fail',
-        fields,
+        steps,
         slot: slotIx.current++ % THEATRE_SLOTS.length,
-        detail,
-        lifeMs: Math.round(life * 1000),
+        stepMs: STEP_GAP_MS,
+        lifeMs,
       };
     };
     const removeAfter = (win: TheatreWindow) => {
@@ -1042,24 +1063,15 @@ function BrowserTheatre({
       next.set(r.id, r.status);
       const wasTerminal = TERMINAL.includes(prev.get(r.id) ?? '');
       const isTerminal = TERMINAL.includes(r.status);
-      if (!first && isTerminal && !wasTerminal) {
-        // Front-load the theatre: the first couple of syncs get the full
-        // step-by-step parade (the "oh, I see what it's doing" moment); after
-        // that it settles into a lighter rhythm so it never becomes a repetitive
-        // show that outstays its welcome.
-        const detail: 'full' | 'brief' = fullShown.current < 2 ? 'full' : 'brief';
-        fullShown.current += 1;
-        fresh.push(makeWin(r, detail));
-      }
+      if (!first && isTerminal && !wasTerminal) fresh.push(makeWin(r));
     }
     seen.current = next;
 
     if (first) {
-      // Open with a few workers already mid-job, so the stage is busy on arrival
-      // rather than "waiting for the next completed job". Uses the most recent
-      // real syncs from the ledger.
-      const recent = ledger.filter((r) => TERMINAL.includes(r.status)).slice(0, 3);
-      const initial = recent.map((r) => makeWin(r, fullShown.current++ < 2 ? 'full' : 'brief'));
+      // Open already busy: dispatch a couple of workers for the most recent jobs
+      // rather than showing "waiting…".
+      const recent = ledger.filter((r) => TERMINAL.includes(r.status)).slice(0, 2);
+      const initial = recent.map(makeWin);
       if (initial.length) {
         setWindows(initial);
         initial.forEach(removeAfter);
@@ -1068,31 +1080,29 @@ function BrowserTheatre({
     }
 
     if (fresh.length) {
-      // Cap concurrent windows so a burst doesn't stack twenty at once.
-      setWindows((w) => [...w, ...fresh].slice(-3));
+      setWindows((w) => [...w, ...fresh].slice(-2));
       fresh.forEach(removeAfter);
     }
-  }, [ledger, target]);
+  }, [ledger]);
 
   return (
     <section className="relative mb-4 overflow-hidden rounded-xl border border-navy-900/40 bg-[radial-gradient(120%_120%_at_50%_-10%,#2a2f6e_0%,#1b1e49_45%,#12142f_100%)] shadow-inner">
       <style>{THEATRE_KEYFRAMES}</style>
-      {/* soft glow behind the workers for depth */}
-      <div className="pointer-events-none absolute inset-x-0 top-8 mx-auto h-40 w-2/3 rounded-full bg-info/10 blur-3xl" />
+      <div className="pointer-events-none absolute inset-x-0 top-8 mx-auto h-48 w-2/3 rounded-full bg-info/10 blur-3xl" />
       <div className="relative flex items-center gap-2 px-4 py-2.5 text-white/80">
         <Cog className="ps-gear size-4 text-info" style={{ animation: 'psGear 3s linear infinite' }} />
         <span className="text-[11px] font-semibold uppercase tracking-wider">
-          ProofSync signing in &amp; filling the client&rsquo;s system
+          ProofSync dispatches a worker for each completed job
         </span>
         <span className="ml-auto hidden text-[10px] text-white/40 sm:inline">
-          the way a person would — where there&rsquo;s no API
+          it signs in and works the client&rsquo;s system itself — no API
         </span>
       </div>
 
-      <div className="relative h-[290px] px-3 pb-3">
+      <div className="relative h-[360px] px-3 pb-3">
         {windows.length === 0 && (
           <div className="flex h-full items-center justify-center text-xs text-white/30">
-            waiting for the next completed job&hellip;
+            workers standing by&hellip;
           </div>
         )}
         {windows.map((win) => (
@@ -1103,81 +1113,72 @@ function BrowserTheatre({
   );
 }
 
-/** Per-worker accent so the three cards read as distinct and the stage has depth. */
+/** Per-worker accent so successive workers read as distinct. */
 const THEATRE_ACCENTS = [
-  { bar: 'from-teal-400 to-emerald-500', badge: 'bg-emerald-600', glow: 'shadow-emerald-500/30', dt: 'text-emerald-600/80' },
-  { bar: 'from-sky-400 to-indigo-500', badge: 'bg-indigo-600', glow: 'shadow-indigo-500/30', dt: 'text-indigo-600/80' },
-  { bar: 'from-fuchsia-400 to-violet-500', badge: 'bg-violet-600', glow: 'shadow-violet-500/30', dt: 'text-violet-600/80' },
+  { bar: 'from-teal-400 to-emerald-500', badge: 'bg-emerald-600', glow: 'shadow-emerald-500/40' },
+  { bar: 'from-sky-400 to-indigo-500', badge: 'bg-indigo-600', glow: 'shadow-indigo-500/40' },
+  { bar: 'from-fuchsia-400 to-violet-500', badge: 'bg-violet-600', glow: 'shadow-violet-500/40' },
+  { bar: 'from-amber-400 to-orange-500', badge: 'bg-orange-600', glow: 'shadow-orange-500/40' },
+  { bar: 'from-rose-400 to-pink-500', badge: 'bg-pink-600', glow: 'shadow-pink-500/40' },
 ];
 
-/** One pop-open browser window: a worker filling the client's form, field by field. */
+/** One BIG dispatched worker: signs in and works the client's system, step by step. */
 function BrowserWindow({ win }: { win: TheatreWindow }) {
-  const worker = `ProofSync Worker ${String(win.slot + 1).padStart(2, '0')}`;
-  const accent = THEATRE_ACCENTS[win.slot % THEATRE_ACCENTS.length]!;
-  const gap = win.detail === 'brief' ? 0.16 : 0.22;
-  const rowDelay = (i: number) => 0.4 + i * gap;
-  const savedDelay = 0.4 + win.fields.length * gap + 0.12;
+  const accent = THEATRE_ACCENTS[(win.workerNo - 1) % THEATRE_ACCENTS.length]!;
+  const worker = `Worker ${String(win.workerNo).padStart(2, '0')}`;
+  const step = (i: number) => `${(700 + i * win.stepMs) / 1000}s`;
 
   return (
     <div
       className={cn(
-        'ps-win absolute w-[31%] min-w-[248px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-2xl',
+        'ps-win absolute w-[46%] min-w-[340px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-2xl',
         accent.glow,
       )}
-      style={{ left: THEATRE_SLOTS[win.slot], top: `${10 + win.slot * 10}px`, animationDuration: `${win.lifeMs / 1000}s` }}
+      style={{ left: THEATRE_SLOTS[win.slot], top: '14px', animationDuration: `${win.lifeMs / 1000}s` }}
     >
-      {/* accent stripe + browser chrome + the named worker */}
-      <div className={cn('h-1 w-full bg-gradient-to-r', accent.bar)} />
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-1.5">
-        <span className="size-2 rounded-full bg-red-400" />
-        <span className="size-2 rounded-full bg-amber-400" />
-        <span className="size-2 rounded-full bg-emerald-400" />
-        <span className="ml-1 flex-1 truncate rounded bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
-          concerto&thinsp;·&thinsp;{win.reference ?? 'work order'}
-        </span>
-        <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[9px] font-semibold text-white', accent.badge)}>
-          {worker}
+      <div className={cn('h-1.5 w-full bg-gradient-to-r', accent.bar)} />
+
+      {/* Dispatch line — "🚀 Worker 03 assigned · opening client system" */}
+      <div className={cn('flex items-center gap-2 px-3.5 py-2 text-white', accent.badge)}>
+        <Rocket className="size-4" />
+        <span className="text-xs font-bold">{worker} assigned</span>
+        <span className="ml-auto text-[10px] font-medium text-white/80">opening client system…</span>
+      </div>
+
+      {/* Browser chrome */}
+      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3.5 py-2">
+        <span className="size-2.5 rounded-full bg-red-400" />
+        <span className="size-2.5 rounded-full bg-amber-400" />
+        <span className="size-2.5 rounded-full bg-emerald-400" />
+        <span className="ml-1 flex-1 truncate rounded bg-white px-2.5 py-1 font-mono text-[11px] text-slate-500 ring-1 ring-slate-200">
+          concerto.client-fm.co.uk&thinsp;·&thinsp;{win.reference ?? 'work order'}
         </span>
       </div>
 
-      {/* the client's form being filled in, field by field, like manual re-keying */}
-      <div className="p-3">
-        <p className="mb-2 text-[9px] font-semibold uppercase tracking-widest text-slate-400">Contractor update</p>
-        {win.kind === 'ok' ? (
-          <>
-            <dl className="space-y-1.5">
-              {win.fields.length === 0 && (
-                <div className="ps-row text-[11px] text-slate-500" style={{ animationDelay: '0.4s' }}>
-                  Entering completion details&hellip;
-                </div>
+      {/* The real steps, ticking through one by one. */}
+      <ul className="space-y-2.5 px-4 py-4">
+        {win.steps.map((s, i) => (
+          <li key={s.label} className="ps-row flex items-center gap-2.5" style={{ animationDelay: step(i) }}>
+            {s.tone === 'fail' ? (
+              <FileWarning className="size-4 shrink-0 text-amber-500" />
+            ) : (
+              <CheckCircle2
+                className={cn('size-4 shrink-0', s.tone === 'gold' ? 'text-emerald-500' : 'text-emerald-400')}
+              />
+            )}
+            <span
+              className={cn(
+                'text-[13px]',
+                s.tone === 'fail' && 'font-medium text-amber-700',
+                s.tone === 'gold' && 'font-bold text-emerald-700',
+                s.tone === 'ok' && 'text-slate-600',
               )}
-              {win.fields.map((f, i) => (
-                <div key={f.label} className="ps-row" style={{ animationDelay: `${rowDelay(i)}s` }}>
-                  <dt className={cn('text-[9px] font-medium uppercase tracking-wide', accent.dt)}>{f.label}</dt>
-                  <dd className="truncate text-[11px] font-medium text-slate-700">{f.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <div
-              className="ps-row mt-2.5 flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200"
-              style={{ animationDelay: `${savedDelay}s` }}
             >
-              <CheckCircle2 className="size-3.5" />
-              Saved to Concerto
-            </div>
-          </>
-        ) : (
-          <div
-            className="ps-row flex items-start gap-2 rounded-md bg-amber-50 px-2 py-1.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
-            style={{ animationDelay: '0.5s' }}
-          >
-            <FileWarning className="mt-0.5 size-3.5 shrink-0" />
-            {win.reference
-              ? `No record matches ${win.reference} — flagged for a person`
-              : 'Missing client reference — flagged for a person'}
-          </div>
-        )}
-      </div>
+              {s.label}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -1525,7 +1526,15 @@ const RUN_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'dan
   QUEUED: 'neutral',
 };
 
-function LedgerPanel({ rows, db }: { rows: LedgerRow[]; db: string }) {
+function LedgerPanel({
+  rows,
+  db,
+  activeRefs,
+}: {
+  rows: LedgerRow[];
+  db: string;
+  activeRefs?: Set<string>;
+}) {
   const [lightbox, setLightbox] = useState<ShotSummary | null>(null);
   const versions = useMemo(
     () => Object.fromEntries(rows.map((r) => [r.id, `${r.status}:${r.completedAt ?? ''}:${r.shots.length}`])),
@@ -1538,12 +1547,14 @@ function LedgerPanel({ rows, db }: { rows: LedgerRow[]; db: string }) {
       {rows.length === 0 && <EmptyRow>Nothing synced yet — waiting for completed work.</EmptyRow>}
       {rows.map((row) => {
         const inFlight = !['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'].includes(row.status);
+        const active = !!row.reference && !!activeRefs?.has(row.reference);
         return (
           <div
             key={row.id}
             className={cn(
               'px-4 py-3 transition-colors duration-700',
               changed.has(row.id) && 'bg-info-soft',
+              active && 'bg-amber-50 shadow-[inset_3px_0_0_0_rgb(245_158_11)]',
             )}
           >
             <div className="flex items-start justify-between gap-2">

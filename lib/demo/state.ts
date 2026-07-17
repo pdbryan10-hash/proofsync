@@ -113,6 +113,9 @@ export interface DemoState {
     targetPopulated: number;
     targetTotal: number;
     adminMinutesSaved: number;
+    /** Totals for the applause screen — real, across the whole batch. */
+    fieldsWritten: number;
+    certificatesUploaded: number;
   };
   seeded: boolean;
 }
@@ -184,6 +187,18 @@ export async function getDemoState(): Promise<DemoState> {
     // A work order counts as populated once the sync has written anything into it.
     lastUpdatedBy: { $ne: null },
   });
+
+  // Real batch totals for the applause screen: how many fields ProofSync actually
+  // wrote and how many documents it uploaded, across every work order it touched.
+  const populatedWos = await wosCol
+    .find({ lastUpdatedBy: { $ne: null } }, { projection: { attributes: 1, documents: 1 } })
+    .toArray();
+  const fieldsWritten = populatedWos.reduce(
+    (n, w) =>
+      n + Object.values(w.attributes ?? {}).filter((v) => v !== null && v !== undefined && v !== '').length,
+    0,
+  );
+  const certificatesUploaded = populatedWos.reduce((n, w) => n + (w.documents?.length ?? 0), 0);
 
   // Backfill the target panel with a few still-empty work orders if there aren't
   // yet enough filled ones — so early on it isn't blank, but filled rows lead.
@@ -330,6 +345,8 @@ export async function getDemoState(): Promise<DemoState> {
       targetPopulated,
       targetTotal,
       adminMinutesSaved: (synced + partial) * getEstimatedManualMinutesPerJob(),
+      fieldsWritten,
+      certificatesUploaded,
     },
     seeded: sourceTotal > 0,
   };
