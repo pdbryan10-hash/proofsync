@@ -85,9 +85,12 @@ export function useDemoState() {
   }, []);
 
   const tick = useCallback(
-    async (force = false) => {
+    async (opts: { force?: boolean; burst?: number } = {}) => {
       try {
-        const res = await fetch(`/api/demo/tick${force ? '?force=1' : ''}`, {
+        const qs = new URLSearchParams();
+        if (opts.force) qs.set('force', '1');
+        if (opts.burst) qs.set('burst', String(opts.burst));
+        const res = await fetch(`/api/demo/tick${qs.toString() ? `?${qs}` : ''}`, {
           method: 'POST',
           cache: 'no-store',
         });
@@ -119,7 +122,9 @@ export function useDemoState() {
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
-      await tick(true);
+      // Pressing the button injects a fresh batch so a burst of real jobs lands
+      // on cue, rather than syncing only whatever happens to be pending.
+      await tick({ force: true, burst: 5 });
       await refresh();
     } finally {
       if (mounted.current) setBusy(false);
@@ -129,10 +134,9 @@ export function useDemoState() {
   useEffect(() => {
     mounted.current = true;
     void refresh();
-    // Run a sync the moment the page opens, so a visitor sees something happen
-    // within a second or two rather than waiting up to 30s for the next one. The
-    // server serialises syncs, so this can't collide with the background cadence.
-    void tick(true);
+    // Land a burst of real jobs the instant the page opens, so a visitor sees
+    // records crossing within a second or two — not an idle screen.
+    void tick({ force: true, burst: 6 });
     // Poll fast so movement feels immediate; ping the sync gate often so it
     // fires the instant it's due. The server serialises and gates, so frequent
     // pinging is cheap.

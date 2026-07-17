@@ -1,6 +1,6 @@
 import { demoControl } from './mongo';
 import { getTickSeconds, getDripPerTick } from './config';
-import { dripSourceActivity, type DripResult } from './seeder';
+import { dripSourceActivity, burstCompletedJobs, type DripResult } from './seeder';
 import { ingestAndSync, type IngestResult } from './ingest';
 
 /**
@@ -43,7 +43,9 @@ export interface TickResult {
  */
 const runningTick = globalThis as unknown as { demoTickInFlight?: boolean };
 
-export async function runTick(options: { force?: boolean } = {}): Promise<TickResult> {
+export async function runTick(
+  options: { force?: boolean; burst?: number } = {},
+): Promise<TickResult> {
   if (runningTick.demoTickInFlight) {
     return { ran: false, reason: 'busy', tickCount: 0, nextTickInMs: 0 };
   }
@@ -55,7 +57,7 @@ export async function runTick(options: { force?: boolean } = {}): Promise<TickRe
   }
 }
 
-async function runTickInner(options: { force?: boolean }): Promise<TickResult> {
+async function runTickInner(options: { force?: boolean; burst?: number }): Promise<TickResult> {
   const startedAt = Date.now();
   const tickSeconds = getTickSeconds();
   const control = await demoControl();
@@ -86,6 +88,13 @@ async function runTickInner(options: { force?: boolean }): Promise<TickResult> {
       tickCount: existing.tickCount ?? 0,
       nextTickInMs: Math.max(0, tickSeconds * 1000 - elapsed),
     };
+  }
+
+  // 0. Burst: inject a handful of already-completed jobs so a viewer who just
+  //    opened the console (or pressed the button) sees real records land within
+  //    a second or two, instead of waiting for the lifecycle to produce work.
+  if (options.burst && options.burst > 0) {
+    await burstCompletedJobs(Math.min(options.burst, 8));
   }
 
   // 1. The source system does its thing: engineers travel, finish, new work lands.

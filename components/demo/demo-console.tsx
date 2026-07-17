@@ -118,7 +118,36 @@ function Explainer({
   onForce: () => void;
 }) {
   return (
-    <section className="my-4 grid gap-4 rounded-lg border border-border bg-card px-5 py-4 lg:grid-cols-[1fr_auto] lg:items-center">
+    <section className="my-4 grid gap-5 rounded-lg border border-border bg-card px-5 py-5 lg:grid-cols-[auto_1fr] lg:items-center">
+      {/* The demo's headline control — left, big and obvious, so a presenter can
+          smack it and make a batch of real jobs land on cue. */}
+      <div className="flex flex-col items-center gap-2">
+        <button
+          type="button"
+          onClick={onForce}
+          disabled={busy}
+          className={cn(
+            'group flex w-full items-center justify-center gap-3 rounded-xl bg-success px-10 py-6 text-xl font-bold text-white shadow-lg shadow-success/25 transition-all lg:w-[17rem]',
+            'hover:bg-success-text hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-success/30',
+            'disabled:cursor-not-allowed disabled:opacity-70',
+            !busy && 'animate-pulse-soft',
+          )}
+        >
+          {busy ? (
+            <>
+              <Loader2 className="size-7 animate-spin" />
+              Syncing&hellip;
+            </>
+          ) : (
+            <>
+              <Zap className="size-7 transition-transform group-hover:scale-110" />
+              Run a sync now
+            </>
+          )}
+        </button>
+        <span className="text-xs text-muted-foreground">or watch it run on its own</span>
+      </div>
+
       <div>
         <h2 className="text-sm font-semibold text-navy-800">What you&rsquo;re watching</h2>
         <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">
@@ -132,31 +161,6 @@ function Explainer({
           that needs a person.
         </p>
       </div>
-
-      {/* The demo's headline control — big and obvious, so a presenter can smack
-          it and make a batch cross on cue rather than waiting for the cadence. */}
-      <button
-        type="button"
-        onClick={onForce}
-        disabled={busy}
-        className={cn(
-          'group flex items-center justify-center gap-3 rounded-xl bg-success px-8 py-5 text-lg font-semibold text-white shadow-lg shadow-success/20 transition-all',
-          'hover:bg-success-text hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-success/30',
-          'disabled:cursor-not-allowed disabled:opacity-70 lg:min-w-[16rem]',
-        )}
-      >
-        {busy ? (
-          <>
-            <Loader2 className="size-6 animate-spin" />
-            Syncing&hellip;
-          </>
-        ) : (
-          <>
-            <Zap className="size-6 transition-transform group-hover:scale-110" />
-            Run a sync now
-          </>
-        )}
-      </button>
     </section>
   );
 }

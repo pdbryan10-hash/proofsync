@@ -23,8 +23,11 @@ async function run(req: NextRequest) {
   if (blocked) return blocked;
 
   try {
-    const force = new URL(req.url).searchParams.get('force') === '1';
-    const result = await runTick({ force });
+    const url = new URL(req.url);
+    const force = url.searchParams.get('force') === '1';
+    const burstRaw = Number(url.searchParams.get('burst'));
+    const burst = Number.isFinite(burstRaw) && burstRaw > 0 ? Math.min(burstRaw, 8) : undefined;
+    const result = await runTick({ force, burst });
     return ok(result);
   } catch (error) {
     return handleRouteError(error);

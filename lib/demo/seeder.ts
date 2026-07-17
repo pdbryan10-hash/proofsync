@@ -227,6 +227,18 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
 }
 
 /**
+ * Inject a burst of already-completed jobs (each with a matching work order), so
+ * a viewer who has just opened the console sees real records land within a second
+ * or two rather than waiting for the lifecycle to produce syncable work. These
+ * are ordinary completed jobs — the sync engine treats them exactly like any
+ * other, faults and all.
+ */
+export async function burstCompletedJobs(count: number): Promise<number> {
+  const created = await createJobs(count, 'Complete');
+  return created.length;
+}
+
+/**
  * Create jobs in the source system at a given lifecycle stage, raising the
  * matching work order in the client's system as the client would have done.
  */
