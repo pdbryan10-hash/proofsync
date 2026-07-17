@@ -176,26 +176,26 @@ async function runTickInner(
     { returnDocument: 'after' },
   );
 
-  // 0. Every beat lands a baseline of freshly-completed jobs (plus any explicit
+  // 0. Bound everything FIRST, so the rest of the beat operates on a small, fast
+  //    set. Trimming used to run LAST — but ingest below mirrors every completed
+  //    job in the source, and once the backlog grew into the hundreds that mirror
+  //    ate the whole 60s budget and the function was killed before trim ever
+  //    committed. So the backlog grew without limit and the target panel filled
+  //    with empty work orders. Pruning up front keeps each beat cheap and steady.
+  await trimDemo().catch(() => {});
+
+  // 1. Every beat lands a baseline of freshly-completed jobs (plus any explicit
   //    burst from an open/button press), so there is ALWAYS something crossing —
   //    no dead beats where the lifecycle happened to complete nothing.
   const burst = BASELINE_BURST + (options.burst ?? 0);
   await burstCompletedJobs(Math.min(burst, 10));
 
-  // 1. The source system also does its thing: engineers travel, finish, new work
+  // 2. The source system also does its thing: engineers travel, finish, new work
   //    lands — so there's a visible pipeline behind the burst, not just landings.
   const drip = await dripSourceActivity(getDripPerTick());
 
-  // 2. ProofSync notices what changed and runs the real engine over it.
+  // 3. ProofSync notices what changed and runs the real engine over it.
   const sync = await ingestAndSync();
-
-  // 3. Keep the demo bounded, every beat. Trimming was gated to every 12th beat
-  //    to spare the shared cluster, but source jobs are created far faster than
-  //    they sync, so between trims the backlog ballooned into the hundreds — which
-  //    floods the target panel with empty work orders and buries the synced ones.
-  //    Once the window is at size the trims are near-free (they early-return on
-  //    count <= keep), so running every beat holds it steady without real cost.
-  await trimDemo().catch(() => {});
 
   return {
     ran: true,
