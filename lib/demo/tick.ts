@@ -5,7 +5,7 @@ import { ingestAndSync, type IngestResult } from './ingest';
 import { trimDemo } from './trim';
 
 /** Jobs guaranteed to complete-and-cross on every beat, so nothing feels dead. */
-const BASELINE_BURST = 2;
+const BASELINE_BURST = 1;
 
 /**
  * One beat of the demo.
@@ -174,7 +174,7 @@ async function runTickInner(
   //    shared cluster, its DB load can starve connections and hang the whole
   //    beat (which holds the lock). Occasional + guarded is plenty for a rolling
   //    window.
-  if ((claim?.tickCount ?? 0) % 6 === 0) {
+  if ((claim?.tickCount ?? 0) % 12 === 0) {
     await trimDemo().catch(() => {});
   }
 

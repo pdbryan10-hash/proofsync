@@ -163,6 +163,10 @@ export const DEMO_SESSION_TTL_MS = 5 * 60_000;
  * The demo runs inside its own Organisation so it can be reset without touching
  * the seeded product-tour data that /dashboard and /jobs render.
  */
-export const DEMO_ORG_NAME = 'Meridian FM (live sync demo)';
+// NOTE: bumped to a fresh org so the ledger starts clean. An earlier concurrency
+// bug left orphaned rows under the previous org that Prisma's relation checks
+// couldn't delete; a new org name sidesteps that data entirely rather than
+// trying to repair it. The old org's rows are harmless and simply unused.
+export const DEMO_ORG_NAME = 'Meridian FM — live sync demo (v2)';
 export const DEMO_CLIENT_NAME = 'Northgate Retail Estates';
 export const DEMO_CONCERTO_TENANT = 'northgate-concerto';
