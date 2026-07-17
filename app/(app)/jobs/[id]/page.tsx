@@ -111,7 +111,14 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 {visibleChanges.map((c) => (
                   <div key={`src-${c.targetField}`} className="px-5 py-3">
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{targetFieldLabel(c.targetField)}</p>
-                    <p className="mt-0.5 text-sm text-navy-800">{c.sourcePreview}</p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                      <p className="text-sm text-navy-800">{c.sourcePreview}</p>
+                      {c.transformationType !== 'DIRECT' && (
+                        <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                          {TRANSFORMATION_LABELS[c.transformationType] ?? c.transformationType}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -129,7 +136,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                         {c.currentTargetValue == null ? 'Currently blank' : c.currentTargetPreview}
                       </p>
                     </div>
-                    <PlannedChangeBadge status={c.status} />
+                    {c.transformationType !== 'DIRECT' &&
+                    c.status === 'ALREADY_MATCHES' &&
+                    c.sourcePreview !== c.currentTargetPreview ? (
+                      <Badge tone="success" className="shrink-0 whitespace-nowrap">Matched · converted</Badge>
+                    ) : (
+                      <PlannedChangeBadge status={c.status} />
+                    )}
                   </div>
                 ))}
               </CardContent>
