@@ -137,11 +137,11 @@ export function useDemoState() {
     // Land a burst of real jobs the instant the page opens, so a visitor sees
     // records crossing within a second or two — not an idle screen.
     void tick({ force: true, burst: 6 });
-    // Poll fast so movement feels immediate; ping the sync gate often so it
-    // fires the instant it's due. The server serialises and gates, so frequent
-    // pinging is cheap.
-    const readLoop = setInterval(() => void refresh(), 1_000);
-    const tickLoop = setInterval(() => void tick(), 1_500);
+    // Poll for movement, and ping the sync gate. Kept modest so many open tabs
+    // don't spin up a swarm of serverless instances (each opens DB connections);
+    // the server gates the actual cadence anyway.
+    const readLoop = setInterval(() => void refresh(), 1_500);
+    const tickLoop = setInterval(() => void tick(), 2_500);
     return () => {
       mounted.current = false;
       clearInterval(readLoop);

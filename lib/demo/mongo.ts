@@ -29,9 +29,12 @@ const cache = globalThis as unknown as ClientCache;
 /** Separate clients — separate pools — so neither system can see the other's. */
 function connect(uri: string): Promise<MongoClient> {
   return new MongoClient(uri, {
-    // Demo traffic is tiny and bursty; a small pool avoids holding Atlas
-    // connections open across idle serverless invocations.
-    maxPoolSize: 4,
+    // Two stand-in systems × many short-lived serverless instances add up fast
+    // on a shared cluster. Keep each pool tiny so the demo can't exhaust Atlas
+    // connections and hang beats waiting for one.
+    maxPoolSize: 2,
+    minPoolSize: 0,
+    maxIdleTimeMS: 10_000,
     serverSelectionTimeoutMS: 8_000,
   }).connect();
 }

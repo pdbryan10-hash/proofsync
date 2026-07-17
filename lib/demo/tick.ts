@@ -47,10 +47,10 @@ export interface TickResult {
  */
 /**
  * How long a held lock is trusted before it's treated as abandoned. Longer than
- * any single beat (direct ~8s), so a genuine run is never cut off, but short
- * enough that a crashed serverless instance frees the demo quickly.
+ * any single beat, but short enough that a crashed or hung serverless instance
+ * frees the demo quickly rather than jamming everything behind it.
  */
-const LOCK_TTL_MS = 60_000;
+const LOCK_TTL_MS = 20_000;
 
 /**
  * Run one beat, serialised CLUSTER-WIDE.
@@ -135,8 +135,14 @@ async function runTickInner(
   // 2. ProofSync notices what changed and runs the real engine over it.
   const sync = await ingestAndSync();
 
-  // 3. Keep the demo bounded — rolling window of recent jobs, believable stats.
-  await trimDemo();
+  // 3. Keep the demo bounded — but only every few beats, and never let it wedge
+  //    the beat: trimming touches all three stores and, run every cycle on a
+  //    shared cluster, its DB load can starve connections and hang the whole
+  //    beat (which holds the lock). Occasional + guarded is plenty for a rolling
+  //    window.
+  if ((claim?.tickCount ?? 0) % 6 === 0) {
+    await trimDemo().catch(() => {});
+  }
 
   return {
     ran: true,
