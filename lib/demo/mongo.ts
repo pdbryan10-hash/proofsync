@@ -95,6 +95,8 @@ export interface DemoControlDoc {
   seededAt: Date | null;
   /** Cluster-wide beat lock (see lib/demo/tick.ts). Null/absent = free. */
   lockedAt?: Date | null;
+  /** While set to a future time, beats stand down so a reset can run cleanly. */
+  pausedUntil?: Date | null;
 }
 
 /** Indexes the demo systems would plausibly have. Safe to call repeatedly. */

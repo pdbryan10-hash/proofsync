@@ -68,6 +68,13 @@ export async function runTick(
   const now = new Date();
   const lockCutoff = new Date(now.getTime() - LOCK_TTL_MS);
 
+  // Stand down if a reset has asked for a clear window — so it isn't starved by
+  // constant beats fighting it for the lock.
+  const existingDoc = await control.findOne({ _id: CONTROL_ID });
+  if (existingDoc?.pausedUntil && new Date(existingDoc.pausedUntil) > now) {
+    return { ran: false, reason: 'paused', tickCount: existingDoc.tickCount ?? 0, nextTickInMs: 0 };
+  }
+
   // Acquire: win only if unlocked or the previous lock has expired. A single
   // conditional findOneAndUpdate is atomic per document, so exactly one caller
   // across all instances can take it.
@@ -103,25 +110,38 @@ export async function runWithDemoLock<T>(fn: () => Promise<T>): Promise<{ ok: bo
   const doc = await control.findOne({ _id: CONTROL_ID });
   if (!doc) return { ok: true, result: await fn() };
 
-  const deadline = Date.now() + 9_000;
-  while (Date.now() < deadline) {
-    const now = new Date();
-    const cutoff = new Date(now.getTime() - LOCK_TTL_MS);
-    const acquired = await control.findOneAndUpdate(
-      { _id: CONTROL_ID, $or: [{ lockedAt: null }, { lockedAt: { $lte: cutoff } }] },
-      { $set: { lockedAt: now } },
-      { returnDocument: 'after' },
-    );
-    if (acquired) {
-      try {
-        return { ok: true, result: await fn() };
-      } finally {
-        await control.updateOne({ _id: CONTROL_ID }, { $set: { lockedAt: null } }).catch(() => {});
+  // Ask beats to stand down (runTick checks pausedUntil), so we aren't starved
+  // for the lock by a fast cadence, then let any in-flight beat finish.
+  await control.updateOne(
+    { _id: CONTROL_ID },
+    { $set: { pausedUntil: new Date(Date.now() + 20_000) } },
+  );
+
+  try {
+    const deadline = Date.now() + 12_000;
+    while (Date.now() < deadline) {
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - LOCK_TTL_MS);
+      const acquired = await control.findOneAndUpdate(
+        { _id: CONTROL_ID, $or: [{ lockedAt: null }, { lockedAt: { $lte: cutoff } }] },
+        { $set: { lockedAt: now } },
+        { returnDocument: 'after' },
+      );
+      if (acquired) {
+        try {
+          return { ok: true, result: await fn() };
+        } finally {
+          await control.updateOne({ _id: CONTROL_ID }, { $set: { lockedAt: null } }).catch(() => {});
+        }
       }
+      await new Promise((r) => setTimeout(r, 300));
     }
-    await new Promise((r) => setTimeout(r, 400));
+    return { ok: false };
+  } finally {
+    // Let beats resume. If fn reseeded the control doc it has no pausedUntil
+    // anyway; this is a no-op then.
+    await control.updateOne({ _id: CONTROL_ID }, { $set: { pausedUntil: null } }).catch(() => {});
   }
-  return { ok: false };
 }
 
 async function runTickInner(
