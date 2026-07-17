@@ -71,7 +71,8 @@ async function trimLedger(keep: number): Promise<void> {
 
   if (runIds.length) await prisma.syncEvent.deleteMany({ where: { syncRunId: { in: runIds } } });
   await prisma.exception.deleteMany({ where: { jobId: { in: jobIds } } });
-  await prisma.syncRun.deleteMany({ where: { jobId: { in: jobIds } } });
+  // Runs by the same id snapshot as their events (see resetDemoLedger).
+  if (runIds.length) await prisma.syncRun.deleteMany({ where: { id: { in: runIds } } });
   await prisma.document.deleteMany({ where: { jobId: { in: jobIds } } });
   await prisma.jobCompletion.deleteMany({ where: { jobId: { in: jobIds } } });
   await prisma.processedEvent.deleteMany({

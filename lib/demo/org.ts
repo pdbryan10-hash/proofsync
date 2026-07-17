@@ -139,7 +139,10 @@ export async function resetDemoLedger(organisationId: string): Promise<void> {
 
     if (runIds.length) await prisma.syncEvent.deleteMany({ where: { syncRunId: { in: runIds } } });
     await prisma.exception.deleteMany({ where: { jobId: { in: jobIds } } });
-    await prisma.syncRun.deleteMany({ where: { jobId: { in: jobIds } } });
+    // Delete runs by the SAME id snapshot the events were — never by jobId — so a
+    // run created by a concurrent beat mid-reset isn't deleted with its events
+    // still present (which violates the required SyncEvent→SyncRun relation).
+    if (runIds.length) await prisma.syncRun.deleteMany({ where: { id: { in: runIds } } });
     await prisma.document.deleteMany({ where: { jobId: { in: jobIds } } });
     await prisma.jobCompletion.deleteMany({ where: { jobId: { in: jobIds } } });
 

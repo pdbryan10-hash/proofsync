@@ -24,10 +24,16 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
   if (!hasWriteKey(req)) return fail('Unauthorised', 401);
 
+  // Temporary: report which step fails and why, so the generic 500 isn't opaque.
+  const steps: string[] = [];
   try {
+    steps.push('ensureDemoOrg');
     const { organisationId } = await ensureDemoOrg();
+    steps.push('resetDemoLedger');
     await resetDemoLedger(organisationId);
+    steps.push('clearShots');
     await clearShots();
+    steps.push('seedDemoSystems');
     const seeded = await seedDemoSystems();
     clearSessions();
 
@@ -45,6 +51,9 @@ export async function POST(req: NextRequest) {
       message: `Both demo systems re-seeded — ${seeded.jobs} jobs in the source, ${seeded.workOrders} work orders in the target.`,
     });
   } catch (error) {
-    return handleRouteError(error);
+    const e = error as Error;
+    return fail(`reset failed at step "${steps[steps.length - 1]}": ${e?.name} — ${e?.message}`, 500, {
+      step: steps[steps.length - 1],
+    });
   }
 }
