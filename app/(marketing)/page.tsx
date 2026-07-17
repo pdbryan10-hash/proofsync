@@ -44,8 +44,9 @@ export default function SalesPage() {
     <>
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_70%_0%,rgba(21,128,61,0.18),transparent)]" />
-        <div className="relative mx-auto w-full max-w-6xl px-5 py-14 lg:py-20">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_55%_at_60%_-5%,rgba(21,128,61,0.22),transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(40%_40%_at_15%_10%,rgba(38,42,99,0.55),transparent)]" />
+        <div className="relative mx-auto w-full max-w-6xl px-5 py-12 lg:py-16">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-success">For FM contractors</p>
           <h1 className="mt-4 max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.4rem]">
             Your engineer completes the job once.
@@ -57,12 +58,33 @@ export default function SalesPage() {
             client&apos;s system. Verified. Audited. Only the exceptions reach a human.
           </p>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          {/* THE MOMENT — one engine, a whole wall of client systems. Leads the page. */}
+          <div className="mt-10">
+            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-success">
+                <span className="relative flex size-1.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-70" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-success" />
+                </span>
+                One engine · any pairing
+              </span>
+              <span className="text-sm text-white/45">
+                Your system on the left. The client&apos;s — whichever of these they run — on the right.
+              </span>
+            </div>
+            <ProcessMap />
+            <p className="mt-4 font-mono text-[11px] leading-relaxed text-white/30">
+              The landscape ProofSync is built for. Connector availability varies by platform and by your
+              client&apos;s authorisation. Ask us about yours.
+            </p>
+          </div>
+
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <a
               href="https://proofsync-demo.vercel.app/demo"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-success-text"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-success/25 transition-all hover:bg-success-text hover:shadow-xl"
             >
               Watch it sync — live
               <ArrowRight className="size-4" />
@@ -80,15 +102,6 @@ export default function SalesPage() {
               How it works
             </Link>
             <span className="font-mono text-xs text-white/35 sm:ml-2 sm:w-full">Live demonstration · no sign-up · updates every 30 seconds</span>
-          </div>
-
-          {/* Process map carries the thesis visually, above the fold on desktop */}
-          <div className="mt-14">
-            <ProcessMap />
-            <p className="mt-4 font-mono text-[11px] leading-relaxed text-white/30">
-              The landscape ProofSync is built for — one engine, any pairing. Connector availability varies by
-              platform and by your client&apos;s authorisation. Ask us about yours.
-            </p>
           </div>
         </div>
       </section>

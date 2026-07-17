@@ -56,3 +56,39 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
   animation: stage-sweep 1.1s ease-in-out infinite;
 }
+
+/* ── Connection-map (marketing hero) motion ─────────────────────────────── */
+
+/* The wall of client systems assembles, chip by chip. */
+@keyframes ps-chip-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.ps-chip-in { opacity: 0; animation: ps-chip-in 0.5s ease forwards; }
+
+/* A pulse of data travelling along a connector beam. */
+@keyframes ps-beam {
+  0%   { transform: translateX(-30%); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+.ps-beam-dot { animation: ps-beam 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* The engine breathes light. */
+@keyframes ps-engine-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(21,128,61,0.35), 0 0 34px rgba(21,128,61,0.22); }
+  50%      { box-shadow: 0 0 0 1px rgba(21,128,61,0.55), 0 0 60px rgba(21,128,61,0.42); }
+}
+.ps-engine-glow { animation: ps-engine-glow 3.2s ease-in-out infinite; }
+
+@keyframes ps-ring {
+  0%   { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.ps-ring { animation: ps-ring 3.2s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-chip-in { opacity: 1; animation: none; }
+  .ps-beam-dot, .ps-engine-glow, .ps-ring { animation: none; }
+}
