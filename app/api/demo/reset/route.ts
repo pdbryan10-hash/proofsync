@@ -11,7 +11,9 @@ import { ingestAndSync } from '@/lib/demo/ingest';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Headroom over the worst realistic cold start; the work below is deliberately
+// kept far under this so a slow first request can't push it over.
+export const maxDuration = 120;
 
 /**
  * Wipe and re-seed the whole demo: both stand-in databases and ProofSync's own
@@ -39,12 +41,15 @@ export async function POST(req: NextRequest) {
       const seeded = await seedDemoSystems();
       clearSessions();
 
-      // Warm it up: run a few sync passes so the demo opens ALREADY in train —
-      // Concerto partly populated and the ledger holding recent SUCCESS — rather
-      // than sparse for the first few seconds. Runs under the lock, so it's clean.
-      for (let i = 0; i < 4; i++) {
+      // Warm it up so the demo opens already in train — Concerto partly populated
+      // rather than sparse. Kept LIGHT (one pass) and BEST-EFFORT: the seed is the
+      // reset; the warmup is a bonus that must never make it slow or fail. The
+      // mount-burst and the theatre-on-load do the rest the moment someone opens it.
+      try {
         await burstCompletedJobs(4);
         await ingestAndSync();
+      } catch {
+        // Seed already succeeded — a warmup hiccup doesn't fail the reset.
       }
       if (isBrowserTransport()) {
         const { closeBrowser } = await import('@/lib/demo/browser');
