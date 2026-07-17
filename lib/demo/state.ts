@@ -204,7 +204,7 @@ export async function getDemoState(): Promise<DemoState> {
     sourceInFlight,
     targetDocsRaw,
     targetTotal,
-    runs,
+    runsRaw,
     synced,
     partial,
     openExceptions,
@@ -223,7 +223,9 @@ export async function getDemoState(): Promise<DemoState> {
     prisma.syncRun.findMany({
       where: { job: { organisationId } },
       orderBy: { createdAt: 'desc' },
-      take: PANEL_LIMIT,
+      // Over-fetch, then keep only the latest run per job (below) so the ledger
+      // shows ONE row per job — a re-attempt can never surface as a duplicate.
+      take: 80,
       include: {
         job: {
           select: {
@@ -276,6 +278,17 @@ export async function getDemoState(): Promise<DemoState> {
 
   // Backfill the target panel with a few still-empty work orders if there aren't
   // yet enough filled ones — so early on it isn't blank, but filled rows lead.
+  // Collapse to the LATEST run per job — the ledger shows one row per job, so a
+  // re-attempt (or any accidental double-dispatch) can never appear as a duplicate.
+  const seenRunJobs = new Set<string>();
+  const runs = runsRaw
+    .filter((r) => {
+      if (seenRunJobs.has(r.jobId)) return false;
+      seenRunJobs.add(r.jobId);
+      return true;
+    })
+    .slice(0, PANEL_LIMIT);
+
   let targetDocs = targetDocsRaw;
   if (targetDocs.length < PANEL_LIMIT) {
     const empties = await wosCol

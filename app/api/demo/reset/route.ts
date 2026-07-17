@@ -41,8 +41,10 @@ export async function POST(req: NextRequest) {
       // past the batch size) so it finishes in ~one sync's time rather than many
       // sequential beats — the 8-beat loop was too slow and hit the 60s ceiling.
       if (!isBrowserTransport()) {
+        // ONE parallel pass over the whole batch. A second pass would re-attempt
+        // the exception job (a failed attempt isn't idempotency-blocked), which is
+        // exactly what produced duplicate ledger rows.
         await ingestAndSync({ maxDispatches: 40 });
-        await ingestAndSync({ maxDispatches: 40 }); // mop up any retryable stragglers
       } else {
         const { closeBrowser } = await import('@/lib/demo/browser');
         await closeBrowser();
