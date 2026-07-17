@@ -742,6 +742,13 @@ function MachineHeader({
             {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}
             Run the batch again
           </Button>
+          <a
+            href="/jobs"
+            className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20"
+          >
+            <Table2 className="size-4" />
+            Explore the data
+          </a>
           <button
             type="button"
             onClick={onFreeze}
@@ -1050,13 +1057,22 @@ function FinaleCard({
           The real engine, signing into a real, separate client system by itself — the whole time.
         </p>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.03]"
-        >
-          Keep watching
-        </button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="/jobs"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.03]"
+          >
+            <Table2 className="size-4" />
+            Explore every job
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm font-medium text-white/70 underline-offset-2 hover:text-white hover:underline"
+          >
+            Keep watching
+          </button>
+        </div>
       </div>
     </div>
   );

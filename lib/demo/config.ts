@@ -78,7 +78,10 @@ export function isHeadedBrowser(): boolean {
 export function getMaxDispatchesPerTick(): number {
   const raw = Number(process.env.DEMO_MAX_SYNCS_PER_TICK);
   if (Number.isFinite(raw) && raw > 0) return raw;
-  return isBrowserTransport() ? 2 : 8;
+  // Deliberately a slow trickle in direct mode: syncing the whole batch in one
+  // or two beats reads as "everything succeeded at once". A few per beat lets a
+  // viewer watch the Joblogic jobs cross into Concerto one cluster at a time.
+  return isBrowserTransport() ? 2 : 3;
 }
 
 /**

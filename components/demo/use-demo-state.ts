@@ -146,14 +146,14 @@ export function useDemoState() {
     setBusy(true);
     try {
       await fetch('/api/demo/replay', { method: 'POST', cache: 'no-store' });
+      // Refresh only — do NOT kick a beat here. The floor should open showing the
+      // Joblogic jobs loaded and Concerto empty; the cadence then trickles them
+      // across a few at a time, rather than a whole batch flashing "synced" at once.
       await refresh();
-      // Kick the batch straight away so it starts crossing live rather than
-      // waiting for the next poll-driven beat.
-      await tick({ force: true });
     } finally {
       if (mounted.current) setBusy(false);
     }
-  }, [refresh, tick]);
+  }, [refresh]);
 
   const forceTick = useCallback(async () => {
     setBusy(true);
