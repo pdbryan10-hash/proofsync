@@ -16,6 +16,7 @@ import {
   Rocket,
   RotateCcw,
   Search,
+  Table2,
   X,
   Zap,
 } from 'lucide-react';
@@ -1418,6 +1419,13 @@ function ConsoleHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href="/jobs"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-navy-800 px-3 text-sm font-semibold text-white transition-colors hover:bg-navy-900"
+          >
+            <Table2 className="size-4" />
+            Explore the data
+          </a>
           <Button size="sm" variant="outline" onClick={onForce} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" /> : <Zap />}
             Run a sync now

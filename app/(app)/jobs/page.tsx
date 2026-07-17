@@ -13,11 +13,11 @@ export const dynamic = 'force-dynamic';
 export default async function JobsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; search?: string }>;
+  searchParams: Promise<{ status?: string; search?: string; from?: string; to?: string }>;
 }) {
-  const { status, search } = await searchParams;
+  const { status, search, from, to } = await searchParams;
   const [jobs, counts] = await Promise.all([
-    listJobs({ status, search }),
+    listJobs({ status, search, from, to }),
     getJobCountsByStatus(),
   ]);
 

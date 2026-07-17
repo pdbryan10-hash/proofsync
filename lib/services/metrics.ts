@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { getEstimatedManualMinutesPerJob } from '@/lib/config';
+import { getDemoOrgId } from '@/lib/demo/org';
 
 export interface DashboardMetrics {
   jobsProcessedToday: number;
@@ -31,14 +32,16 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const minutes = getEstimatedManualMinutesPerJob();
   const today = startOfToday();
   const month = startOfMonth();
+  const orgId = await getDemoOrgId();
+  const inOrg = { job: { organisationId: orgId } } as const;
 
   const [processedToday, syncedToday, openExceptions, totalTerminalToday, syncedThisMonth] =
     await Promise.all([
-      prisma.syncRun.count({ where: { startedAt: { gte: today } } }),
-      prisma.syncRun.count({ where: { startedAt: { gte: today }, status: { in: ['SUCCESS', 'PARTIAL'] } } }),
-      prisma.exception.count({ where: { status: { in: ['OPEN', 'IN_REVIEW', 'RETRYING'] } } }),
-      prisma.syncRun.count({ where: { startedAt: { gte: today }, status: { in: ['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'] } } }),
-      prisma.syncRun.count({ where: { startedAt: { gte: month }, status: { in: ['SUCCESS', 'PARTIAL'] } } }),
+      prisma.syncRun.count({ where: { startedAt: { gte: today }, ...inOrg } }),
+      prisma.syncRun.count({ where: { startedAt: { gte: today }, status: { in: ['SUCCESS', 'PARTIAL'] }, ...inOrg } }),
+      prisma.exception.count({ where: { status: { in: ['OPEN', 'IN_REVIEW', 'RETRYING'] }, ...inOrg } }),
+      prisma.syncRun.count({ where: { startedAt: { gte: today }, status: { in: ['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'] }, ...inOrg } }),
+      prisma.syncRun.count({ where: { startedAt: { gte: month }, status: { in: ['SUCCESS', 'PARTIAL'] }, ...inOrg } }),
     ]);
 
   const successRatePct = totalTerminalToday === 0 ? 100 : Math.round((syncedToday / totalTerminalToday) * 1000) / 10;
@@ -72,7 +75,7 @@ export async function getSyncActivity(days = 14): Promise<DailySyncPoint[]> {
   start.setDate(start.getDate() - (days - 1));
 
   const runs = await prisma.syncRun.findMany({
-    where: { startedAt: { gte: start } },
+    where: { startedAt: { gte: start }, job: { organisationId: await getDemoOrgId() } },
     select: { startedAt: true, status: true },
   });
 
@@ -116,6 +119,7 @@ export interface RecentSyncRow {
 
 export async function getRecentSyncs(limit = 8): Promise<RecentSyncRow[]> {
   const runs = await prisma.syncRun.findMany({
+    where: { job: { organisationId: await getDemoOrgId() } },
     orderBy: { createdAt: 'desc' },
     take: limit,
     include: { job: true },

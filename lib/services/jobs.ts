@@ -1,9 +1,13 @@
 import { prisma } from '@/lib/db/prisma';
 import type { Prisma } from '@prisma/client';
+import { getDemoOrgId } from '@/lib/demo/org';
 
 export interface JobListFilters {
   status?: string; // SyncStatus or 'ALL'
   search?: string;
+  /** Inclusive completed-date bounds (YYYY-MM-DD), from the dashboard filter bar. */
+  from?: string;
+  to?: string;
 }
 
 export interface JobListRow {
@@ -20,7 +24,7 @@ export interface JobListRow {
 }
 
 export async function listJobs(filters: JobListFilters = {}): Promise<JobListRow[]> {
-  const where: Prisma.JobWhereInput = {};
+  const where: Prisma.JobWhereInput = { organisationId: await getDemoOrgId() };
   if (filters.status && filters.status !== 'ALL') {
     where.syncStatus = filters.status;
   }
@@ -32,6 +36,12 @@ export async function listJobs(filters: JobListFilters = {}): Promise<JobListRow
       { siteName: { contains: q } },
       { jobDescription: { contains: q } },
     ];
+  }
+  if (filters.from || filters.to) {
+    const completedAt: Prisma.DateTimeNullableFilter = {};
+    if (filters.from) completedAt.gte = new Date(`${filters.from}T00:00:00.000Z`);
+    if (filters.to) completedAt.lte = new Date(`${filters.to}T23:59:59.999Z`);
+    where.completedAt = completedAt;
   }
 
   const jobs = await prisma.job.findMany({ where, orderBy: [{ completedAt: 'desc' }, { createdAt: 'desc' }] });
@@ -66,7 +76,11 @@ export async function getJobDetail(id: string) {
 }
 
 export async function getJobCountsByStatus(): Promise<Record<string, number>> {
-  const groups = await prisma.job.groupBy({ by: ['syncStatus'], _count: { _all: true } });
+  const groups = await prisma.job.groupBy({
+    by: ['syncStatus'],
+    where: { organisationId: await getDemoOrgId() },
+    _count: { _all: true },
+  });
   const out: Record<string, number> = {};
   for (const g of groups) out[g.syncStatus] = g._count._all;
   return out;

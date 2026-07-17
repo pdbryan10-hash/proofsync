@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { SeverityBadge, ExceptionStatusBadge } from '@/components/ui/status-badge';
 import { ExceptionActions } from '@/components/exceptions/exception-actions';
 import { prisma } from '@/lib/db/prisma';
+import { getDemoOrgId } from '@/lib/demo/org';
 import { cn, timeAgo } from '@/lib/utils';
 import { EXCEPTION_TYPE_LABEL } from '@/lib/domain/enums';
 
@@ -19,14 +20,15 @@ const FILTERS = [
 
 export default async function ExceptionsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const { status = 'OPEN' } = await searchParams;
+  const inOrg = { job: { organisationId: await getDemoOrgId() } };
 
   const [exceptions, counts] = await Promise.all([
     prisma.exception.findMany({
-      where: status === 'ALL' ? {} : { status },
+      where: status === 'ALL' ? inOrg : { status, ...inOrg },
       orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
       include: { job: true },
     }),
-    prisma.exception.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.exception.groupBy({ by: ['status'], where: inOrg, _count: { _all: true } }),
   ]);
 
   const countByStatus: Record<string, number> = {};

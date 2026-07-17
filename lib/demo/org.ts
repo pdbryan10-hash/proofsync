@@ -58,6 +58,18 @@ export async function currentDemoOrgName(): Promise<string> {
   return `${DEMO_ORG_NAME} #${doc?.orgEpoch ?? 1}`;
 }
 
+/**
+ * Read-only resolver for the current demo organisation id — for the dashboard,
+ * which scopes every view to the demo data. Returns a sentinel that matches
+ * nothing (rather than null) if the org doesn't exist yet, so a scoped query
+ * returns EMPTY instead of accidentally falling back to every org's data.
+ */
+export async function getDemoOrgId(): Promise<string> {
+  const orgName = await currentDemoOrgName();
+  const org = await prisma.organisation.findFirst({ where: { name: orgName }, select: { id: true } });
+  return org?.id ?? '__no_demo_org__';
+}
+
 /** Create the demo org/client/mappings if absent. Safe to call every tick. */
 export async function ensureDemoOrg(): Promise<DemoOrg> {
   const orgName = await currentDemoOrgName();
