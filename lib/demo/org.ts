@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
+import { demoControl } from './mongo';
 import { DEMO_ORG_NAME, DEMO_CLIENT_NAME, DEMO_CONCERTO_TENANT } from './config';
 
 /**
@@ -50,10 +51,18 @@ export interface DemoOrg {
   clientId: string;
 }
 
+/** The live demo org's name — base name plus the current epoch (see reset). */
+export async function currentDemoOrgName(): Promise<string> {
+  const control = await demoControl();
+  const doc = await control.findOne({ _id: 'demo-control' });
+  return `${DEMO_ORG_NAME} #${doc?.orgEpoch ?? 1}`;
+}
+
 /** Create the demo org/client/mappings if absent. Safe to call every tick. */
 export async function ensureDemoOrg(): Promise<DemoOrg> {
-  let org = await prisma.organisation.findFirst({ where: { name: DEMO_ORG_NAME } });
-  if (!org) org = await prisma.organisation.create({ data: { name: DEMO_ORG_NAME } });
+  const orgName = await currentDemoOrgName();
+  let org = await prisma.organisation.findFirst({ where: { name: orgName } });
+  if (!org) org = await prisma.organisation.create({ data: { name: orgName } });
 
   let client = await prisma.client.findFirst({
     where: { organisationId: org.id, name: DEMO_CLIENT_NAME },

@@ -233,6 +233,12 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
     demoControl(),
   ]);
 
+  // Advance the org epoch so this reseed points ProofSync's ledger at a FRESH
+  // organisation — nothing to delete there, so reset stays instant and can't
+  // race the relation checks. The previous org is simply abandoned.
+  const prevControl = await control.findOne({ _id: CONTROL_ID });
+  const nextEpoch = (prevControl?.orgEpoch ?? 0) + 1;
+
   await Promise.all([
     jobs.deleteMany({}),
     users.deleteMany({}),
@@ -265,6 +271,7 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
     tickCount: 0,
     jobSequence: 0,
     seededAt: new Date(),
+    orgEpoch: nextEpoch,
   });
 
   // Baseline: four already complete (first beat has real work), five mid-flight

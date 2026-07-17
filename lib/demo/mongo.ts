@@ -97,6 +97,12 @@ export interface DemoControlDoc {
   lockedAt?: Date | null;
   /** While set to a future time, beats stand down so a reset can run cleanly. */
   pausedUntil?: Date | null;
+  /**
+   * Which demo organisation is live. "Start over" increments this instead of
+   * deleting the ledger — a fresh org has nothing to delete, so reset is instant
+   * and can't race or time out. Old orgs are simply abandoned.
+   */
+  orgEpoch?: number;
 }
 
 /** Indexes the demo systems would plausibly have. Safe to call repeatedly. */
