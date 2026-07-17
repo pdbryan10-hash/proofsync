@@ -296,26 +296,38 @@ export async function getDemoState(): Promise<DemoState> {
     : [];
   const woByRef = new Map(ledgerWos.map((w) => [w.reference, w]));
 
-  // Open exceptions: work orders Concerto still refuses, each waiting for a
-  // person. Joined back to the source job for a human-readable label.
-  const blockedWos = await wosCol.find({ demoBlock: { $ne: null } }).sort({ reference: 1 }).toArray();
+  // Open exceptions: work orders Concerto still refuses. A work order carries its
+  // block from the moment it's seeded, but the exception has NOT HAPPENED until
+  // ProofSync actually tries to sync it and Concerto rejects — so only surface the
+  // ones whose job is genuinely in EXCEPTION state, not ones still queued. Without
+  // this the queue shows the fault before the run even reaches it.
+  const raisedExceptionJobs = await prisma.job.findMany({
+    where: {
+      organisationId,
+      exceptions: { some: { status: { in: ['OPEN', 'IN_REVIEW', 'RETRYING'] } } },
+    },
+    select: { concertoJobReference: true },
+  });
+  const raisedRefs = new Set(
+    raisedExceptionJobs.map((j) => j.concertoJobReference).filter((r): r is string => !!r),
+  );
+  const blockedWos = (await wosCol.find({ demoBlock: { $ne: null } }).sort({ reference: 1 }).toArray())
+    .filter((w) => w.demoBlock && raisedRefs.has(w.reference));
   const blockedRefs = blockedWos.map((w) => w.reference);
   const blockedJobs = blockedRefs.length
     ? await jobsCol.find({ customerOrderRef: { $in: blockedRefs } }).toArray()
     : [];
   const jobByRef = new Map(blockedJobs.map((j) => [j.customerOrderRef, j]));
-  const exceptions: ExceptionItem[] = blockedWos
-    .filter((w) => w.demoBlock)
-    .map((w) => ({
-      reference: w.reference,
-      jobNumber: jobByRef.get(w.reference)?.jobNumber ?? '—',
-      summary: w.summary,
-      propertyName: w.property?.propertyName ?? '—',
-      kind: w.demoBlock!.kind,
-      label: w.demoBlock!.label,
-      message: w.demoBlock!.message,
-      badValue: w.demoBlock!.badValue ?? null,
-    }));
+  const exceptions: ExceptionItem[] = blockedWos.map((w) => ({
+    reference: w.reference,
+    jobNumber: jobByRef.get(w.reference)?.jobNumber ?? '—',
+    summary: w.summary,
+    propertyName: w.property?.propertyName ?? '—',
+    kind: w.demoBlock!.kind,
+    label: w.demoBlock!.label,
+    message: w.demoBlock!.message,
+    badValue: w.demoBlock!.badValue ?? null,
+  }));
 
   // The Act 1 job: the first clean completed job. Built from SOURCE data, so it is
   // available the instant the batch is seeded and never waits on a sync — Act 1

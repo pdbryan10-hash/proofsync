@@ -43,23 +43,33 @@ const hasValue = (v: unknown) => v !== null && v !== undefined && v !== '';
 export async function getTerminalData(): Promise<TerminalData> {
   const orgId = await getDemoOrgId();
   const [jobsCol, wosCol] = await Promise.all([sourceJobs(), targetWorkOrders()]);
-  const [srcJobs, wos, pJobs] = await Promise.all([
+  const [srcJobs, wos, pJobs, raisedJobs] = await Promise.all([
     jobsCol.find({}).sort({ jobNumber: 1 }).toArray(),
     wosCol.find({}).toArray(),
     prisma.job.findMany({
       where: { organisationId: orgId },
       select: { id: true, joblogicJobId: true, syncStatus: true },
     }),
+    prisma.job.findMany({
+      where: {
+        organisationId: orgId,
+        exceptions: { some: { status: { in: ['OPEN', 'IN_REVIEW', 'RETRYING'] } } },
+      },
+      select: { joblogicJobId: true },
+    }),
   ]);
 
   const woByRef = new Map(wos.map((w) => [w.reference, w]));
   const pByJobNo = new Map(pJobs.map((j) => [j.joblogicJobId, j]));
+  const raised = new Set(raisedJobs.map((j) => j.joblogicJobId));
 
   const rows: TerminalRow[] = srcJobs.map((s) => {
     const wo = s.customerOrderRef ? woByRef.get(s.customerOrderRef) : undefined;
     const p = pByJobNo.get(s.jobNumber);
     const fieldsWritten = Object.values(wo?.attributes ?? {}).filter(hasValue).length;
-    const block = wo?.demoBlock ?? null;
+    // Only an exception once ProofSync has actually tried it and been refused —
+    // not just because the work order carries a seeded block.
+    const block = wo?.demoBlock && raised.has(s.jobNumber) ? wo.demoBlock : null;
     return {
       jobNumber: s.jobNumber,
       reference: s.customerOrderRef,
