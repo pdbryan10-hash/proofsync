@@ -34,7 +34,7 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick, resolve } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick, resolve, replay } = useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
@@ -100,7 +100,12 @@ export function DemoConsole() {
     );
   }
 
-  const enterMachine = () => setAct('machine');
+  // Entering the machine floor rewinds the batch and runs it live from empty, so
+  // Act 2 is a run to watch — not a screen of already-finished rows.
+  const enterMachine = () => {
+    setAct('machine');
+    void replay();
+  };
 
   // The applause screen states the batch result — all real, straight from state.
   const freeze = () =>
@@ -120,7 +125,6 @@ export function DemoConsole() {
           <SpotlightStage
             hero={hero}
             pending={pending}
-            tickSeconds={state.tick.tickSeconds}
             seeded={state.seeded}
             onScaleUp={enterMachine}
           />
@@ -131,7 +135,7 @@ export function DemoConsole() {
             activeRefs={activeRefs}
             onActive={setActiveRefs}
             busy={busy}
-            onForce={forceTick}
+            onReplay={replay}
             onBack={() => setAct('human')}
             onFreeze={freeze}
             onFix={setResolving}
@@ -177,55 +181,45 @@ const SPOT_NODES = [
 function SpotlightStage({
   hero,
   pending,
-  tickSeconds,
   seeded,
   onScaleUp,
 }: {
   hero: HeroJob | null;
   pending: SourceRow | null;
-  tickSeconds: number;
   seeded: boolean;
   onScaleUp: () => void;
 }) {
-  const latest = useRef(hero);
-  latest.current = hero;
   const [job, setJob] = useState<HeroJob | null>(hero);
+  const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle');
   const [stage, setStage] = useState(0);
-  const [gen, setGen] = useState(0);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // Adopt a hero the moment one becomes available.
+  // While idle, keep the ready card pointed at the freshest real synced job.
   useEffect(() => {
-    if (!job && latest.current) {
-      setJob(latest.current);
-      setGen((g) => g + 1);
-    }
-  }, [job, hero]);
+    if (phase === 'idle' && hero) setJob(hero);
+  }, [hero, phase]);
 
-  // Choreograph the current job across the four stops, then hold and pick up the
-  // freshest real job — so a lingering presenter always sees a live record.
-  useEffect(() => {
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  // Fired by the presenter — deliberately slow, so every step is readable.
+  const run = () => {
     if (!job) return;
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setPhase('running');
     setStage(0);
     const fields = job.led.targetFields.length;
-    const durs = [1700, 1900, Math.max(2400, 800 + fields * 320), 1800];
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    const durs = [2600, 2900, Math.max(3800, 1400 + fields * 480), 2700];
     let acc = 0;
     durs.forEach((d, i) => {
       acc += d;
-      timers.push(setTimeout(() => setStage(i + 1), acc));
+      timers.current.push(setTimeout(() => setStage(i + 1), acc));
     });
-    timers.push(
-      setTimeout(() => {
-        setJob(latest.current ?? job);
-        setGen((g) => g + 1);
-      }, acc + 3600),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [job, gen]);
+    timers.current.push(setTimeout(() => setPhase('done'), acc + 500));
+  };
 
   const stop = Math.min(stage, 3);
   const progress = (Math.min(stage, 3) / 3) * 100;
-  const done = stage >= 3;
 
   return (
     <section className="relative my-4 overflow-hidden rounded-2xl border border-navy-900/50 bg-[radial-gradient(130%_130%_at_50%_-10%,#2a2f6e_0%,#1b1e49_45%,#111330_100%)] px-5 py-6 shadow-xl sm:px-8 sm:py-8">
@@ -269,27 +263,56 @@ function SpotlightStage({
             <SpotlightFocus led={job.led} stop={stop} />
           </div>
 
-          {/* The bridge into Act 2. */}
-          <div
-            className={cn(
-              'relative mx-auto mt-7 max-w-2xl text-center transition-all duration-500',
-              done ? 'opacity-100' : 'pointer-events-none opacity-0',
-            )}
-          >
-            <p className="text-sm text-white/70">
-              That was <strong className="text-white">one</strong> job — about {tickSeconds} seconds of
-              work a person never had to do. Now imagine it never stopping.
-            </p>
-            <button
-              type="button"
-              onClick={onScaleUp}
-              className="group mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-900/40 transition-all hover:from-indigo-400 hover:to-blue-500 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-info/40"
-            >
-              <Zap className="size-5 transition-transform group-hover:scale-110" />
-              Now watch it at machine speed
-              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-            </button>
-          </div>
+          {phase === 'idle' && (
+            <div className="relative mx-auto mt-7 max-w-2xl text-center">
+              <p className="text-sm text-white/70">
+                One completed job is sitting in Joblogic, waiting to cross. Dispatch a worker and
+                watch ProofSync do it — step by step.
+              </p>
+              <button
+                type="button"
+                onClick={run}
+                className="group mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-emerald-900/40 transition-all hover:from-emerald-400 hover:to-teal-500 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40"
+              >
+                <Rocket className="size-5 transition-transform group-hover:scale-110" />
+                Run this sync
+              </button>
+            </div>
+          )}
+
+          {phase === 'running' && (
+            <div className="relative mx-auto mt-7 flex max-w-2xl items-center justify-center gap-2 text-sm text-white/50">
+              <Loader2 className="size-4 animate-spin" />
+              Working — signing in and filling the client&rsquo;s system…
+            </div>
+          )}
+
+          {phase === 'done' && (
+            <div className="relative mx-auto mt-7 max-w-2xl text-center">
+              <p className="text-sm text-white/70">
+                That was <strong className="text-white">one</strong> job — work a person never had to
+                do. Now imagine it never stopping.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={onScaleUp}
+                  className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-900/40 transition-all hover:from-indigo-400 hover:to-blue-500 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-info/40"
+                >
+                  <Zap className="size-5 transition-transform group-hover:scale-110" />
+                  Now watch it at machine speed
+                  <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                </button>
+                <button
+                  type="button"
+                  onClick={run}
+                  className="text-xs font-medium text-white/60 underline-offset-2 hover:text-white hover:underline"
+                >
+                  run it again
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </section>
@@ -537,7 +560,7 @@ function MachineFloor({
   activeRefs,
   onActive,
   busy,
-  onForce,
+  onReplay,
   onBack,
   onFreeze,
   onFix,
@@ -547,14 +570,14 @@ function MachineFloor({
   activeRefs: Set<string>;
   onActive: (refs: Set<string>) => void;
   busy: boolean;
-  onForce: () => void;
+  onReplay: () => void;
   onBack: () => void;
   onFreeze: () => void;
   onFix: (item: ExceptionItem) => void;
 }) {
   return (
     <>
-      <MachineHeader busy={busy} onForce={onForce} onBack={onBack} onFreeze={onFreeze} />
+      <MachineHeader busy={busy} onReplay={onReplay} onBack={onBack} onFreeze={onFreeze} />
       <KpiBar stats={state.stats} exceptionCount={state.exceptions.length} />
       <ExceptionsQueue exceptions={state.exceptions} onFix={onFix} />
       <BrowserTheatre ledger={state.ledger} target={state.target} onActive={onActive} />
@@ -583,12 +606,12 @@ function MachineFloor({
 
 function MachineHeader({
   busy,
-  onForce,
+  onReplay,
   onBack,
   onFreeze,
 }: {
   busy: boolean;
-  onForce: () => void;
+  onReplay: () => void;
   onBack: () => void;
   onFreeze: () => void;
 }) {
@@ -618,16 +641,16 @@ function MachineHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={onForce} disabled={busy}>
-            {busy ? <Loader2 className="animate-spin" /> : <Zap />}
-            Run a sync now
+          <Button size="sm" variant="outline" onClick={onReplay} disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}
+            Run the batch again
           </Button>
           <button
             type="button"
             onClick={onFreeze}
             className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-navy-900 shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
           >
-            Freeze — what just happened
+            Freeze — the result
           </button>
           <button
             type="button"

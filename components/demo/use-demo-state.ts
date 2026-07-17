@@ -142,6 +142,19 @@ export function useDemoState() {
     [refresh, pushActivity],
   );
 
+  const replay = useCallback(async () => {
+    setBusy(true);
+    try {
+      await fetch('/api/demo/replay', { method: 'POST', cache: 'no-store' });
+      await refresh();
+      // Kick the batch straight away so it starts crossing live rather than
+      // waiting for the next poll-driven beat.
+      await tick({ force: true });
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  }, [refresh, tick]);
+
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
@@ -172,7 +185,7 @@ export function useDemoState() {
     };
   }, [refresh, tick]);
 
-  return { state, error, busy, activity, refresh, reset, forceTick, resolve };
+  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay };
 }
 
 /**
