@@ -38,6 +38,42 @@ export function DemoConsole() {
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
 
+  // Two acts. Act 1 follows ONE real job end to end at human speed, so a viewer
+  // understands exactly what happens. Act 2 reveals the same thing running flat
+  // out across the whole floor — the "oh, it's doing that to all of them" moment.
+  const [act, setAct] = useState<'human' | 'machine'>('human');
+  // Snapshot taken when the machine floor opens, so the finale can state the REAL
+  // delta over the exact window the viewer watched — nothing invented.
+  const [baseline, setBaseline] = useState<{ done: number; minutes: number; at: number } | null>(
+    null,
+  );
+  const [finale, setFinale] = useState<{ jobs: number; minutes: number; seconds: number } | null>(
+    null,
+  );
+
+  const targetByRef = useMemo(() => {
+    const map = new Map<string, TargetRow>();
+    if (state) for (const t of state.target) map.set(t.reference, t);
+    return map;
+  }, [state]);
+
+  // The hero job for Act 1: the most recent real sync that actually wrote fields
+  // into a work order we can still read — so every value on screen is real.
+  const hero = useMemo<HeroJob | null>(() => {
+    if (!state) return null;
+    const led = state.ledger.find(
+      (r) =>
+        (r.status === 'SUCCESS' || r.status === 'PARTIAL') &&
+        r.reference &&
+        (targetByRef.get(r.reference)?.populatedFields.length ?? 0) > 0,
+    );
+    if (!led?.reference) return null;
+    const tgt = targetByRef.get(led.reference);
+    if (!tgt) return null;
+    const src = state.source.find((s) => s.jobNumber === led.jobNumber) ?? null;
+    return { led, tgt, src };
+  }, [state, targetByRef]);
+
   if (error && !state) {
     return (
       <div className="mx-auto max-w-2xl p-10">
@@ -62,110 +98,631 @@ export function DemoConsole() {
     );
   }
 
+  const enterMachine = () => {
+    setBaseline({
+      done: state.stats.synced + state.stats.partial,
+      minutes: state.stats.adminMinutesSaved,
+      at: Date.now(),
+    });
+    setAct('machine');
+  };
+
+  const freeze = () => {
+    if (!baseline) return;
+    setFinale({
+      jobs: Math.max(0, state.stats.synced + state.stats.partial - baseline.done),
+      minutes: Math.max(0, state.stats.adminMinutesSaved - baseline.minutes),
+      seconds: Math.max(1, Math.round((Date.now() - baseline.at) / 1000)),
+    });
+  };
+
   return (
     <div className="min-h-screen bg-muted/40">
-      <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} />
+      <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} act={act} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
-        <Explainer tickSeconds={state.tick.tickSeconds} busy={busy} onForce={forceTick} />
-        <BrowserTheatre ledger={state.ledger} target={state.target} onActive={setActiveRefs} />
-        <ActivityFeed activity={activity} />
-        <StatsRow state={state} />
-
-        {!state.seeded && (
-          <div className="mb-4 rounded-lg border border-warning-soft bg-warning-soft p-4 text-sm text-warning-text">
-            Both systems are empty. Press <strong>Start over</strong> to lay down a fresh set of
-            jobs, and the syncing will begin.
-          </div>
-        )}
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <SourcePanel
-            rows={state.source}
-            session={state.sessions.joblogic}
-            db={state.databases.source}
-            systemUrl={state.systemUrls.source}
-            transport={state.transport}
+        {act === 'human' ? (
+          <SpotlightStage
+            hero={hero}
+            tickSeconds={state.tick.tickSeconds}
+            seeded={state.seeded}
+            onScaleUp={enterMachine}
           />
-          <LedgerPanel rows={state.ledger} db={state.databases.ledger} />
-          <TargetPanel
-            rows={state.target}
-            session={state.sessions.concerto}
-            db={state.databases.target}
-            systemUrl={state.systemUrls.target}
-            transport={state.transport}
+        ) : (
+          <MachineFloor
+            state={state}
+            activity={activity}
             activeRefs={activeRefs}
+            onActive={setActiveRefs}
+            busy={busy}
+            onForce={forceTick}
+            onBack={() => setAct('human')}
+            onFreeze={freeze}
           />
-        </div>
+        )}
 
         {/* The "what this does / doesn't prove" note is only shown in the local
             browser-drive mode, where that distinction matters to whoever is
-            running it. The public hosted demo (direct) leads with the plain
-            explainer above instead. */}
+            running it. */}
         {state.transport === 'browser' && <HonestyNote transport={state.transport} />}
       </div>
+
+      {finale && <FinaleCard data={finale} onClose={() => setFinale(null)} />}
     </div>
   );
 }
 
+interface HeroJob {
+  led: LedgerRow;
+  tgt: TargetRow;
+  src: SourceRow | null;
+}
+
+// --- Act 1: the spotlight ----------------------------------------------------
+
+const SPOT_NODES = [
+  { icon: Database, label: 'Joblogic', sub: 'job completed' },
+  { icon: Cog, label: 'ProofSync', sub: 'reads & matches' },
+  { icon: Chrome, label: 'Concerto', sub: 'fills the form' },
+  { icon: CheckCircle2, label: 'Verified', sub: 'read back' },
+];
+
 /**
- * Plain-English "what am I looking at". A stranger should understand the whole
- * demo from this one paragraph, without knowing anything about the product.
+ * Act 1. One real, recently-synced job, walked across the four stops slowly
+ * enough that a stranger understands exactly what ProofSync does. Every value on
+ * screen is the job's real data; only the pacing is choreographed.
  */
-function Explainer({
+function SpotlightStage({
+  hero,
   tickSeconds,
-  busy,
-  onForce,
+  seeded,
+  onScaleUp,
 }: {
+  hero: HeroJob | null;
   tickSeconds: number;
-  busy: boolean;
-  onForce: () => void;
+  seeded: boolean;
+  onScaleUp: () => void;
 }) {
+  const latest = useRef(hero);
+  latest.current = hero;
+  const [job, setJob] = useState<HeroJob | null>(hero);
+  const [stage, setStage] = useState(0);
+  const [gen, setGen] = useState(0);
+
+  // Adopt a hero the moment one becomes available.
+  useEffect(() => {
+    if (!job && latest.current) {
+      setJob(latest.current);
+      setGen((g) => g + 1);
+    }
+  }, [job, hero]);
+
+  // Choreograph the current job across the four stops, then hold and pick up the
+  // freshest real job — so a lingering presenter always sees a live record.
+  useEffect(() => {
+    if (!job) return;
+    setStage(0);
+    const fields = job.tgt.populatedFields.length;
+    const durs = [1700, 1900, Math.max(2400, 800 + fields * 320), 1800];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let acc = 0;
+    durs.forEach((d, i) => {
+      acc += d;
+      timers.push(setTimeout(() => setStage(i + 1), acc));
+    });
+    timers.push(
+      setTimeout(() => {
+        setJob(latest.current ?? job);
+        setGen((g) => g + 1);
+      }, acc + 3600),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [job, gen]);
+
+  const stop = Math.min(stage, 3);
+  const progress = (Math.min(stage, 3) / 3) * 100;
+  const done = stage >= 3;
+
   return (
-    <section className="my-4 grid gap-5 rounded-lg border border-border bg-card px-5 py-5 lg:grid-cols-[auto_1fr] lg:items-center">
-      {/* The demo's headline control — left, big and obvious, so a presenter can
-          smack it and make a batch of real jobs land on cue. */}
-      <div className="flex flex-col items-center gap-2">
-        <button
-          type="button"
-          onClick={onForce}
-          disabled={busy}
-          className={cn(
-            'group flex w-full items-center justify-center gap-3 rounded-xl bg-success px-10 py-6 text-xl font-bold text-white shadow-lg shadow-success/25 transition-all lg:w-[17rem]',
-            'hover:bg-success-text hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-success/30',
-            'disabled:cursor-not-allowed disabled:opacity-70',
-            !busy && 'animate-pulse-soft',
-          )}
-        >
-          {busy ? (
-            <>
-              <Loader2 className="size-7 animate-spin" />
-              Syncing&hellip;
-            </>
-          ) : (
-            <>
-              <Zap className="size-7 transition-transform group-hover:scale-110" />
-              Run a sync now
-            </>
-          )}
-        </button>
-        <span className="text-xs text-muted-foreground">or watch it run on its own</span>
+    <section className="relative my-4 overflow-hidden rounded-2xl border border-navy-900/50 bg-[radial-gradient(130%_130%_at_50%_-10%,#2a2f6e_0%,#1b1e49_45%,#111330_100%)] px-5 py-6 shadow-xl sm:px-8 sm:py-8">
+      <style>{THEATRE_KEYFRAMES}</style>
+      <div className="pointer-events-none absolute inset-x-0 -top-10 mx-auto h-56 w-3/4 rounded-full bg-info/10 blur-3xl" />
+
+      <div className="relative flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="rounded-full bg-info/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-info-soft">
+          Act 1 · Human speed
+        </span>
+        <h2 className="text-lg font-semibold text-white sm:text-xl">Follow one job across both systems</h2>
+        <span className="ml-auto hidden text-xs text-white/40 lg:inline">
+          real data · slowed down so you can see every step
+        </span>
       </div>
 
-      <div>
-        <h2 className="text-sm font-semibold text-navy-800">What you&rsquo;re watching</h2>
-        <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-          A live demonstration. On the <strong className="text-foreground">left</strong> is a
-          contractor&rsquo;s job system, where engineers record the work they&rsquo;ve finished. On the{' '}
-          <strong className="text-foreground">right</strong> is their client&rsquo;s facilities
-          system, which needs those same details. The two don&rsquo;t talk to each other. Every{' '}
-          {tickSeconds} seconds, <strong className="text-foreground">ProofSync</strong> (the middle
-          column) checks the left system for newly-completed jobs and copies each one into the right
-          system &mdash; filling in the details, checking its own work, and setting aside anything
-          that needs a person.
+      {!job ? (
+        <div className="relative mt-8 flex h-56 flex-col items-center justify-center gap-3 text-white/50">
+          {seeded ? (
+            <>
+              <Loader2 className="size-5 animate-spin" />
+              <span className="text-sm">The first job is landing…</span>
+            </>
+          ) : (
+            <span className="max-w-sm text-center text-sm">
+              Both systems are empty. Press <strong className="text-white/80">Start over</strong> in the
+              header to lay down a fresh set of jobs.
+            </span>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* The rail: four stops, a filling track and the job travelling along it. */}
+          <div className="relative mt-7 px-2">
+            <div className="absolute left-[9%] right-[9%] top-5 h-0.5 rounded bg-white/15" />
+            <div
+              className="absolute left-[9%] top-5 h-0.5 rounded bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-700 ease-out"
+              style={{ width: `calc((100% - 18%) * ${progress / 100})` }}
+            />
+            <div className="relative grid grid-cols-4">
+              {SPOT_NODES.map((node, i) => {
+                const status = stage > i ? 'done' : stage === i ? 'active' : 'todo';
+                const Icon = status === 'done' ? CheckCircle2 : node.icon;
+                return (
+                  <div key={node.label} className="flex flex-col items-center text-center">
+                    <span
+                      className={cn(
+                        'flex size-10 items-center justify-center rounded-full ring-2 transition-all duration-500',
+                        status === 'done' && 'bg-emerald-500 text-white ring-emerald-400',
+                        status === 'active' &&
+                          'bg-white text-navy-900 ring-white shadow-lg shadow-info/40 scale-110 animate-pulse-soft',
+                        status === 'todo' && 'bg-white/5 text-white/40 ring-white/15',
+                      )}
+                    >
+                      <Icon className="size-5" />
+                    </span>
+                    <span
+                      className={cn(
+                        'mt-2 text-xs font-semibold',
+                        status === 'todo' ? 'text-white/40' : 'text-white',
+                      )}
+                    >
+                      {node.label}
+                    </span>
+                    <span className="text-[10px] text-white/40">{node.sub}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* The focus card — what is happening at the current stop, in detail. */}
+          <div className="relative mx-auto mt-7 max-w-2xl">
+            <SpotlightFocus job={job} stop={stop} />
+          </div>
+
+          {/* The bridge into Act 2. */}
+          <div
+            className={cn(
+              'relative mx-auto mt-7 max-w-2xl text-center transition-all duration-500',
+              done ? 'opacity-100' : 'pointer-events-none opacity-0',
+            )}
+          >
+            <p className="text-sm text-white/70">
+              That was <strong className="text-white">one</strong> job — about {tickSeconds} seconds of
+              work a person never had to do. Now imagine it never stopping.
+            </p>
+            <button
+              type="button"
+              onClick={onScaleUp}
+              className="group mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-900/40 transition-all hover:from-indigo-400 hover:to-blue-500 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-info/40"
+            >
+              <Zap className="size-5 transition-transform group-hover:scale-110" />
+              Now watch it at machine speed
+              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+/** The morphing detail card under the Act 1 rail. */
+function SpotlightFocus({ job, stop }: { job: HeroJob; stop: number }) {
+  const { led, tgt, src } = job;
+
+  if (stop === 0) {
+    return (
+      <FocusCard
+        chip="Joblogic"
+        chipTone="slate"
+        title={led.jobNumber}
+        badge={<Badge tone="success" dot>Completed on site</Badge>}
+      >
+        <p className="text-sm font-medium text-foreground">{tgt.summary}</p>
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+          <Fact label="Site" value={tgt.propertyName} />
+          <Fact label="Engineer" value={src?.engineerName ?? '—'} />
+          <Fact label="Completed" value={src?.completedAt ? timeAgo(src.completedAt) : 'just now'} />
+          <Fact label="Paperwork" value={`${tgt.documentCount} document(s) attached`} />
+        </dl>
+        <p className="mt-3 rounded-md bg-muted px-2.5 py-1.5 text-[11px] text-muted-foreground">
+          Finished in Joblogic. The client&rsquo;s system knows nothing about it yet — today a person
+          would re-key all of this by hand.
         </p>
+      </FocusCard>
+    );
+  }
+
+  if (stop === 1) {
+    return (
+      <FocusCard chip="ProofSync" chipTone="indigo" title="Reading it — and finding the match">
+        <ul className="space-y-2 text-sm">
+          <Step done>Signed in to the client&rsquo;s system</Step>
+          <Step done>
+            Reference <span className="font-mono text-xs">{led.reference}</span> matched to a work
+            order
+          </Step>
+          <Step done>Client rules loaded — costs withheld by policy</Step>
+          <Step>Mapping {tgt.populatedFields.length} field(s) into Concerto&rsquo;s form…</Step>
+        </ul>
+        <p className="mt-3 rounded-md bg-info-soft px-2.5 py-1.5 text-[11px] text-info-text">
+          It refuses to guess: no matching reference means the job is set aside for a person, never
+          forced through.
+        </p>
+      </FocusCard>
+    );
+  }
+
+  if (stop === 2) {
+    return (
+      <FocusCard
+        chip="Concerto"
+        chipTone="teal"
+        title={`Filling ${led.reference}`}
+        badge={<Badge tone="info" dot>typing it in</Badge>}
+      >
+        <dl className="space-y-1.5">
+          {tgt.populatedFields.map((f, i) => (
+            <div
+              key={f.field}
+              className="ps-row flex items-baseline justify-between gap-3 rounded-md bg-success-soft/50 px-2.5 py-1.5"
+              style={{ animationDelay: `${0.2 + i * 0.28}s` }}
+            >
+              <dt className="text-[10px] font-semibold uppercase tracking-wide text-success-text">
+                {f.label}
+              </dt>
+              <dd className="truncate text-right text-xs font-medium text-foreground">{f.preview}</dd>
+            </div>
+          ))}
+        </dl>
+      </FocusCard>
+    );
+  }
+
+  return (
+    <FocusCard
+      chip="Verified"
+      chipTone="emerald"
+      title="Saved — and checked"
+      badge={<Badge tone="success" dot>done</Badge>}
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <CheckCircle2 className="size-6" />
+        </span>
+        <div>
+          <p className="text-sm font-medium text-foreground">
+            {tgt.populatedFields.length} field(s) written and read back to confirm
+            {led.documentsTransferred > 0 ? `, ${led.documentsTransferred} document(s) attached` : ''}.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {led.durationMs ? `Took ${formatDuration(led.durationMs)}. ` : ''}0 minutes of re-keying.
+          </p>
+        </div>
+      </div>
+    </FocusCard>
+  );
+}
+
+const FOCUS_CHIP: Record<string, string> = {
+  slate: 'bg-slate-700 text-white',
+  indigo: 'bg-indigo-600 text-white',
+  teal: 'bg-teal-600 text-white',
+  emerald: 'bg-emerald-600 text-white',
+};
+
+function FocusCard({
+  chip,
+  chipTone,
+  title,
+  badge,
+  children,
+}: {
+  chip: string;
+  chipTone: string;
+  title: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-black/5 bg-white p-4 shadow-2xl">
+      <div className="mb-3 flex items-center gap-2">
+        <span
+          className={cn(
+            'rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+            FOCUS_CHIP[chipTone],
+          )}
+        >
+          {chip}
+        </span>
+        <span className="font-mono text-sm font-semibold text-navy-800">{title}</span>
+        {badge && <span className="ml-auto">{badge}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="text-foreground">{value}</dd>
+    </div>
+  );
+}
+
+function Step({ children, done }: { children: React.ReactNode; done?: boolean }) {
+  return (
+    <li className="flex items-start gap-2">
+      {done ? (
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+      ) : (
+        <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-info" />
+      )}
+      <span className={cn(done ? 'text-foreground' : 'text-muted-foreground')}>{children}</span>
+    </li>
+  );
+}
+
+// --- Act 2: the machine floor ------------------------------------------------
+
+/** Act 2. The same engine, now shown running flat out across the whole floor. */
+function MachineFloor({
+  state,
+  activity,
+  activeRefs,
+  onActive,
+  busy,
+  onForce,
+  onBack,
+  onFreeze,
+}: {
+  state: DemoState;
+  activity: ActivityLine[];
+  activeRefs: Set<string>;
+  onActive: (refs: Set<string>) => void;
+  busy: boolean;
+  onForce: () => void;
+  onBack: () => void;
+  onFreeze: () => void;
+}) {
+  return (
+    <>
+      <MachineHeader busy={busy} onForce={onForce} onBack={onBack} onFreeze={onFreeze} />
+      <KpiBar stats={state.stats} />
+      <BrowserTheatre ledger={state.ledger} target={state.target} onActive={onActive} />
+      <ActivityFeed activity={activity} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SourcePanel
+          rows={state.source}
+          session={state.sessions.joblogic}
+          db={state.databases.source}
+          systemUrl={state.systemUrls.source}
+          transport={state.transport}
+        />
+        <LedgerPanel rows={state.ledger} db={state.databases.ledger} />
+        <TargetPanel
+          rows={state.target}
+          session={state.sessions.concerto}
+          db={state.databases.target}
+          systemUrl={state.systemUrls.target}
+          transport={state.transport}
+          activeRefs={activeRefs}
+        />
+      </div>
+    </>
+  );
+}
+
+function MachineHeader({
+  busy,
+  onForce,
+  onBack,
+  onFreeze,
+}: {
+  busy: boolean;
+  onForce: () => void;
+  onBack: () => void;
+  onFreeze: () => void;
+}) {
+  return (
+    <section className="relative my-4 overflow-hidden rounded-2xl border border-navy-900/60 bg-[radial-gradient(130%_130%_at_20%_-20%,#1e2a6e_0%,#141a44_50%,#0c0f26_100%)] px-5 py-5 shadow-xl sm:px-8">
+      <div className="pointer-events-none absolute inset-x-0 -top-10 left-1/3 h-56 w-1/2 rounded-full bg-info/10 blur-3xl" />
+      <div className="relative flex flex-wrap items-center gap-x-6 gap-y-4">
+        <div className="mr-auto">
+          <span className="rounded-full bg-info/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-info-soft">
+            Act 2 · Machine speed
+          </span>
+          <h2 className="mt-1.5 text-lg font-semibold text-white sm:text-xl">
+            The same thing — every job, all at once
+          </h2>
+          <div className="mt-2 flex items-center gap-2 text-xs text-white/50">
+            <span className="flex items-center gap-1">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span
+                  key={i}
+                  className="size-2 rounded-full bg-emerald-400 animate-pulse-soft"
+                  style={{ animationDelay: `${i * 0.18}s` }}
+                />
+              ))}
+            </span>
+            5 browser workers running in parallel
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={onForce} disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" /> : <Zap />}
+            Run a sync now
+          </Button>
+          <button
+            type="button"
+            onClick={onFreeze}
+            className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-navy-900 shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+          >
+            Freeze — what just happened
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-xs font-medium text-white/60 underline-offset-2 hover:text-white hover:underline"
+          >
+            back to one job
+          </button>
+        </div>
       </div>
     </section>
+  );
+}
+
+/** The live KPI counters — big, tabular, and visibly spinning as figures land. */
+function KpiBar({ stats }: { stats: DemoState['stats'] }) {
+  const synced = useCountUp(stats.synced);
+  const minutes = useCountUp(stats.adminMinutesSaved);
+  const complete = useCountUp(stats.sourceComplete);
+  const flagged = useCountUp(stats.openExceptions);
+
+  const items = [
+    { label: 'Synced to Concerto', value: synced.toLocaleString(), tone: 'success' as const },
+    { label: 'Minutes of re-keying returned', value: minutes.toLocaleString(), tone: 'info' as const },
+    { label: 'Completed on site', value: complete.toLocaleString(), tone: 'plain' as const },
+    { label: 'Set aside for a person', value: flagged.toLocaleString(), tone: 'plain' as const },
+  ];
+
+  return (
+    <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className={cn(
+            'rounded-xl border px-4 py-3.5 shadow-sm',
+            item.tone === 'success' && 'border-success-soft bg-gradient-to-br from-emerald-50 to-teal-50',
+            item.tone === 'info' && 'border-info-soft bg-gradient-to-br from-sky-50 to-indigo-50',
+            item.tone === 'plain' && 'border-border bg-card',
+          )}
+        >
+          <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {item.label}
+          </div>
+          <div
+            className={cn(
+              'mt-1 text-3xl font-bold tabular-nums',
+              item.tone === 'success' && 'text-success-text',
+              item.tone === 'info' && 'text-info-text',
+              item.tone === 'plain' && 'text-navy-800',
+            )}
+          >
+            {item.value}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- Finale ------------------------------------------------------------------
+
+/** Count from zero to the target on mount, for the finale reveal. */
+function BigCount({ to, suffix = '' }: { to: number; suffix?: string }) {
+  const [target, setTarget] = useState(0);
+  useEffect(() => {
+    const id = setTimeout(() => setTarget(to), 80);
+    return () => clearTimeout(id);
+  }, [to]);
+  const n = useCountUp(target, 1200);
+  return (
+    <span className="tabular-nums">
+      {n.toLocaleString()}
+      {suffix}
+    </span>
+  );
+}
+
+/** "While you watched" — the real delta over the exact window Act 2 was open. */
+function FinaleCard({
+  data,
+  onClose,
+}: {
+  data: { jobs: number; minutes: number; seconds: number };
+  onClose: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/85 p-5 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(120%_120%_at_50%_-10%,#233079_0%,#161c4a_55%,#0c0f26_100%)] p-8 text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-full p-1.5 text-white/50 hover:bg-white/10 hover:text-white"
+          aria-label="Close"
+        >
+          <X className="size-4" />
+        </button>
+
+        <p className="text-[11px] font-bold uppercase tracking-widest text-info-soft">
+          While you watched — {data.seconds}s
+        </p>
+
+        <div className="mt-6 space-y-5">
+          <div>
+            <div className="text-5xl font-black text-white">
+              <BigCount to={data.jobs} />
+            </div>
+            <div className="mt-1 text-sm text-white/60">jobs synced into Concerto</div>
+          </div>
+          <div>
+            <div className="text-5xl font-black text-emerald-400">
+              <BigCount to={data.minutes} />
+            </div>
+            <div className="mt-1 text-sm text-white/60">minutes of re-keying returned</div>
+          </div>
+          <div>
+            <div className="text-5xl font-black text-white">0</div>
+            <div className="mt-1 text-sm text-white/60">minutes anyone spent doing it</div>
+          </div>
+        </div>
+
+        <p className="mt-7 text-sm text-white/70">
+          No admin intervention. Nothing typed twice. This was the real engine over two real,
+          separate systems — the whole time.
+        </p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.03]"
+        >
+          Keep watching
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -465,11 +1022,13 @@ function ConsoleHeader({
   busy,
   onReset,
   onForce,
+  act,
 }: {
   state: DemoState;
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
+  act: 'human' | 'machine';
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
   const seconds = Math.ceil(countdown / 1000);
@@ -484,6 +1043,14 @@ function ConsoleHeader({
             <span className="font-normal text-muted-foreground">Joblogic</span>
             <ArrowRight className="size-3.5 text-muted-foreground" />
             <span className="font-normal text-muted-foreground">Concerto</span>
+            <span
+              className={cn(
+                'ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                act === 'human' ? 'bg-info-soft text-info-text' : 'bg-navy-900 text-white',
+              )}
+            >
+              {act === 'human' ? 'Act 1 · one job' : 'Act 2 · full floor'}
+            </span>
           </h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Two separate systems, checked and kept in step every {state.tick.tickSeconds} seconds.
@@ -566,44 +1133,36 @@ function useCountdown(nextTickInMs: number, lastTickAt: string | null) {
   return remaining;
 }
 
-// --- Stats -------------------------------------------------------------------
+/**
+ * Eases a displayed number toward a target so counters visibly spin up when the
+ * real figure jumps, instead of snapping. Purely presentational — the target is
+ * always the real value.
+ */
+function useCountUp(target: number, durationMs = 900) {
+  const [display, setDisplay] = useState(target);
+  const from = useRef(target);
+  const raf = useRef<number | null>(null);
 
-function StatsRow({ state }: { state: DemoState }) {
-  const { stats } = state;
-  const items: { label: string; value: string; tone?: 'success' | 'warning' | 'danger' }[] = [
-    { label: 'Jobs in Joblogic', value: String(stats.sourceTotal) },
-    { label: 'Still on site', value: String(stats.sourceInFlight) },
-    { label: 'Completed', value: String(stats.sourceComplete) },
-    { label: 'Synced to Concerto', value: String(stats.synced), tone: 'success' },
-    { label: 'Partial', value: String(stats.partial), tone: stats.partial ? 'warning' : undefined },
-    {
-      label: 'Needs a human',
-      value: String(stats.openExceptions),
-      tone: stats.openExceptions ? 'danger' : undefined,
-    },
-    { label: 'Re-keying avoided', value: `${stats.adminMinutesSaved} min` },
-  ];
+  useEffect(() => {
+    const start = from.current;
+    if (start === target) return;
+    let t0: number | null = null;
+    const step = (t: number) => {
+      if (t0 === null) t0 = t;
+      const p = Math.min(1, (t - t0) / durationMs);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(Math.round(start + (target - start) * eased));
+      if (p < 1) raf.current = requestAnimationFrame(step);
+      else from.current = target;
+    };
+    raf.current = requestAnimationFrame(step);
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+      from.current = target;
+    };
+  }, [target, durationMs]);
 
-  return (
-    <div className="my-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-      {items.map((item) => (
-        <div key={item.label} className="rounded-lg border border-border bg-card px-3 py-2.5">
-          <div className="text-xs text-muted-foreground">{item.label}</div>
-          <div
-            className={cn(
-              'mt-0.5 text-xl font-semibold tabular-nums',
-              item.tone === 'success' && 'text-success-text',
-              item.tone === 'warning' && 'text-warning-text',
-              item.tone === 'danger' && 'text-danger-text',
-              !item.tone && 'text-navy-800',
-            )}
-          >
-            {item.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return display;
 }
 
 // --- Panel shell -------------------------------------------------------------
