@@ -13,6 +13,7 @@ import {
 import { ensureDemoOrg } from './org';
 import { shotsForSubjects, type ShotSummary } from './screenshots';
 import { TARGET_FIELD_LABELS, targetFieldLabel } from '@/lib/domain/field-labels';
+import type { SourceJobDoc } from './schema';
 
 /**
  * The console's read model — all three panels in one round trip.
@@ -75,6 +76,18 @@ export interface TargetRow {
   updatedAt: string;
 }
 
+export interface SpotlightData {
+  jobNumber: string;
+  reference: string;
+  description: string;
+  site: string;
+  engineer: string | null;
+  completedAt: string | null;
+  documentCount: number;
+  /** The completion values that cross into Concerto — real Joblogic data. */
+  fields: { label: string; value: string }[];
+}
+
 export interface ExceptionItem {
   reference: string;
   jobNumber: string;
@@ -100,6 +113,8 @@ export interface DemoState {
   source: SourceRow[];
   ledger: LedgerRow[];
   target: TargetRow[];
+  /** One job for Act 1 to walk through — built from source data, always present. */
+  spotlight: SpotlightData | null;
   /** Jobs Concerto refused, waiting for a person to correct and resubmit. */
   exceptions: ExceptionItem[];
   stats: {
@@ -129,6 +144,40 @@ function previewValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
   const s = String(value);
   return s.length > 90 ? `${s.slice(0, 89)}…` : s;
+}
+
+/** Build the Act 1 walkthrough job from a source completion — no sync required. */
+function buildSpotlight(d: SourceJobDoc): SpotlightData {
+  const cs = d.completionSheet;
+  const mins = d.visit?.minutesOnSite ?? null;
+  const fields: { label: string; value: string }[] = [];
+  if (cs?.workCarriedOut) fields.push({ label: 'Work completed', value: cs.workCarriedOut });
+  if (cs?.engineerComments) fields.push({ label: 'Engineer notes', value: cs.engineerComments });
+  if (mins != null) fields.push({ label: 'Time on site', value: `${(mins / 60).toFixed(1)} hours` });
+  if (d.completedAt)
+    fields.push({
+      label: 'Completed',
+      value: new Date(d.completedAt).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    });
+  if (cs) fields.push({ label: 'Follow-on required', value: cs.followOnRequired ? 'Yes — raised' : 'No' });
+  if (d.charges?.totalCharge != null)
+    fields.push({ label: 'Cost', value: 'Withheld by client policy' });
+
+  return {
+    jobNumber: d.jobNumber,
+    reference: d.customerOrderRef ?? '—',
+    description: d.description,
+    site: d.siteName,
+    engineer: d.engineer?.engineerName ?? null,
+    completedAt: iso(d.completedAt),
+    documentCount: d.attachments?.length ?? 0,
+    fields: fields.map((f) => ({ label: f.label, value: previewValue(f.value) })),
+  };
 }
 
 export async function getDemoState(): Promise<DemoState> {
@@ -243,6 +292,18 @@ export async function getDemoState(): Promise<DemoState> {
       badValue: w.demoBlock!.badValue ?? null,
     }));
 
+  // The Act 1 job: the first clean completed job. Built from SOURCE data, so it is
+  // available the instant the batch is seeded and never waits on a sync — Act 1
+  // can't hang on "reading…".
+  const blockedRefSet = new Set(blockedRefs);
+  const spotlightDoc =
+    sourceDocs.find(
+      (d) => d.status === 'Complete' && d.customerOrderRef && !blockedRefSet.has(d.customerOrderRef),
+    ) ??
+    sourceDocs.find((d) => d.status === 'Complete') ??
+    null;
+  const spotlight = spotlightDoc ? buildSpotlight(spotlightDoc) : null;
+
   // Evidence is keyed by whatever the connector could name at the time — a job
   // number in the source, a work-order reference in the target — so a ledger row
   // collects shots under either of its two identities.
@@ -312,6 +373,7 @@ export async function getDemoState(): Promise<DemoState> {
         targetFields,
       };
     }),
+    spotlight,
     exceptions,
     target: targetDocs.map((w) => {
       const attributes = w.attributes ?? {};

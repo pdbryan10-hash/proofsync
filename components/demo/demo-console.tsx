@@ -20,7 +20,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, formatDuration, formatTime, timeAgo } from '@/lib/utils';
-import type { DemoState, ExceptionItem, LedgerRow, SourceRow, TargetRow } from '@/lib/demo/state';
+import type {
+  DemoState,
+  ExceptionItem,
+  LedgerRow,
+  SourceRow,
+  SpotlightData,
+  TargetRow,
+} from '@/lib/demo/state';
 import type { ShotSummary } from '@/lib/demo/screenshots';
 import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-state';
 
@@ -51,30 +58,6 @@ export function DemoConsole() {
     certs: number;
     minutes: number;
   } | null>(null);
-
-  // The hero job for Act 1: the most recent real sync that actually wrote fields
-  // into the client's work order. The ledger row now carries those fields itself,
-  // so this no longer depends on the job being in the (windowed) target panel —
-  // which is why it used to sit forever on "the first job is landing…".
-  const hero = useMemo<HeroJob | null>(() => {
-    if (!state) return null;
-    const led = state.ledger.find(
-      (r) =>
-        (r.status === 'SUCCESS' || r.status === 'PARTIAL') &&
-        r.reference &&
-        r.targetFields.length > 0,
-    );
-    return led ? { led } : null;
-  }, [state]);
-
-  // A completed job already sitting in the source system, shown while the first
-  // real sync is still landing — so Act 1 is alive and on-message within a second
-  // of load instead of a bare spinner. Seeded jobs exist long before the first
-  // sync finishes on the slow demo cluster.
-  const pending = useMemo(
-    () => state?.source.find((s) => s.status === 'Complete') ?? null,
-    [state],
-  );
 
   if (error && !state) {
     return (
@@ -123,8 +106,7 @@ export function DemoConsole() {
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         {act === 'human' ? (
           <SpotlightStage
-            hero={hero}
-            pending={pending}
+            spotlight={state.spotlight}
             seeded={state.seeded}
             onScaleUp={enterMachine}
           />
@@ -160,10 +142,6 @@ export function DemoConsole() {
   );
 }
 
-interface HeroJob {
-  led: LedgerRow;
-}
-
 // --- Act 1: the spotlight ----------------------------------------------------
 
 const SPOT_NODES = [
@@ -174,41 +152,35 @@ const SPOT_NODES = [
 ];
 
 /**
- * Act 1. One real, recently-synced job, walked across the four stops slowly
- * enough that a stranger understands exactly what ProofSync does. Every value on
- * screen is the job's real data; only the pacing is choreographed.
+ * Act 1. ONE job walked across the four stops slowly enough that a stranger
+ * understands exactly what ProofSync does. Built entirely from Joblogic source
+ * data (state.spotlight), so it is available the instant the batch is seeded and
+ * never waits on a sync — it cannot hang on "reading…". The pacing is
+ * choreographed; every value shown is real.
  */
 function SpotlightStage({
-  hero,
-  pending,
+  spotlight,
   seeded,
   onScaleUp,
 }: {
-  hero: HeroJob | null;
-  pending: SourceRow | null;
+  spotlight: SpotlightData | null;
   seeded: boolean;
   onScaleUp: () => void;
 }) {
-  const [job, setJob] = useState<HeroJob | null>(hero);
   const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle');
   const [stage, setStage] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  // While idle, keep the ready card pointed at the freshest real synced job.
-  useEffect(() => {
-    if (phase === 'idle' && hero) setJob(hero);
-  }, [hero, phase]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   // Fired by the presenter — deliberately slow, so every step is readable.
   const run = () => {
-    if (!job) return;
+    if (!spotlight) return;
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setPhase('running');
     setStage(0);
-    const fields = job.led.targetFields.length;
+    const fields = spotlight.fields.length;
     const durs = [2600, 2900, Math.max(3800, 1400 + fields * 480), 2700];
     let acc = 0;
     durs.forEach((d, i) => {
@@ -236,31 +208,27 @@ function SpotlightStage({
         </span>
       </div>
 
-      {!job ? (
-        pending ? (
-          <PreHero pending={pending} />
-        ) : (
-          <div className="relative mt-8 flex h-56 flex-col items-center justify-center gap-3 text-white/50">
-            {seeded ? (
-              <>
-                <Loader2 className="size-5 animate-spin" />
-                <span className="text-sm">Watching for the next completed job…</span>
-              </>
-            ) : (
-              <span className="max-w-sm text-center text-sm">
-                Both systems are empty. Press <strong className="text-white/80">Start over</strong> in
-                the header to lay down a fresh set of jobs.
-              </span>
-            )}
-          </div>
-        )
+      {!spotlight ? (
+        <div className="relative mt-8 flex h-56 flex-col items-center justify-center gap-3 text-white/50">
+          {seeded ? (
+            <>
+              <Loader2 className="size-5 animate-spin" />
+              <span className="text-sm">Preparing the batch…</span>
+            </>
+          ) : (
+            <span className="max-w-sm text-center text-sm">
+              Both systems are empty. Press <strong className="text-white/80">Start over</strong> in
+              the header to lay down a fresh set of jobs.
+            </span>
+          )}
+        </div>
       ) : (
         <>
           <SpotRail stage={stage} progress={progress} />
 
           {/* The focus card — what is happening at the current stop, in detail. */}
           <div className="relative mx-auto mt-7 max-w-2xl">
-            <SpotlightFocus led={job.led} stop={stop} />
+            <SpotlightFocus spot={spotlight} stop={stop} />
           </div>
 
           {phase === 'idle' && (
@@ -362,54 +330,22 @@ function SpotRail({ stage, progress }: { stage: number; progress: number }) {
   );
 }
 
-/** Shown while the first real sync is still landing: a completed job being read. */
-function PreHero({ pending }: { pending: SourceRow }) {
-  return (
-    <>
-      <SpotRail stage={1} progress={(1 / 3) * 100} />
-      <div className="relative mx-auto mt-7 max-w-2xl">
-        <FocusCard
-          chip="Joblogic"
-          chipTone="slate"
-          title={pending.jobNumber}
-          badge={<Badge tone="success" dot>Completed on site</Badge>}
-        >
-          <p className="text-sm font-medium text-foreground">{pending.description}</p>
-          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <Fact label="Site" value={pending.siteName} />
-            <Fact label="Engineer" value={pending.engineerName ?? '—'} />
-            <Fact
-              label="Completed"
-              value={pending.completedAt ? timeAgo(pending.completedAt) : 'just now'}
-            />
-            <Fact label="Client ref" value={pending.customerOrderRef ?? '—'} />
-          </dl>
-          <p className="mt-3 flex items-center gap-2 rounded-md bg-info-soft px-2.5 py-1.5 text-[11px] text-info-text">
-            <Loader2 className="size-3.5 shrink-0 animate-spin" />
-            ProofSync is signing in and reading this now…
-          </p>
-        </FocusCard>
-      </div>
-    </>
-  );
-}
-
-/** The morphing detail card under the Act 1 rail. */
-function SpotlightFocus({ led, stop }: { led: LedgerRow; stop: number }) {
+/** The morphing detail card under the Act 1 rail — all from source data. */
+function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
   if (stop === 0) {
     return (
       <FocusCard
         chip="Joblogic"
         chipTone="slate"
-        title={led.jobNumber}
+        title={spot.jobNumber}
         badge={<Badge tone="success" dot>Completed on site</Badge>}
       >
-        <p className="text-sm font-medium text-foreground">{led.summary}</p>
+        <p className="text-sm font-medium text-foreground">{spot.description}</p>
         <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-          <Fact label="Site" value={led.propertyName} />
-          <Fact label="Engineer" value={led.engineerName ?? '—'} />
-          <Fact label="Completed" value={led.jobCompletedAt ? timeAgo(led.jobCompletedAt) : 'just now'} />
-          <Fact label="Paperwork" value={`${led.documentCount} document(s) attached`} />
+          <Fact label="Site" value={spot.site} />
+          <Fact label="Engineer" value={spot.engineer ?? '—'} />
+          <Fact label="Completed" value={spot.completedAt ? timeAgo(spot.completedAt) : 'just now'} />
+          <Fact label="Paperwork" value={`${spot.documentCount} document(s) attached`} />
         </dl>
         <p className="mt-3 rounded-md bg-muted px-2.5 py-1.5 text-[11px] text-muted-foreground">
           Finished in Joblogic. The client&rsquo;s system knows nothing about it yet — today a person
@@ -425,11 +361,11 @@ function SpotlightFocus({ led, stop }: { led: LedgerRow; stop: number }) {
         <ul className="space-y-2 text-sm">
           <Step done>Signed in to the client&rsquo;s system</Step>
           <Step done>
-            Reference <span className="font-mono text-xs">{led.reference}</span> matched to a work
+            Reference <span className="font-mono text-xs">{spot.reference}</span> matched to a work
             order
           </Step>
           <Step done>Client rules loaded — costs withheld by policy</Step>
-          <Step>Mapping {led.targetFields.length} field(s) into Concerto&rsquo;s form…</Step>
+          <Step>Mapping {spot.fields.length} field(s) into Concerto&rsquo;s form…</Step>
         </ul>
         <p className="mt-3 rounded-md bg-info-soft px-2.5 py-1.5 text-[11px] text-info-text">
           It refuses to guess: no matching reference means the job is set aside for a person, never
@@ -444,20 +380,20 @@ function SpotlightFocus({ led, stop }: { led: LedgerRow; stop: number }) {
       <FocusCard
         chip="Concerto"
         chipTone="teal"
-        title={`Filling ${led.reference}`}
+        title={`Filling ${spot.reference}`}
         badge={<Badge tone="info" dot>typing it in</Badge>}
       >
         <dl className="space-y-1.5">
-          {led.targetFields.map((f, i) => (
+          {spot.fields.map((f, i) => (
             <div
-              key={f.field}
+              key={f.label}
               className="ps-row flex items-baseline justify-between gap-3 rounded-md bg-success-soft/50 px-2.5 py-1.5"
               style={{ animationDelay: `${0.2 + i * 0.28}s` }}
             >
               <dt className="text-[10px] font-semibold uppercase tracking-wide text-success-text">
                 {f.label}
               </dt>
-              <dd className="truncate text-right text-xs font-medium text-foreground">{f.preview}</dd>
+              <dd className="truncate text-right text-xs font-medium text-foreground">{f.value}</dd>
             </div>
           ))}
         </dl>
@@ -478,12 +414,10 @@ function SpotlightFocus({ led, stop }: { led: LedgerRow; stop: number }) {
         </span>
         <div>
           <p className="text-sm font-medium text-foreground">
-            {led.targetFields.length} field(s) written and read back to confirm
-            {led.documentsTransferred > 0 ? `, ${led.documentsTransferred} document(s) attached` : ''}.
+            {spot.fields.length} field(s) written and read back to confirm
+            {spot.documentCount > 0 ? `, ${spot.documentCount} document(s) attached` : ''}.
           </p>
-          <p className="text-xs text-muted-foreground">
-            {led.durationMs ? `Took ${formatDuration(led.durationMs)}. ` : ''}0 minutes of re-keying.
-          </p>
+          <p className="text-xs text-muted-foreground">0 minutes of re-keying.</p>
         </div>
       </div>
     </FocusCard>
