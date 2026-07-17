@@ -476,9 +476,10 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
 
   if (stop === 1) {
     return (
-      <FocusCard chip="ProofSync" chipTone="indigo" title="Reading it — and finding the match">
-        <ul className="space-y-2 text-sm">
-          <Step done>Signed in to the client&rsquo;s system</Step>
+      <FocusCard chip="ProofSync" chipTone="indigo" title="Signs into Joblogic — and finds the match">
+        <MiniSignIn system="Joblogic" url="joblogic.contractor-fm.co.uk" username={spot.sourceLogin} />
+        <ul className="mt-3 space-y-2 text-sm">
+          <Step done>Read the completed job</Step>
           <Step done>
             Reference <span className="font-mono text-xs">{spot.reference}</span> matched to a work
             order
@@ -499,15 +500,16 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
       <FocusCard
         chip="Concerto"
         chipTone="teal"
-        title={`Filling ${spot.reference}`}
+        title={`Signs into Concerto — fills ${spot.reference}`}
         badge={<Badge tone="info" dot>typing it in</Badge>}
       >
-        <dl className="space-y-1.5">
+        <MiniSignIn system="Concerto" url="concerto.client-fm.co.uk" username={spot.targetLogin} />
+        <dl className="mt-3 space-y-1.5">
           {spot.fields.map((f, i) => (
             <div
               key={f.label}
               className="ps-row flex items-baseline justify-between gap-3 rounded-md bg-success-soft/50 px-2.5 py-1.5"
-              style={{ animationDelay: `${0.2 + i * 0.28}s` }}
+              style={{ animationDelay: `${1.1 + i * 0.28}s` }}
             >
               <dt className="text-[10px] font-semibold uppercase tracking-wide text-success-text">
                 {f.label}
@@ -540,6 +542,47 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
         </div>
       </div>
     </FocusCard>
+  );
+}
+
+/** A mini browser signing in to a system — the "logs in like a person" proof. */
+function MiniSignIn({ system, url, username }: { system: string; url: string; username: string }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200 shadow-sm">
+      <div className="flex items-center gap-1.5 border-b border-slate-200 bg-slate-50 px-2.5 py-1.5">
+        <span className="size-2 rounded-full bg-red-400" />
+        <span className="size-2 rounded-full bg-amber-400" />
+        <span className="size-2 rounded-full bg-emerald-400" />
+        <span className="ml-1 flex-1 truncate rounded bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
+          {url}
+        </span>
+        <Lock className="size-3 shrink-0 text-slate-400" />
+      </div>
+      <div className="space-y-2 p-3">
+        <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-400">
+          {system} · sign in
+        </p>
+        <div className="ps-row" style={{ animationDelay: '0.2s' }}>
+          <p className="text-[8px] font-medium uppercase tracking-wide text-slate-400">Email</p>
+          <p className="truncate rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] text-slate-700">
+            {username}
+          </p>
+        </div>
+        <div className="ps-row" style={{ animationDelay: '0.45s' }}>
+          <p className="text-[8px] font-medium uppercase tracking-wide text-slate-400">Password</p>
+          <p className="rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] tracking-widest text-slate-400">
+            ••••••••••••
+          </p>
+        </div>
+        <div
+          className="ps-row flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200"
+          style={{ animationDelay: '0.85s' }}
+        >
+          <CheckCircle2 className="size-3.5" />
+          Signed in
+        </div>
+      </div>
+    </div>
   );
 }
 

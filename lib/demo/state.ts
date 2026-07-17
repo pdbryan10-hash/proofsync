@@ -8,6 +8,8 @@ import {
   getSourceDbName,
   getTargetDbName,
   getDemoTransport,
+  DEMO_SOURCE_LOGIN,
+  DEMO_TARGET_LOGIN,
   type DemoTransport,
 } from './config';
 import { ensureDemoOrg } from './org';
@@ -88,6 +90,9 @@ export interface SpotlightData {
   documentCount: number;
   /** The completion values that cross into Concerto — real Joblogic data. */
   fields: { label: string; value: string }[];
+  /** The two systems ProofSync signs into, for Act 1's sign-in visual. */
+  sourceLogin: string;
+  targetLogin: string;
 }
 
 export interface ExceptionItem {
@@ -182,6 +187,8 @@ function buildSpotlight(d: SourceJobDoc): SpotlightData {
     completedAt: iso(d.completedAt),
     documentCount: d.attachments?.length ?? 0,
     fields: fields.map((f) => ({ label: f.label, value: previewValue(f.value) })),
+    sourceLogin: DEMO_SOURCE_LOGIN.username,
+    targetLogin: DEMO_TARGET_LOGIN.username,
   };
 }
 
