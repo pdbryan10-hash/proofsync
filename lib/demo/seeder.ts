@@ -174,38 +174,25 @@ const ENGINEERS = [
 const CONTROL_ID = 'demo-control';
 
 /** The fixed batch. Size and the exact jobs that need a person are constant. */
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 10;
 /** Concerto attribute the cost-centre exceptions write to. */
 export const COST_CENTRE_ATTR = 'clientCostCentre';
 
 /**
- * The fixed exceptions — a small, varied set so the queue reads like a real
- * morning, not one scripted fault repeated. Keyed by batch index; every other
- * job syncs cleanly.
+ * The fixed exception(s) — kept to a single, resolvable one so the batch runs
+ * quickly and the "needs a person" moment is clear. Keyed by batch index; every
+ * other job syncs cleanly.
  */
 const BLOCKS: Record<number, TargetWorkOrderBlock> = {
-  4: {
+  6: {
     kind: 'MISSING_FIELD',
     label: 'Cost centre',
     message: 'Cost centre is required for this contract before the work order can be updated.',
     attribute: COST_CENTRE_ATTR,
-  },
-  16: {
-    kind: 'MISSING_FIELD',
-    label: 'Cost centre',
-    message: 'Cost centre is required for this contract before the work order can be updated.',
-    attribute: COST_CENTRE_ATTR,
-  },
-  11: {
-    kind: 'INVALID_VALUE',
-    label: 'Engineer’s completion notes',
-    message: 'Completion notes contain characters Concerto could not accept — please review and re-enter.',
-    sourceField: 'engineerComments',
-    badValue: 'Serviced OK â€” pressures checked, all units firing ??? no further action reqd ��',
   },
 };
-/** One job whose site photo Concerto rejects — core data syncs, document doesn't (PARTIAL). */
-const DOCUMENT_REJECTED = new Set([8]);
+/** Jobs whose site photo Concerto rejects — core data syncs, document doesn't (PARTIAL). */
+const DOCUMENT_REJECTED = new Set<number>();
 
 // A fixed spread of minutes-ago so the batch reads like a real morning's work,
 // deterministic so every reset is identical.

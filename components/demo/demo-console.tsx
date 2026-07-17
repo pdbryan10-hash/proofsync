@@ -60,9 +60,37 @@ export function DemoConsole() {
     fields: number;
     certs: number;
     minutes: number;
+    exceptions: number;
     avgSyncMs: number;
     totalSyncMs: number;
   } | null>(null);
+  const finaleFired = useRef(false);
+
+  // Auto-fire the "what just happened" card once the batch finishes in Act 2, so
+  // the close lands without anyone reaching for the Freeze button. Re-arms when a
+  // new run starts (awaiting climbs back up).
+  useEffect(() => {
+    if (!state || act !== 'machine') return;
+    const done = state.stats.awaitingSync === 0 && state.stats.synced + state.stats.partial > 0;
+    if (!done) {
+      finaleFired.current = false;
+      return;
+    }
+    if (finaleFired.current || finale) return;
+    finaleFired.current = true;
+    const t = setTimeout(() => {
+      setFinale({
+        jobs: state.stats.synced + state.stats.partial,
+        fields: state.stats.fieldsWritten,
+        certs: state.stats.certificatesUploaded,
+        minutes: state.stats.adminMinutesSaved,
+        exceptions: state.exceptions.length,
+        avgSyncMs: state.stats.avgSyncMs,
+        totalSyncMs: state.stats.totalSyncMs,
+      });
+    }, 1400);
+    return () => clearTimeout(t);
+  }, [state, act, finale]);
 
   if (error && !state) {
     return (
@@ -93,6 +121,7 @@ export function DemoConsole() {
   // trickles the jobs across, rather than briefly flashing the fully-synced
   // batch that quietly finished behind Act 1.
   const enterMachine = async () => {
+    finaleFired.current = false;
     await replay();
     setAct('machine');
   };
@@ -104,6 +133,7 @@ export function DemoConsole() {
       fields: state.stats.fieldsWritten,
       certs: state.stats.certificatesUploaded,
       minutes: state.stats.adminMinutesSaved,
+      exceptions: state.exceptions.length,
       avgSyncMs: state.stats.avgSyncMs,
       totalSyncMs: state.stats.totalSyncMs,
     });
@@ -992,17 +1022,28 @@ function FinaleCard({
   data,
   onClose,
 }: {
-  data: { jobs: number; fields: number; certs: number; minutes: number; avgSyncMs: number; totalSyncMs: number };
+  data: {
+    jobs: number;
+    fields: number;
+    certs: number;
+    minutes: number;
+    exceptions: number;
+    avgSyncMs: number;
+    totalSyncMs: number;
+  };
   onClose: () => void;
 }) {
   const rows = [
-    { to: data.jobs, label: 'jobs completed into Concerto', tone: 'text-white' },
-    { to: data.fields, label: 'fields updated', tone: 'text-white' },
-    { to: data.certs, label: 'documents uploaded', tone: 'text-white' },
-    { to: data.minutes, label: 'minutes of re-keying returned', tone: 'text-emerald-400' },
+    { to: data.jobs, label: 'jobs completed into Concerto' },
+    { to: data.fields, label: 'fields updated' },
+    { to: data.certs, label: 'documents uploaded' },
   ];
   const avgSec = (data.avgSyncMs / 1000).toFixed(1);
   const totalSec = (data.totalSyncMs / 1000).toFixed(1);
+  // Extrapolate at a typical mid-market volume so the tiny demo figure lands as a
+  // real annual saving. Uses the same minutes-per-job basis as the run itself.
+  const perJobMin = data.jobs > 0 ? data.minutes / data.jobs : 15;
+  const annualHours = Math.round((500 * 52 * perJobMin) / 60).toLocaleString();
   return (
     <div
       role="dialog"
@@ -1027,37 +1068,50 @@ function FinaleCard({
           While you watched
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5">
+        <div className="mt-6 grid grid-cols-3 gap-x-5 gap-y-5">
           {rows.map((r) => (
             <div key={r.label}>
-              <div className={cn('text-4xl font-black sm:text-5xl', r.tone)}>
+              <div className="text-3xl font-black text-white sm:text-4xl">
                 <BigCount to={r.to} />
               </div>
-              <div className="mt-1 text-xs text-white/60 sm:text-sm">{r.label}</div>
+              <div className="mt-1 text-[11px] leading-snug text-white/60 sm:text-xs">{r.label}</div>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
-            <div className="text-xl font-bold tabular-nums text-white">{avgSec}s</div>
-            <div className="text-[11px] text-white/55">avg per job synced</div>
+        {/* The number that matters — time back, in hours, extrapolated to a year. */}
+        <div className="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-4">
+          <div className="text-4xl font-black text-emerald-300">
+            <BigCount to={Math.round(data.minutes / 60)} suffix="" />
+            <span className="text-2xl"> hrs</span>
           </div>
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
-            <div className="text-xl font-bold tabular-nums text-white">{totalSec}s</div>
-            <div className="text-[11px] text-white/55">total machine time</div>
-          </div>
+          <div className="mt-0.5 text-sm text-white/75">given back to your team in this run</div>
+          <p className="mt-2 border-t border-white/10 pt-2 text-xs text-white/60">
+            At 500 completed jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
+          </p>
         </div>
 
-        <div className="mt-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
-          <div className="text-3xl font-black text-emerald-300">0</div>
-          <div className="text-sm text-white/70">minutes of admin intervention</div>
+        {/* Honest against the exception story: zero touch on the clean ones only. */}
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <div className="text-2xl font-black text-white">0</div>
+          <div className="text-sm text-white/70">
+            minutes of admin on the {data.jobs} that synced clean
+          </div>
+          {data.exceptions > 0 && (
+            <p className="mt-1 text-xs text-white/55">
+              {data.exceptions} set aside for a person — the only one{data.exceptions === 1 ? '' : 's'} that
+              needed you. That&apos;s the point, not a caveat.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 flex justify-center gap-4 text-[11px] text-white/45">
+          <span>avg {avgSec}s / job</span>
+          <span>{totalSec}s total machine time</span>
         </div>
 
         <p className="mt-5 text-2xl">👏</p>
-        <p className="mt-1 text-sm text-white/70">
-          The real engine, signing into a real, separate client system by itself — the whole time.
-        </p>
+        <p className="mt-1 text-sm font-semibold text-white/85">Tomorrow it&apos;ll do the same thing again.</p>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
@@ -1065,7 +1119,7 @@ function FinaleCard({
             className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.03]"
           >
             <Table2 className="size-4" />
-            Explore every job
+            Show me the proof
           </a>
           <button
             type="button"
