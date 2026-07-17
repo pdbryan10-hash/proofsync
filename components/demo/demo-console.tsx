@@ -775,7 +775,7 @@ function MachineHeader({
             Run the batch again
           </Button>
           <a
-            href="/jobs"
+            href="/dashboard"
             className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20"
           >
             <Table2 className="size-4" />
@@ -1115,7 +1115,7 @@ function FinaleCard({
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
-            href="/jobs"
+            href="/dashboard"
             className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-navy-900 transition-transform hover:scale-[1.03]"
           >
             <Table2 className="size-4" />
@@ -1492,7 +1492,7 @@ function ConsoleHeader({
 
         <div className="flex items-center gap-2">
           <a
-            href="/jobs"
+            href="/dashboard"
             className="inline-flex h-8 items-center gap-1.5 rounded-md bg-navy-800 px-3 text-sm font-semibold text-white transition-colors hover:bg-navy-900"
           >
             <Table2 className="size-4" />

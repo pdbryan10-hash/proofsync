@@ -6,6 +6,7 @@ import {
   TriangleAlert,
   Gauge,
   ArrowRight,
+  Play,
   PlugZap,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { SyncActivityChart } from '@/components/dashboard/sync-activity-chart';
 import { WorkflowStrip } from '@/components/dashboard/workflow-strip';
-import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { RunStatusBadge } from '@/components/ui/status-badge';
 import { getDashboardMetrics, getSyncActivity, getRecentSyncs } from '@/lib/services/metrics';
 import { prisma } from '@/lib/db/prisma';
@@ -43,54 +43,48 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Hero */}
-      <section className="overflow-hidden rounded-xl border border-navy-900/30 bg-navy-800 text-white">
-        <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] lg:p-8">
-          <div>
-            <ProofSyncLogo subdued />
-            <h1 className="mt-4 text-3xl font-bold leading-tight lg:text-4xl">
-              Complete once.
-              <br />
-              Sync automatically.
-              <br />
-              <span className="text-white/70">Review only the exceptions.</span>
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/70">
-              Automatically transfer completed job information, attendance data and certificates from Joblogic
-              back into the correct Concerto job — without administrators re-keying the same information twice.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/jobs">
-                <Button variant="success" size="lg">
-                  View live sync
-                  <ArrowRight />
-                </Button>
-              </Link>
-              <Link href="/exceptions">
-                <Button variant="outline" size="lg" className="border-white/25 bg-transparent text-white hover:bg-white/10">
-                  View exceptions
-                </Button>
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <div className="w-full rounded-lg bg-white/5 p-5 ring-1 ring-white/10">
-              <p className="text-xs font-medium uppercase tracking-wide text-white/50">Time returned to the team</p>
-              <p className="mt-2 text-4xl font-bold">{metrics.monthHoursSaved} hrs</p>
-              <p className="text-sm text-white/60">removed this month</p>
-              <div className="mt-4 border-t border-white/10 pt-4 text-sm text-white/70">
-                Equivalent to <span className="font-semibold text-white">{metrics.monthWorkingDaysReturned} working days</span> returned.
-              </div>
-              <p className="mt-3 text-[11px] leading-relaxed text-white/40">
-                Estimate based on {metrics.estimatedMinutesPerJob} minutes of duplicated admin per completed job.
-              </p>
-            </div>
+      {/* Header */}
+      <section className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-wide text-muted-foreground">ProofSync · dashboard</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-navy-800 lg:text-3xl">Dashboard</h1>
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            Everything the live sync just did — jobs moved into Concerto, time returned to the team, and
+            anything set aside for a person. Drill into any of it below.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/jobs">
+              <Button variant="success" size="sm">
+                Explore all jobs
+                <ArrowRight />
+              </Button>
+            </Link>
+            <Link href="/exceptions">
+              <Button variant="outline" size="sm">Review exceptions</Button>
+            </Link>
+            <Link href="/demo">
+              <Button variant="ghost" size="sm">
+                <Play className="fill-current" />
+                Watch the live sync
+              </Button>
+            </Link>
           </div>
         </div>
-        <div className="border-t border-white/10 bg-navy-900/40 px-6 py-4 lg:px-8">
-          <WorkflowStrip />
+
+        <div className="w-full rounded-xl border border-success-soft bg-gradient-to-br from-emerald-50 to-teal-50 p-5 lg:max-w-xs">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Time returned to the team</p>
+          <p className="mt-2 text-4xl font-bold text-success-text">{metrics.monthHoursSaved} hrs</p>
+          <p className="text-sm text-muted-foreground">this month</p>
+          <div className="mt-3 border-t border-success-soft pt-3 text-sm text-navy-800">
+            ≈ <span className="font-semibold">{metrics.monthWorkingDaysReturned} working days</span> returned.
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            Estimate: {metrics.estimatedMinutesPerJob} min of duplicated admin per completed job.
+          </p>
         </div>
       </section>
+
+      <WorkflowStrip />
 
       {/* KPIs */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
