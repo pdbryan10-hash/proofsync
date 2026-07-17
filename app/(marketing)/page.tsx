@@ -57,13 +57,21 @@ export default function SalesPage() {
             client&apos;s system. Verified. Audited. Only the exceptions reach a human.
           </p>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              href="/dashboard"
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <a
+              href="https://proofsync-demo.vercel.app/demo"
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-success-text"
             >
-              See it work
+              Watch it sync — live
               <ArrowRight className="size-4" />
+            </a>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/5 hover:text-white"
+            >
+              See it work
             </Link>
             <Link
               href="/how-it-works"
@@ -71,7 +79,7 @@ export default function SalesPage() {
             >
               How it works
             </Link>
-            <span className="font-mono text-xs text-white/35 sm:ml-2">Live demonstration · no sign-up</span>
+            <span className="font-mono text-xs text-white/35 sm:ml-2 sm:w-full">Live demonstration · no sign-up · updates every 30 seconds</span>
           </div>
 
           {/* Process map carries the thesis visually, above the fold on desktop */}

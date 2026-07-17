@@ -144,12 +144,18 @@ export async function resetDemoLedger(organisationId: string): Promise<void> {
     await prisma.jobCompletion.deleteMany({ where: { jobId: { in: jobIds } } });
 
     const jobNumbers = await prisma.job.findMany({
-      where: { organisationId },
+      where: { id: { in: jobIds } },
       select: { joblogicJobId: true },
     });
     await prisma.processedEvent.deleteMany({
       where: { joblogicJobId: { in: jobNumbers.map((j) => j.joblogicJobId) } },
     });
-    await prisma.job.deleteMany({ where: { organisationId } });
+    // Delete jobs by the SAME id snapshot the children were deleted against —
+    // never by a fresh organisation query. The every-minute demo cron can insert
+    // a new job+document between the child-delete and this one; deleting by
+    // organisation would then try to remove that racing job whose document is
+    // still present, violating the required Document→Job relation (P2014). A job
+    // that appears mid-reset is simply left for the next reset.
+    await prisma.job.deleteMany({ where: { id: { in: jobIds } } });
   }
 }
