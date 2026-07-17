@@ -12,7 +12,7 @@ import {
   DEMO_TARGET_LOGIN,
   type DemoTransport,
 } from './config';
-import { ensureDemoOrg } from './org';
+import { getDemoOrgId } from './org';
 import { shotsForSubjects, type ShotSummary } from './screenshots';
 import { TARGET_FIELD_LABELS, targetFieldLabel } from '@/lib/domain/field-labels';
 import type { SourceJobDoc } from './schema';
@@ -193,7 +193,13 @@ function buildSpotlight(d: SourceJobDoc): SpotlightData {
 }
 
 export async function getDemoState(): Promise<DemoState> {
-  const { organisationId } = await ensureDemoOrg();
+  // Resolve the org READ-ONLY — never create it here. getDemoState runs on every
+  // 1s poll from every open tab; if it created the org, concurrent readers (plus
+  // the cron) would each race to create a fresh one, producing DUPLICATE orgs with
+  // the same name. Ingest would then write runs into one while the dashboard read
+  // another — impossible counts, no visible syncs. Only reset/ingest (both under
+  // the beat lock) may create the org.
+  const organisationId = await getDemoOrgId();
 
   const [jobsCol, wosCol] = await Promise.all([sourceJobs(), targetWorkOrders()]);
 
