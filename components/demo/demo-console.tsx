@@ -88,11 +88,13 @@ export function DemoConsole() {
     );
   }
 
-  // Entering the machine floor rewinds the batch and runs it live from empty, so
-  // Act 2 is a run to watch — not a screen of already-finished rows.
-  const enterMachine = () => {
+  // Entering the machine floor rewinds the batch FIRST (Concerto emptied, jobs
+  // re-queued), THEN switches in — so Act 2 opens on the cleared state and
+  // trickles the jobs across, rather than briefly flashing the fully-synced
+  // batch that quietly finished behind Act 1.
+  const enterMachine = async () => {
+    await replay();
     setAct('machine');
-    void replay();
   };
 
   // The applause screen states the batch result — all real, straight from state.
