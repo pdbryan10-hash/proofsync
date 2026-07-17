@@ -5,7 +5,7 @@ import { ingestAndSync, type IngestResult } from './ingest';
 import { trimDemo } from './trim';
 
 /** Jobs guaranteed to complete-and-cross on every beat, so nothing feels dead. */
-const BASELINE_BURST = 1;
+const BASELINE_BURST = 2;
 
 /**
  * One beat of the demo.

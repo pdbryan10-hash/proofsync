@@ -140,8 +140,8 @@ export function useDemoState() {
     // Poll for movement, and ping the sync gate. Kept modest so many open tabs
     // don't spin up a swarm of serverless instances (each opens DB connections);
     // the server gates the actual cadence anyway.
-    const readLoop = setInterval(() => void refresh(), 1_500);
-    const tickLoop = setInterval(() => void tick(), 2_500);
+    const readLoop = setInterval(() => void refresh(), 1_000);
+    const tickLoop = setInterval(() => void tick(), 2_000);
     return () => {
       mounted.current = false;
       clearInterval(readLoop);
