@@ -6,7 +6,6 @@ import { clearSessions } from '@/lib/demo/session';
 import { clearShots } from '@/lib/demo/screenshots';
 import { isBrowserTransport } from '@/lib/demo/config';
 import { runWithDemoLock } from '@/lib/demo/tick';
-import { ingestAndSync } from '@/lib/demo/ingest';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -35,17 +34,11 @@ export async function POST(req: NextRequest) {
       await ensureDemoOrg(); // create the fresh (new-epoch) org + client + mappings
       await clearShots();
       clearSessions();
-      // Run the batch to completion so the RESTING state is a finished run: land
-      // on /dashboard, /jobs or /terminal directly and they're already populated,
-      // with no need to open the live console. One big PARALLEL pass (cap raised
-      // past the batch size) so it finishes in ~one sync's time rather than many
-      // sequential beats — the 8-beat loop was too slow and hit the 60s ceiling.
-      if (!isBrowserTransport()) {
-        // ONE parallel pass over the whole batch. A second pass would re-attempt
-        // the exception job (a failed attempt isn't idempotency-blocked), which is
-        // exactly what produced duplicate ledger rows.
-        await ingestAndSync({ maxDispatches: 40 });
-      } else {
+      // Deliberately NO syncing inside reset: the slow cluster can't finish the
+      // batch in the 60s budget, and trying left half-run, inconsistent state.
+      // Reset stays a fast, bulletproof reseed; the console cadence and the
+      // once-a-minute cron backstop drive the batch to completion.
+      if (isBrowserTransport()) {
         const { closeBrowser } = await import('@/lib/demo/browser');
         await closeBrowser();
       }
