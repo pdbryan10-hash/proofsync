@@ -45,6 +45,12 @@ body {
   border-radius: 9999px;
 }
 
+/* Marketing display face (Bricolage Grotesque, loaded in the marketing layout). */
+.font-display {
+  font-family: var(--font-display), 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
 @keyframes stage-sweep {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }

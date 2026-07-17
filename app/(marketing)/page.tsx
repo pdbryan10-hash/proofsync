@@ -6,14 +6,13 @@ import {
   ShieldCheck,
   FileCheck2,
   Lock,
+  Play,
   Server,
   ScrollText,
   TriangleAlert,
   MonitorSmartphone,
   Plug,
 } from 'lucide-react';
-
-const CALENDLY_URL = 'https://calendly.com/bidengine/proofworks-discovery';
 import { ProcessMap } from '@/components/marketing/process-map';
 import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
@@ -42,89 +41,83 @@ const STAGES = [
   { n: 6, label: 'Verified', note: 'Read back and compared. If it didn’t land, you’re told.', emphasis: true },
 ];
 
+// Shared type tokens for the light editorial theme.
+const EYEBROW = 'font-mono text-xs font-semibold uppercase tracking-[0.2em] text-[#0e6b3f]';
+const EYEBROW_MUTED = 'font-mono text-xs font-semibold uppercase tracking-[0.2em] text-[#8a8578]';
+const H2 = 'font-display text-3xl font-bold leading-[1.1] text-[#1a1b1f] sm:text-4xl';
+const BODY = 'text-lg leading-relaxed text-[#4b4c54]';
+
 export default function SalesPage() {
   return (
     <>
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-white/10">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_55%_at_60%_-5%,rgba(21,128,61,0.22),transparent)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(40%_40%_at_15%_10%,rgba(38,42,99,0.55),transparent)]" />
-        <div className="relative mx-auto w-full max-w-6xl px-5 py-12 lg:py-16">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-success">For FM contractors</p>
-          <h1 className="mt-4 max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-            Your engineer completes the job once.
-            <br />
-            <span className="text-white/55">Your admin types it into the client&apos;s system all over again.</span>
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_-10%,rgba(14,107,63,0.10),transparent)]" />
+        <div className="relative mx-auto w-full max-w-6xl px-5 py-14 lg:py-20">
+          <p className={EYEBROW}>For FM contractors</p>
+          <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-[#1a1b1f] sm:text-6xl lg:text-[4.2rem]">
+            Stop typing every completed job twice.
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-            ProofSync moves the completed job — notes, times, costs, certificates — straight into your
-            client&apos;s system. Verified. Audited. Only the exceptions reach a human.
+          <p className="mt-6 max-w-xl text-xl leading-relaxed text-[#3a3b42]">
+            Your engineer completes the job once. Today your admin types it into the client&apos;s system
+            all over again. <span className="text-[#1a1b1f]">ProofSync does that part for you</span> —
+            verified, audited, and only the exceptions reach a human.
           </p>
 
-          {/* THE MOMENT — one engine, a whole wall of client systems. Leads the page. */}
-          <div className="mt-10">
-            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-success">
+          {/* CTA ladder — one loud primary (self-serve demo), one quiet secondary. */}
+          <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <Link
+              href="/demo"
+              className="group inline-flex items-center justify-center gap-2.5 rounded-full bg-[#0e6b3f] px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-[#0e6b3f]/20 transition-all hover:bg-[#0b5531] hover:shadow-xl"
+            >
+              <Play className="size-4 fill-current" />
+              Watch it sync — live
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/book"
+                className="inline-flex items-center gap-2 text-base font-medium text-[#33343a] underline decoration-[#cfc9ba] decoration-1 underline-offset-4 transition-colors hover:text-[#0e6b3f] hover:decoration-[#0e6b3f]"
+              >
+                <CalendarClock className="size-4" />
+                Book a discovery session
+              </Link>
+            </div>
+          </div>
+          <p className="mt-3 font-mono text-xs text-[#8a8578]">No sign-up · runs on real data · no slides</p>
+
+          {/* THE MOMENT — one engine, a whole wall of client systems. */}
+          <div className="mt-14 rounded-2xl border border-[#e6e1d6] bg-white p-5 shadow-sm sm:p-7">
+            <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0e6b3f]">
                 <span className="relative flex size-1.5">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-70" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-success" />
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#0e6b3f] opacity-70" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-[#0e6b3f]" />
                 </span>
                 One engine · any pairing
               </span>
-              <span className="text-sm text-white/45">
+              <span className="text-sm text-[#5f6068]">
                 Your system on the left. The client&apos;s — whichever of these they run — on the right.
               </span>
             </div>
             <ProcessMap />
-            <p className="mt-4 font-mono text-[11px] leading-relaxed text-white/30">
-              The landscape ProofSync is built for. Connector availability varies by platform and by your
-              client&apos;s authorisation. Ask us about yours.
-            </p>
           </div>
-
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <a
-              href="https://proofsync-demo.vercel.app/demo"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-success/25 transition-all hover:bg-success-text hover:shadow-xl"
-            >
-              Watch it sync — live
-              <ArrowRight className="size-4" />
-            </a>
-            <a
-              href={CALENDLY_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white ring-1 ring-success/50 transition-colors hover:bg-success/10"
-            >
-              <CalendarClock className="size-4 text-success" />
-              Book a discovery tour
-            </a>
-            <Link
-              href="/how-it-works"
-              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/5 hover:text-white"
-            >
-              How it works
-            </Link>
-            <span className="font-mono text-xs text-white/35 sm:ml-2 sm:w-full">Live demonstration · no sign-up · updates every 30 seconds</span>
-          </div>
+          <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#8a8578]">
+            The landscape ProofSync is built for. Connector availability varies by platform and by your
+            client&apos;s authorisation. Ask us about yours.
+          </p>
         </div>
       </section>
 
       {/* ── THE PROBLEM, NAMED AS A ROLE ─────────────────────────────────── */}
-      <section className="border-b border-white/10 bg-navy-800">
-        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-20">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">The job nobody advertises for</p>
+      <section className="border-y border-[#e6e1d6] bg-[#efece2]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
+          <p className={EYEBROW_MUTED}>The job nobody advertises for</p>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_1.25fr] lg:items-center lg:gap-14">
             <div>
-              <h2 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-                Somewhere in your office, someone is a human bridge.
-              </h2>
-              <p className="mt-5 text-lg leading-relaxed text-white/70">
-                For every completed job, one person does this — by hand, on two screens:
-              </p>
-              <p className="mt-5 text-lg font-semibold leading-relaxed text-white">
+              <h2 className={H2}>Somewhere in your office, someone is a human bridge.</h2>
+              <p className={`mt-5 ${BODY}`}>For every completed job, one person does this — by hand, on two screens:</p>
+              <p className="mt-5 text-lg font-semibold leading-relaxed text-[#1a1b1f]">
                 That isn&apos;t admin. That&apos;s a job a machine should do — and it&apos;s costing you a salary
                 to do it slowly and inconsistently.
               </p>
@@ -135,23 +128,23 @@ export default function SalesPage() {
       </section>
 
       {/* ── WHY NOBODY HAS FIXED IT ──────────────────────────────────────── */}
-      <section className="border-b border-white/10">
-        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-20">
+      <section className="border-b border-[#e6e1d6]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
           <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Why it still happens</p>
-              <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+              <p className={EYEBROW_MUTED}>Why it still happens</p>
+              <h2 className={`mt-5 ${H2}`}>
                 Your software won&apos;t talk to their software. Neither vendor will fix that.
               </h2>
             </div>
-            <div className="space-y-4 text-lg leading-relaxed text-white/70 lg:pt-10">
+            <div className="space-y-4 text-lg leading-relaxed text-[#4b4c54] lg:pt-10">
               <p>
-                Your system runs <em className="not-italic text-white">your</em> business. Their CAFM runs{' '}
-                <em className="not-italic text-white">theirs</em>. Rival vendors, different buyers, no reason to
-                integrate.
+                Your system runs <em className="not-italic font-semibold text-[#1a1b1f]">your</em> business.
+                Their CAFM runs <em className="not-italic font-semibold text-[#1a1b1f]">theirs</em>. Rival
+                vendors, different buyers, no reason to integrate.
               </p>
               <p>So the gap gets filled with the cheapest middleware going: a person with two screens.</p>
-              <p className="font-semibold text-white">
+              <p className="font-semibold text-[#1a1b1f]">
                 ProofSync is the bridge neither vendor will build — because we sit on your side of it.
               </p>
             </div>
@@ -160,74 +153,74 @@ export default function SalesPage() {
       </section>
 
       {/* ── HOW IT WORKS: 6 STAGES ───────────────────────────────────────── */}
-      <section className="border-b border-white/10 bg-navy-800">
-        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-20">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-success">The sync</p>
-          <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-            Complete once. Everything after that is ours.
-          </h2>
+      <section className="border-b border-[#e6e1d6] bg-[#efece2]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
+          <p className={EYEBROW}>The sync</p>
+          <h2 className={`mt-5 ${H2}`}>Complete once. Everything after that is ours.</h2>
 
           <ol className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {STAGES.map((s) => (
               <li
                 key={s.n}
-                className={`rounded-xl border p-4 ${
-                  s.emphasis ? 'border-success/40 bg-success/[0.07]' : 'border-white/10 bg-navy-900/50'
+                className={`rounded-xl border p-5 ${
+                  s.emphasis ? 'border-[#0e6b3f]/30 bg-[#e7f0ea]' : 'border-[#e6e1d6] bg-white'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <span
                     className={`flex size-6 items-center justify-center rounded font-mono text-[11px] font-bold ${
-                      s.emphasis ? 'bg-success text-white' : 'bg-white/10 text-white/60'
+                      s.emphasis ? 'bg-[#0e6b3f] text-white' : 'bg-[#efece2] text-[#8a8578]'
                     }`}
                   >
                     {s.emphasis ? <Check className="size-3.5" /> : s.n}
                   </span>
-                  <h3 className={`text-sm font-semibold ${s.emphasis ? 'text-success' : 'text-white'}`}>{s.label}</h3>
+                  <h3 className={`text-sm font-semibold ${s.emphasis ? 'text-[#0e6b3f]' : 'text-[#1a1b1f]'}`}>
+                    {s.label}
+                  </h3>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-white/55">{s.note}</p>
+                <p className="mt-2 text-sm leading-relaxed text-[#5f6068]">{s.note}</p>
               </li>
             ))}
           </ol>
 
-          <div className="mt-8 flex items-start gap-4 rounded-xl border border-white/10 bg-navy-900/60 p-5">
-            <ShieldCheck className="mt-0.5 size-6 shrink-0 text-success" />
-            <p className="text-white/65">
-              <strong className="text-white">Verified is not a figure of speech.</strong> After every write we read
-              the record back and compare it. If one field didn&apos;t land, the job isn&apos;t marked done — it&apos;s
-              raised. Most automation fires and hopes.
+          <div className="mt-8 flex items-start gap-4 rounded-xl border border-[#e6e1d6] bg-white p-5">
+            <ShieldCheck className="mt-0.5 size-6 shrink-0 text-[#0e6b3f]" />
+            <p className="text-[#4b4c54]">
+              <strong className="text-[#1a1b1f]">Verified is not a figure of speech.</strong> After every
+              write we read the record back and compare it. If one field didn&apos;t land, the job isn&apos;t
+              marked done — it&apos;s raised. Most automation fires and hopes.
             </p>
           </div>
         </div>
       </section>
 
       {/* ── EXCEPTIONS ───────────────────────────────────────────────────── */}
-      <section className="border-b border-white/10">
-        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-20">
+      <section className="border-b border-[#e6e1d6]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
           <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-14">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Where the human goes</p>
-              <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+              <p className={EYEBROW_MUTED}>Where the human goes</p>
+              <h2 className={`mt-5 ${H2}`}>
                 It doesn&apos;t replace your admin. It hands them only the jobs that need them.
               </h2>
-              <p className="mt-5 text-lg leading-relaxed text-white/70">
+              <p className={`mt-5 ${BODY}`}>
                 Most jobs sync clean and nobody touches them. The rest don&apos;t vanish and don&apos;t fail
-                silently — they land in one queue, across every client system, with the reason in plain English
-                and an audit trail behind them.
+                silently — they land in one queue, across every client system, with the reason in plain
+                English and an audit trail behind them.
               </p>
-              <p className="mt-4 text-lg font-semibold text-white">
+              <p className="mt-4 text-lg font-semibold text-[#1a1b1f]">
                 You don&apos;t lose a person. You get their week back.
               </p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-navy-800/70 p-5">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Exception queue</p>
+            <div className="rounded-2xl border border-[#e6e1d6] bg-white p-5 shadow-sm">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Exception queue</p>
               <div className="mt-3 space-y-2">
                 <ExceptionRow icon={TriangleAlert} title="Missing client reference" action="Add reference → retry" />
                 <ExceptionRow icon={TriangleAlert} title="Job not found in client system" action="Confirm reference" />
                 <ExceptionRow icon={FileCheck2} title="Certificate upload rejected" action="Retry transfer" />
               </div>
-              <p className="mt-4 border-t border-white/10 pt-3 text-xs text-white/45">
+              <p className="mt-4 border-t border-[#e6e1d6] pt-3 text-xs text-[#767680]">
                 Every sync ends in a definite state. Nothing is quietly dropped.
               </p>
             </div>
@@ -236,17 +229,15 @@ export default function SalesPage() {
       </section>
 
       {/* ── ROI: HEADCOUNT, NOT MINUTES ──────────────────────────────────── */}
-      <section className="border-b border-white/10 bg-navy-800">
-        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-20">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-success">What it gives back</p>
-          <h2 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-            Measured in people, not seconds.
-          </h2>
+      <section className="border-b border-[#e6e1d6] bg-[#efece2]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
+          <p className={EYEBROW}>What it gives back</p>
+          <h2 className={`mt-5 ${H2}`}>Measured in people, not seconds.</h2>
 
-          <div className="mt-8 overflow-hidden rounded-xl border border-white/10">
+          <div className="mt-8 overflow-hidden rounded-2xl border border-[#e6e1d6] bg-white">
             <table className="w-full text-left">
-              <thead className="bg-navy-900/60">
-                <tr className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+              <thead className="bg-[#f7f5ef]">
+                <tr className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">
                   <th className="px-5 py-3 font-medium">Completed jobs / month</th>
                   <th className="px-5 py-3 font-medium">Re-keying time</th>
                   <th className="px-5 py-3 font-medium">Equivalent</th>
@@ -254,10 +245,10 @@ export default function SalesPage() {
               </thead>
               <tbody>
                 {ROI_ROWS.map((r) => (
-                  <tr key={r.jobs} className="border-t border-white/10">
-                    <td className="px-5 py-3.5 font-mono text-lg text-white">{r.jobs.toLocaleString()}</td>
-                    <td className="px-5 py-3.5 font-mono text-lg text-white/70">{Math.round(r.hours)} hrs</td>
-                    <td className="px-5 py-3.5 text-lg font-semibold text-success">
+                  <tr key={r.jobs} className="border-t border-[#e6e1d6]">
+                    <td className="px-5 py-3.5 font-mono text-lg text-[#1a1b1f]">{r.jobs.toLocaleString()}</td>
+                    <td className="px-5 py-3.5 font-mono text-lg text-[#5f6068]">{Math.round(r.hours)} hrs</td>
+                    <td className="px-5 py-3.5 text-lg font-semibold text-[#0e6b3f]">
                       {r.fte.toFixed(1)} full-time admin{r.fte >= 2 ? 's' : ''}
                     </td>
                   </tr>
@@ -266,27 +257,25 @@ export default function SalesPage() {
             </table>
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-white/45">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-white/35">Show your working — </span>
-            Basis: <span className="font-mono text-white/70">{MINUTES_PER_JOB} min</span> of duplicated admin per
-            completed job; <span className="font-mono text-white/70">{FTE_HOURS_PER_MONTH} hrs</span> per full-time
-            month. This is an <strong className="text-white/70">estimate, not an audited saving</strong> — challenge
-            it with your own numbers and we&apos;ll recalculate in front of you. We&apos;d rather be defensible than
-            flattering.
+          <p className="mt-4 text-sm leading-relaxed text-[#767680]">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Show your working — </span>
+            Basis: <span className="font-mono text-[#33343a]">{MINUTES_PER_JOB} min</span> of duplicated admin
+            per completed job; <span className="font-mono text-[#33343a]">{FTE_HOURS_PER_MONTH} hrs</span> per
+            full-time month. This is an <strong className="text-[#33343a]">estimate, not an audited saving</strong>{' '}
+            — challenge it with your own numbers and we&apos;ll recalculate in front of you. We&apos;d rather be
+            defensible than flattering.
           </p>
         </div>
       </section>
 
       {/* ── ANY CLIENT SYSTEM — API OR NOT ───────────────────────────────── */}
-      <section className="border-b border-white/10">
-        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-20">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">The awkward client</p>
-          <h2 className="mt-5 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-            It works with your client&apos;s system. Even the one with no API.
-          </h2>
-          <p className="mt-5 max-w-2xl text-lg text-white/60">
-            Every contractor has that one account on a system too old or too closed to integrate. It&apos;s usually
-            the one drowning your admin team — and the one everybody else says no to.
+      <section className="border-b border-[#e6e1d6]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
+          <p className={EYEBROW_MUTED}>The awkward client</p>
+          <h2 className={`mt-5 max-w-3xl ${H2}`}>It works with your client&apos;s system. Even the one with no API.</h2>
+          <p className="mt-5 max-w-2xl text-lg text-[#5f6068]">
+            Every contractor has that one account on a system too old or too closed to integrate. It&apos;s
+            usually the one drowning your admin team — and the one everybody else says no to.
           </p>
 
           <div className="mt-8 grid gap-3 md:grid-cols-3">
@@ -300,22 +289,22 @@ export default function SalesPage() {
             />
           </div>
 
-          <p className="mt-7 max-w-3xl text-lg font-semibold text-white">
+          <p className="mt-7 max-w-3xl text-lg font-semibold text-[#1a1b1f]">
             So the awkward account stops being the one you can&apos;t help.
           </p>
-          <p className="mt-3 max-w-3xl text-sm text-white/45">
+          <p className="mt-3 max-w-3xl text-sm text-[#767680]">
             We work within what each client permits. If a system can&apos;t be automated within their rules, we
-            tell you that plainly rather than sell you a workaround — and we never touch a system we haven&apos;t
-            been invited into.
+            tell you that plainly rather than sell you a workaround — and we never touch a system we
+            haven&apos;t been invited into.
           </p>
         </div>
       </section>
 
       {/* ── TRUST / GOVERNANCE ───────────────────────────────────────────── */}
-      <section className="border-b border-white/10 bg-navy-800">
-        <div className="mx-auto w-full max-w-6xl px-5 py-14">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">Before your IT team asks</p>
-          <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="border-b border-[#e6e1d6] bg-[#efece2]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16">
+          <p className={EYEBROW_MUTED}>Before your IT team asks</p>
+          <div className="mt-7 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             <TrustItem icon={ScrollText} title="Every sync is evidenced" body="Read, changed, excluded, returned, verified, and who intervened — timestamped." />
             <TrustItem icon={Lock} title="Credentials handled properly" body="Managed secret store. Never in the database, never in a browser." />
             <TrustItem icon={ShieldCheck} title="Client-authorised only" body="Connected on their written say-so, with an account they can switch off." />
@@ -325,16 +314,15 @@ export default function SalesPage() {
       </section>
 
       {/* ── CLOSE — the capture tool ─────────────────────────────────────── */}
-      <section id="prove-it">
-        <div className="mx-auto w-full max-w-4xl px-5 py-16 lg:py-20">
+      <section id="prove-it" className="bg-[#f7f5ef]">
+        <div className="mx-auto w-full max-w-4xl px-5 py-16 lg:py-24">
           <div className="text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-success">Prove it first</p>
-            <h2 className="mx-auto mt-5 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+            <p className={EYEBROW}>Prove it first</p>
+            <h2 className={`mx-auto mt-5 max-w-3xl font-display text-3xl font-bold leading-[1.1] text-[#1a1b1f] sm:text-[2.6rem]`}>
               Tell us one client system you&apos;re re-keying into.
-              <br />
-              <span className="text-white/60">We&apos;ll prove the sync on your real data before you commit.</span>
+              <span className="block text-[#0e6b3f]">We&apos;ll prove the sync on your real data.</span>
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-white/55">
+            <p className="mx-auto mt-5 max-w-xl text-lg text-[#5f6068]">
               One client, one job type, your actual data. No procurement exercise, no rip-and-replace.
             </p>
           </div>
@@ -343,10 +331,10 @@ export default function SalesPage() {
             <EnquiryForm pageSource="sales" />
           </div>
 
-          <p className="mt-6 text-center text-sm text-white/40">
+          <p className="mt-6 text-center text-sm text-[#767680]">
             Rather just watch it run first?{' '}
-            <Link href="/dashboard" className="text-white/70 underline underline-offset-4 hover:text-white">
-              See the live demonstration
+            <Link href="/demo" className="font-medium text-[#0e6b3f] underline underline-offset-4 hover:text-[#0b5531]">
+              Watch it sync — live
             </Link>
           </p>
         </div>
@@ -359,22 +347,22 @@ export default function SalesPage() {
 
 function ExceptionRow({ icon: Icon, title, action }: { icon: typeof TriangleAlert; title: string; action: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-navy-900/50 px-3 py-2.5">
-      <span className="flex items-center gap-2.5 text-sm text-white">
-        <Icon className="size-4 shrink-0 text-warning" />
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#e6e1d6] bg-[#f7f5ef] px-3 py-2.5">
+      <span className="flex items-center gap-2.5 text-sm font-medium text-[#1a1b1f]">
+        <Icon className="size-4 shrink-0 text-[#b4652a]" />
         {title}
       </span>
-      <span className="hidden font-mono text-[10px] text-white/40 sm:block">{action}</span>
+      <span className="hidden font-mono text-[10px] text-[#8a8578] sm:block">{action}</span>
     </div>
   );
 }
 
 function RouteCard({ icon: Icon, title, body, accent }: { icon: typeof Plug; title: string; body: string; accent?: boolean }) {
   return (
-    <div className={`rounded-xl border p-5 ${accent ? 'border-success/35 bg-success/[0.07]' : 'border-white/10 bg-navy-800/60'}`}>
-      <Icon className={`size-5 ${accent ? 'text-success' : 'text-white/50'}`} />
-      <h3 className="mt-3 font-semibold text-white">{title}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-white/60">{body}</p>
+    <div className={`rounded-xl border p-5 ${accent ? 'border-[#0e6b3f]/30 bg-[#e7f0ea]' : 'border-[#e6e1d6] bg-white'}`}>
+      <Icon className={`size-5 ${accent ? 'text-[#0e6b3f]' : 'text-[#8a8578]'}`} />
+      <h3 className="mt-3 font-semibold text-[#1a1b1f]">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-[#5f6068]">{body}</p>
     </div>
   );
 }
@@ -382,9 +370,9 @@ function RouteCard({ icon: Icon, title, body, accent }: { icon: typeof Plug; tit
 function TrustItem({ icon: Icon, title, body }: { icon: typeof Lock; title: string; body: string }) {
   return (
     <div>
-      <Icon className="size-5 text-success" />
-      <h3 className="mt-3 text-sm font-semibold text-white">{title}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-white/55">{body}</p>
+      <Icon className="size-5 text-[#0e6b3f]" />
+      <h3 className="mt-3 text-sm font-semibold text-[#1a1b1f]">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-[#5f6068]">{body}</p>
     </div>
   );
 }

@@ -3,8 +3,8 @@ import { ProofSyncMark } from '@/components/brand/proofsync-logo';
 
 /**
  * The one-to-many connection map: contractor systems → ProofSync → client CAFMs.
- * This is the thesis in a single picture — one engine, reaching a whole wall of
- * client systems — so it leads the page.
+ * The thesis in a single picture — one engine, reaching a whole wall of client
+ * systems — so it leads the page.
  *
  * HONESTY RULE: this shows the landscape ProofSync is built to work across, NOT a
  * claim of live connectors. Availability is stated plainly beneath. Never imply a
@@ -26,20 +26,20 @@ export function ProcessMap() {
     <div className="relative">
       {/* Flow rail behind the columns (desktop): data pulses through the engine. */}
       <div className="pointer-events-none absolute inset-x-6 top-1/2 hidden -translate-y-1/2 lg:block">
-        <div className="relative h-px w-full overflow-hidden bg-gradient-to-r from-transparent via-success/40 to-transparent">
-          <span className="ps-beam-dot absolute top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-success shadow-[0_0_10px_3px_rgba(21,128,61,0.7)]" />
+        <div className="relative h-px w-full overflow-hidden bg-gradient-to-r from-transparent via-[#0e6b3f]/35 to-transparent">
+          <span className="ps-beam-dot absolute top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[#0e6b3f] shadow-[0_0_8px_2px_rgba(14,107,63,0.4)]" />
           <span
-            className="ps-beam-dot absolute top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-success shadow-[0_0_10px_3px_rgba(21,128,61,0.7)]"
+            className="ps-beam-dot absolute top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-[#0e6b3f] shadow-[0_0_8px_2px_rgba(14,107,63,0.4)]"
             style={{ animationDelay: '1.2s' }}
           />
         </div>
       </div>
 
       <div className="relative grid items-center gap-5 lg:grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1.9fr)] lg:gap-3">
-        {/* SOURCE — where the job is completed */}
-        <div className="rounded-2xl border border-white/10 bg-navy-900/60 p-5 backdrop-blur">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Your system</p>
-          <p className="mt-1 text-sm font-semibold text-white">Where the job is completed</p>
+        {/* SOURCE */}
+        <div className="rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your system</p>
+          <p className="mt-1 text-sm font-semibold text-[#1a1b1f]">Where the job is completed</p>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {SOURCES.map((s) => (
               <Chip key={s} label={s} />
@@ -47,36 +47,35 @@ export function ProcessMap() {
           </div>
         </div>
 
-        {/* ENGINE — the glowing hub */}
+        {/* ENGINE */}
         <div className="relative flex justify-center py-2 lg:py-0">
-          <ArrowRight className="absolute -left-2 top-1/2 hidden size-4 -translate-y-1/2 text-success/50 lg:block" />
+          <ArrowRight className="absolute -left-2 top-1/2 hidden size-4 -translate-y-1/2 text-[#0e6b3f]/60 lg:block" />
           <div className="relative">
-            {/* expanding pulse ring */}
-            <span className="ps-ring pointer-events-none absolute inset-0 rounded-2xl border border-success/40" />
-            <div className="ps-engine-glow relative rounded-2xl border border-success/50 bg-gradient-to-b from-success/[0.16] to-success/[0.06] px-6 py-6 text-center">
+            <span className="ps-ring pointer-events-none absolute inset-0 rounded-2xl border border-[#0e6b3f]/30" />
+            <div className="ps-engine-glow relative rounded-2xl border border-[#0e6b3f]/40 bg-white px-6 py-6 text-center">
               <ProofSyncMark className="mx-auto h-9 w-auto" />
-              <p className="mt-3 text-sm font-bold text-white">ProofSync</p>
-              <p className="mt-2 font-mono text-[10px] uppercase leading-relaxed tracking-widest text-success">
+              <p className="mt-3 text-sm font-bold text-[#1a1b1f]">ProofSync</p>
+              <p className="mt-2 font-mono text-[10px] uppercase leading-relaxed tracking-widest text-[#0e6b3f]">
                 match<br />map<br />write<br />verify
               </p>
-              <div className="mt-3 flex items-center justify-center gap-1 border-t border-white/10 pt-3">
-                <ShieldCheck className="size-3 text-success" />
-                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">audited</span>
+              <div className="mt-3 flex items-center justify-center gap-1 border-t border-[#e6e1d6] pt-3">
+                <ShieldCheck className="size-3 text-[#0e6b3f]" />
+                <span className="font-mono text-[9px] uppercase tracking-wider text-[#8a8578]">audited</span>
               </div>
             </div>
           </div>
-          <ArrowRight className="absolute -right-2 top-1/2 hidden size-4 -translate-y-1/2 text-success/50 lg:block" />
+          <ArrowRight className="absolute -right-2 top-1/2 hidden size-4 -translate-y-1/2 text-[#0e6b3f]/60 lg:block" />
         </div>
 
         {/* TARGETS — the wall of client systems (the wow) */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-navy-800/80 to-navy-900/50 p-5 backdrop-blur">
-          <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-success/10 blur-3xl" />
+        <div className="relative overflow-hidden rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
+          <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-[#0e6b3f]/[0.06] blur-3xl" />
           <div className="relative flex items-baseline justify-between gap-3">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-white/35">Your client&apos;s system</p>
-              <p className="mt-1 text-sm font-semibold text-white">Whatever they happen to run</p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your client&apos;s system</p>
+              <p className="mt-1 text-sm font-semibold text-[#1a1b1f]">Whatever they happen to run</p>
             </div>
-            <p className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-success">
+            <p className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-[#0e6b3f]">
               {TARGETS.length}+ platforms
             </p>
           </div>
@@ -85,7 +84,7 @@ export function ProcessMap() {
               <Chip key={t} label={t} animateIndex={i} block />
             ))}
             <span
-              className="ps-chip-in inline-flex items-center justify-center rounded-md border border-dashed border-success/40 px-2 py-1.5 font-mono text-[11px] text-success"
+              className="ps-chip-in inline-flex items-center justify-center rounded-md border border-dashed border-[#0e6b3f]/40 px-2 py-1.5 font-mono text-[11px] text-[#0e6b3f]"
               style={{ animationDelay: `${TARGETS.length * 35}ms` }}
             >
               + yours
@@ -97,21 +96,13 @@ export function ProcessMap() {
   );
 }
 
-function Chip({
-  label,
-  animateIndex,
-  block,
-}: {
-  label: string;
-  animateIndex?: number;
-  block?: boolean;
-}) {
+function Chip({ label, animateIndex, block }: { label: string; animateIndex?: number; block?: boolean }) {
   const animated = animateIndex !== undefined;
   return (
     <span
       className={[
-        'inline-flex items-center rounded-md border border-white/10 bg-white/[0.05] px-2 py-1.5 font-mono text-[11px] text-white/75',
-        'transition-colors hover:border-success/40 hover:bg-success/[0.08] hover:text-white',
+        'inline-flex items-center rounded-md border border-[#e0dbcd] bg-white px-2 py-1.5 font-mono text-[11px] text-[#4b4c54]',
+        'transition-colors hover:border-[#0e6b3f]/40 hover:bg-[#e7f0ea] hover:text-[#0e6b3f]',
         block ? 'justify-center text-center' : '',
         animated ? 'ps-chip-in' : '',
       ].join(' ')}

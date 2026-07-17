@@ -24,16 +24,16 @@ export function TediumSteps() {
         {STEPS.map((s, i) => (
           <div
             key={s}
-            className="flex items-center gap-2.5 rounded-md border border-white/10 bg-navy-900/50 px-3 py-2.5"
+            className="flex items-center gap-2.5 rounded-md border border-[#e6e1d6] bg-white px-3 py-2.5"
           >
-            <span className="font-mono text-[10px] text-white/30">{String(i + 1).padStart(2, '0')}</span>
-            <span className="text-sm text-white/75">{s}</span>
+            <span className="font-mono text-[10px] text-[#a9a498]">{String(i + 1).padStart(2, '0')}</span>
+            <span className="text-sm text-[#33343a]">{s}</span>
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-2.5 rounded-md border border-danger/30 bg-danger/[0.08] px-3 py-2.5">
-        <Repeat className="size-4 shrink-0 text-danger" />
-        <span className="text-sm font-semibold text-white">Then the next job. And the next. All day.</span>
+      <div className="mt-3 flex items-center gap-2.5 rounded-md border border-[#b4652a]/30 bg-[#f6ece2] px-3 py-2.5">
+        <Repeat className="size-4 shrink-0 text-[#b4652a]" />
+        <span className="text-sm font-semibold text-[#1a1b1f]">Then the next job. And the next. All day.</span>
       </div>
     </div>
   );

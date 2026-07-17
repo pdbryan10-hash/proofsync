@@ -1,3 +1,4 @@
+import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -33,16 +34,16 @@ export function ProofWorksEndorsement({ className }: { className?: string }) {
       href="https://proof-works.co.uk"
       target="_blank"
       rel="noreferrer"
+      title="ProofSync is a ProofWorks product — see what we build"
       className={cn(
-        'group inline-flex items-center gap-2 text-white/45 transition-colors hover:text-white/80',
+        'group inline-flex items-center gap-2 rounded-full border border-[#dcd6c8] bg-white px-2.5 py-1 shadow-sm transition-colors hover:border-[#0e6b3f]/40 hover:bg-[#e7f0ea]',
         className,
       )}
     >
-      <span className="font-mono text-[10px] uppercase tracking-widest">Part of</span>
-      <ProofWorksMark className="h-3 w-auto text-white/70 transition-colors group-hover:text-white" />
-      <span className="text-[13px] font-bold tracking-tight text-white/70 transition-colors group-hover:text-white">
-        Proofworks
-      </span>
+      <span className="font-mono text-[10px] uppercase tracking-widest text-[#767680]">Part of</span>
+      <ProofWorksMark className="h-3.5 w-auto text-[#1a1b1f]" />
+      <span className="text-[13px] font-bold tracking-tight text-[#1a1b1f]">Proofworks</span>
+      <ArrowUpRight className="size-3 text-[#a9a498] transition-colors group-hover:text-[#0e6b3f]" />
     </a>
   );
 }
