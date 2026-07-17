@@ -188,8 +188,14 @@ const THEATRE_KEYFRAMES = `
 @keyframes psGear { to { transform: rotate(360deg); } }
 .ps-win { animation: psWinLife 3.6s ease forwards; }
 .ps-row { opacity: 0; animation: psRowIn .3s ease forwards; }
+.ps-sign { animation: psSignOff 3.6s ease forwards; }
 @media (prefers-reduced-motion: reduce) {
-  .ps-win, .ps-row { animation-duration: 1ms !important; }
+  /* Snapping a 1ms duration would leave the window at its closed (opacity 0)
+     end-state — invisible. Instead disable the motion and hold everything at
+     its VISIBLE state; windows still appear and are removed on their timer. */
+  .ps-win { animation: none; opacity: 1; }
+  .ps-row { animation: none; opacity: 1; }
+  .ps-sign { animation: none; opacity: 0; }
   .ps-gear { animation: none !important; }
 }
 `;
@@ -298,10 +304,8 @@ function BrowserWindow({ win }: { win: TheatreWindow }) {
       {/* page body */}
       <div className="relative p-3">
         {/* signing-in flash */}
-        <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-white text-xs font-medium text-slate-500"
-          style={{ animation: 'psSignOff 3.6s ease forwards' }}
-        >
+        <div className="ps-sign absolute inset-0 z-10 flex items-center justify-center bg-white text-xs font-medium text-slate-500">
+
           <Lock className="mr-1.5 size-3.5 text-slate-400" />
           Signing in&hellip;
         </div>

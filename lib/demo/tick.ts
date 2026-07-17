@@ -41,58 +41,85 @@ export interface TickResult {
  * process: while one is running, every other caller — forced or not — is turned
  * away with `busy` rather than launching a colliding drive.
  */
-const runningTick = globalThis as unknown as { demoTickInFlight?: boolean };
+/**
+ * How long a held lock is trusted before it's treated as abandoned. Longer than
+ * any single beat (direct ~8s), so a genuine run is never cut off, but short
+ * enough that a crashed serverless instance frees the demo quickly.
+ */
+const LOCK_TTL_MS = 60_000;
 
+/**
+ * Run one beat, serialised CLUSTER-WIDE.
+ *
+ * The previous guard was an in-process boolean — useless on serverless, where
+ * each request may land on a different instance, so the cron, the console pings
+ * and every `force` call ran concurrently and trampled each other (duplicate
+ * sync runs, jobs stuck mid-flight). This takes an atomic lock in the control
+ * document instead: exactly one beat runs anywhere at a time, `force` included.
+ */
 export async function runTick(
   options: { force?: boolean; burst?: number } = {},
 ): Promise<TickResult> {
-  if (runningTick.demoTickInFlight) {
-    return { ran: false, reason: 'busy', tickCount: 0, nextTickInMs: 0 };
+  const control = await demoControl();
+  const now = new Date();
+  const lockCutoff = new Date(now.getTime() - LOCK_TTL_MS);
+
+  // Acquire: win only if unlocked or the previous lock has expired. A single
+  // conditional findOneAndUpdate is atomic per document, so exactly one caller
+  // across all instances can take it.
+  const acquired = await control.findOneAndUpdate(
+    { _id: CONTROL_ID, $or: [{ lockedAt: null }, { lockedAt: { $lte: lockCutoff } }] },
+    { $set: { lockedAt: now } },
+    { returnDocument: 'after' },
+  );
+
+  if (!acquired) {
+    const existing = await control.findOne({ _id: CONTROL_ID });
+    if (!existing) return { ran: false, reason: 'not-seeded', tickCount: 0, nextTickInMs: 0 };
+    return { ran: false, reason: 'busy', tickCount: existing.tickCount ?? 0, nextTickInMs: 0 };
   }
-  runningTick.demoTickInFlight = true;
+
   try {
-    return await runTickInner(options);
+    return await runTickInner(options, now);
   } finally {
-    runningTick.demoTickInFlight = false;
+    await control.updateOne({ _id: CONTROL_ID }, { $set: { lockedAt: null } });
   }
 }
 
-async function runTickInner(options: { force?: boolean; burst?: number }): Promise<TickResult> {
+async function runTickInner(
+  options: { force?: boolean; burst?: number },
+  now: Date,
+): Promise<TickResult> {
   const startedAt = Date.now();
   const tickSeconds = getTickSeconds();
   const control = await demoControl();
 
-  const now = new Date();
-  const cutoff = new Date(now.getTime() - tickSeconds * 1000);
+  const existing = await control.findOne({ _id: CONTROL_ID });
+  if (!existing) return { ran: false, reason: 'not-seeded', tickCount: 0, nextTickInMs: 0 };
 
-  // Claim the beat. Without `force`, only a caller arriving after the interval
-  // has elapsed wins; everyone else is told how long is left and does nothing.
+  // Due gate (bypassed by force). We hold the lock, so this check is race-free.
+  if (!options.force) {
+    const elapsed = existing.lastTickAt
+      ? now.getTime() - new Date(existing.lastTickAt).getTime()
+      : Number.MAX_SAFE_INTEGER;
+    if (elapsed < tickSeconds * 1000) {
+      return {
+        ran: false,
+        reason: 'not-due',
+        tickCount: existing.tickCount ?? 0,
+        nextTickInMs: Math.max(0, tickSeconds * 1000 - elapsed),
+      };
+    }
+  }
+
   const claim = await control.findOneAndUpdate(
-    options.force
-      ? { _id: CONTROL_ID }
-      : { _id: CONTROL_ID, $or: [{ lastTickAt: null }, { lastTickAt: { $lte: cutoff } }] },
+    { _id: CONTROL_ID },
     { $set: { lastTickAt: now }, $inc: { tickCount: 1 } },
     { returnDocument: 'after' },
   );
 
-  if (!claim) {
-    // Either the demo has not been seeded, or the beat is not due yet.
-    const existing = await control.findOne({ _id: CONTROL_ID });
-    if (!existing) {
-      return { ran: false, reason: 'not-seeded', tickCount: 0, nextTickInMs: 0 };
-    }
-    const elapsed = existing.lastTickAt ? now.getTime() - existing.lastTickAt.getTime() : 0;
-    return {
-      ran: false,
-      reason: 'not-due',
-      tickCount: existing.tickCount ?? 0,
-      nextTickInMs: Math.max(0, tickSeconds * 1000 - elapsed),
-    };
-  }
-
   // 0. Burst: inject a handful of already-completed jobs so a viewer who just
-  //    opened the console (or pressed the button) sees real records land within
-  //    a second or two, instead of waiting for the lifecycle to produce work.
+  //    opened the console (or pressed the button) sees real records land at once.
   if (options.burst && options.burst > 0) {
     await burstCompletedJobs(Math.min(options.burst, 8));
   }
@@ -106,7 +133,7 @@ async function runTickInner(options: { force?: boolean; burst?: number }): Promi
   return {
     ran: true,
     reason: 'ok',
-    tickCount: claim.tickCount ?? 0,
+    tickCount: claim?.tickCount ?? 0,
     nextTickInMs: tickSeconds * 1000,
     drip,
     sync,

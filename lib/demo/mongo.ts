@@ -90,6 +90,8 @@ export interface DemoControlDoc {
   tickCount: number;
   jobSequence: number;
   seededAt: Date | null;
+  /** Cluster-wide beat lock (see lib/demo/tick.ts). Null/absent = free. */
+  lockedAt?: Date | null;
 }
 
 /** Indexes the demo systems would plausibly have. Safe to call repeatedly. */
