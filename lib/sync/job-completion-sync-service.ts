@@ -35,11 +35,16 @@ import { buildIdempotencyKey, isAlreadyProcessed, markProcessed } from './idempo
 import type { SyncDispatchRequest, SyncDispatchResult } from './dispatcher';
 
 /**
- * Modest, controlled per-stage delay so a sync is legible to someone watching it
- * happen. Applied whenever the systems on the far side are stand-ins (mock or
- * demo) and never against live APIs, where the real latency is the truth.
+ * Per-stage delay so a sync is legible to someone watching — machine-fast, but
+ * not instant. Applied only when the far side is a stand-in (mock or demo),
+ * never against live APIs where the real latency is the truth. Tunable via
+ * DEMO_STAGE_DELAY_MS; the default keeps a whole sync to roughly a second.
  */
-const STAGE_DELAY_MS = usesSimulatedTransport() ? 450 : 0;
+function stageDelayMs(): number {
+  const raw = Number(process.env.DEMO_STAGE_DELAY_MS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 120;
+}
+const STAGE_DELAY_MS = usesSimulatedTransport() ? stageDelayMs() : 0;
 const sleep = (ms: number) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve());
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 

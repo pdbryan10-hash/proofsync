@@ -133,8 +133,11 @@ export function useDemoState() {
     // within a second or two rather than waiting up to 30s for the next one. The
     // server serialises syncs, so this can't collide with the background cadence.
     void tick(true);
-    const readLoop = setInterval(() => void refresh(), 2_000);
-    const tickLoop = setInterval(() => void tick(), 5_000);
+    // Poll fast so movement feels immediate; ping the sync gate often so it
+    // fires the instant it's due. The server serialises and gates, so frequent
+    // pinging is cheap.
+    const readLoop = setInterval(() => void refresh(), 1_000);
+    const tickLoop = setInterval(() => void tick(), 1_500);
     return () => {
       mounted.current = false;
       clearInterval(readLoop);

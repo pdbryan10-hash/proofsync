@@ -63,7 +63,7 @@ export function DemoConsole() {
       <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
-        <Explainer tickSeconds={state.tick.tickSeconds} />
+        <Explainer tickSeconds={state.tick.tickSeconds} busy={busy} onForce={forceTick} />
         <ActivityFeed activity={activity} />
         <StatsRow state={state} />
 
@@ -106,20 +106,55 @@ export function DemoConsole() {
  * Plain-English "what am I looking at". A stranger should understand the whole
  * demo from this one paragraph, without knowing anything about the product.
  */
-function Explainer({ tickSeconds }: { tickSeconds: number }) {
+function Explainer({
+  tickSeconds,
+  busy,
+  onForce,
+}: {
+  tickSeconds: number;
+  busy: boolean;
+  onForce: () => void;
+}) {
   return (
-    <section className="my-4 rounded-lg border border-border bg-card px-5 py-4">
-      <h2 className="text-sm font-semibold text-navy-800">What you&rsquo;re watching</h2>
-      <p className="mt-1.5 max-w-4xl text-sm leading-relaxed text-muted-foreground">
-        A live demonstration. On the <strong className="text-foreground">left</strong> is a
-        contractor&rsquo;s job system, where engineers record the work they&rsquo;ve finished. On the{' '}
-        <strong className="text-foreground">right</strong> is their client&rsquo;s facilities system,
-        which needs those same details. The two don&rsquo;t talk to each other. Every {tickSeconds}{' '}
-        seconds, <strong className="text-foreground">ProofSync</strong> (the middle column) checks the
-        left system for newly-completed jobs and copies each one into the right system &mdash; filling
-        in the details, checking its own work, and setting aside anything that needs a person. It runs
-        on its own; just watch a job cross.
-      </p>
+    <section className="my-4 grid gap-4 rounded-lg border border-border bg-card px-5 py-4 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div>
+        <h2 className="text-sm font-semibold text-navy-800">What you&rsquo;re watching</h2>
+        <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+          A live demonstration. On the <strong className="text-foreground">left</strong> is a
+          contractor&rsquo;s job system, where engineers record the work they&rsquo;ve finished. On the{' '}
+          <strong className="text-foreground">right</strong> is their client&rsquo;s facilities
+          system, which needs those same details. The two don&rsquo;t talk to each other. Every{' '}
+          {tickSeconds} seconds, <strong className="text-foreground">ProofSync</strong> (the middle
+          column) checks the left system for newly-completed jobs and copies each one into the right
+          system &mdash; filling in the details, checking its own work, and setting aside anything
+          that needs a person.
+        </p>
+      </div>
+
+      {/* The demo's headline control — big and obvious, so a presenter can smack
+          it and make a batch cross on cue rather than waiting for the cadence. */}
+      <button
+        type="button"
+        onClick={onForce}
+        disabled={busy}
+        className={cn(
+          'group flex items-center justify-center gap-3 rounded-xl bg-success px-8 py-5 text-lg font-semibold text-white shadow-lg shadow-success/20 transition-all',
+          'hover:bg-success-text hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-success/30',
+          'disabled:cursor-not-allowed disabled:opacity-70 lg:min-w-[16rem]',
+        )}
+      >
+        {busy ? (
+          <>
+            <Loader2 className="size-6 animate-spin" />
+            Syncing&hellip;
+          </>
+        ) : (
+          <>
+            <Zap className="size-6 transition-transform group-hover:scale-110" />
+            Run a sync now
+          </>
+        )}
+      </button>
     </section>
   );
 }

@@ -20,13 +20,13 @@ export function isDemoEnabled(): boolean {
  */
 export function getTickSeconds(): number {
   const raw = Number(process.env.DEMO_TICK_SECONDS);
-  return Number.isFinite(raw) && raw >= 5 ? raw : 30;
+  return Number.isFinite(raw) && raw >= 3 ? raw : 30;
 }
 
 /** How many new completed jobs the source system produces per beat (0..max). */
 export function getDripPerTick(): number {
   const raw = Number(process.env.DEMO_DRIP_PER_TICK);
-  return Number.isFinite(raw) && raw >= 0 ? raw : 2;
+  return Number.isFinite(raw) && raw >= 0 ? raw : 3;
 }
 
 /**
