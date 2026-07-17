@@ -52,6 +52,15 @@ export interface LedgerRow {
   completedAt: string | null;
   /** Browser-transport evidence: what was on screen when this run happened. */
   shots: ShotSummary[];
+  // The job's own detail + the fields this run actually wrote into the client's
+  // work order, carried on the ledger row so a consumer (the Act 1 spotlight) can
+  // show one job's whole journey without depending on the target panel's window.
+  summary: string;
+  propertyName: string;
+  engineerName: string | null;
+  jobCompletedAt: string | null;
+  documentCount: number;
+  targetFields: { field: string; label: string; preview: string }[];
 }
 
 export interface TargetRow {
@@ -115,7 +124,7 @@ export async function getDemoState(): Promise<DemoState> {
     sourceTotal,
     sourceComplete,
     sourceInFlight,
-    targetDocs,
+    targetDocsRaw,
     targetTotal,
     runs,
     synced,
@@ -128,13 +137,27 @@ export async function getDemoState(): Promise<DemoState> {
     jobsCol.countDocuments({}),
     jobsCol.countDocuments({ status: 'Complete' }),
     jobsCol.countDocuments({ status: { $in: ['Allocated', 'Travelling', 'On Site'] } }),
-    wosCol.find({}).sort({ updatedAt: -1 }).limit(PANEL_LIMIT).toArray(),
+    // Foreground work orders ProofSync has actually filled — the proof it crossed —
+    // rather than the flood of freshly-raised empty ones, which otherwise dominate
+    // by recency and make the client's system look untouched.
+    wosCol.find({ lastUpdatedBy: { $ne: null } }).sort({ updatedAt: -1 }).limit(PANEL_LIMIT).toArray(),
     wosCol.countDocuments({}),
     prisma.syncRun.findMany({
       where: { job: { organisationId } },
       orderBy: { createdAt: 'desc' },
       take: PANEL_LIMIT,
-      include: { job: { select: { joblogicJobId: true, concertoJobReference: true } } },
+      include: {
+        job: {
+          select: {
+            joblogicJobId: true,
+            concertoJobReference: true,
+            jobDescription: true,
+            siteName: true,
+            engineerName: true,
+            completedAt: true,
+          },
+        },
+      },
     }),
     prisma.job.count({ where: { organisationId, syncStatus: 'SYNCED' } }),
     prisma.job.count({ where: { organisationId, syncStatus: 'PARTIAL' } }),
@@ -147,6 +170,28 @@ export async function getDemoState(): Promise<DemoState> {
     // A work order counts as populated once the sync has written anything into it.
     lastUpdatedBy: { $ne: null },
   });
+
+  // Backfill the target panel with a few still-empty work orders if there aren't
+  // yet enough filled ones — so early on it isn't blank, but filled rows lead.
+  let targetDocs = targetDocsRaw;
+  if (targetDocs.length < PANEL_LIMIT) {
+    const empties = await wosCol
+      .find({ lastUpdatedBy: null })
+      .sort({ updatedAt: -1 })
+      .limit(PANEL_LIMIT - targetDocs.length)
+      .toArray();
+    targetDocs = [...targetDocs, ...empties];
+  }
+
+  // Pull the work orders the ledger rows point at (by reference, regardless of the
+  // target panel's window) so each ledger row can carry the real fields it wrote.
+  const ledgerRefs = Array.from(
+    new Set(runs.map((r) => r.job.concertoJobReference).filter((x): x is string => !!x)),
+  );
+  const ledgerWos = ledgerRefs.length
+    ? await wosCol.find({ reference: { $in: ledgerRefs } }).toArray()
+    : [];
+  const woByRef = new Map(ledgerWos.map((w) => [w.reference, w]));
 
   // Evidence is keyed by whatever the connector could name at the time — a job
   // number in the source, a work-order reference in the target — so a ledger row
@@ -186,24 +231,37 @@ export async function getDemoState(): Promise<DemoState> {
       revision: d.revision ?? 1,
       updatedAt: iso(d.updatedAt) ?? new Date().toISOString(),
     })),
-    ledger: runs.map((r) => ({
-      id: r.id,
-      jobNumber: r.job.joblogicJobId,
-      reference: r.job.concertoJobReference,
-      status: r.status,
-      attemptNumber: r.attemptNumber,
-      durationMs: r.durationMs,
-      fieldsUpdated: r.fieldsUpdated,
-      documentsTransferred: r.documentsTransferred,
-      errorCode: r.errorCode,
-      errorMessage: r.errorMessage,
-      startedAt: iso(r.startedAt),
-      completedAt: iso(r.completedAt),
-      shots: [
-        ...(shotsBySubject[r.job.joblogicJobId] ?? []),
-        ...(r.job.concertoJobReference ? shotsBySubject[r.job.concertoJobReference] ?? [] : []),
-      ].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt)),
-    })),
+    ledger: runs.map((r) => {
+      const wo = r.job.concertoJobReference ? woByRef.get(r.job.concertoJobReference) : undefined;
+      const woAttrs = wo?.attributes ?? {};
+      const targetFields = Object.entries(woAttrs)
+        .filter(([, v]) => v !== null && v !== undefined && v !== '')
+        .map(([field, v]) => ({ field, label: targetFieldLabel(field), preview: previewValue(v) }));
+      return {
+        id: r.id,
+        jobNumber: r.job.joblogicJobId,
+        reference: r.job.concertoJobReference,
+        status: r.status,
+        attemptNumber: r.attemptNumber,
+        durationMs: r.durationMs,
+        fieldsUpdated: r.fieldsUpdated,
+        documentsTransferred: r.documentsTransferred,
+        errorCode: r.errorCode,
+        errorMessage: r.errorMessage,
+        startedAt: iso(r.startedAt),
+        completedAt: iso(r.completedAt),
+        shots: [
+          ...(shotsBySubject[r.job.joblogicJobId] ?? []),
+          ...(r.job.concertoJobReference ? shotsBySubject[r.job.concertoJobReference] ?? [] : []),
+        ].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt)),
+        summary: wo?.summary ?? r.job.jobDescription ?? '—',
+        propertyName: wo?.property?.propertyName ?? r.job.siteName ?? '—',
+        engineerName: r.job.engineerName ?? null,
+        jobCompletedAt: iso(r.job.completedAt),
+        documentCount: wo?.documents?.length ?? r.documentsTransferred ?? 0,
+        targetFields,
+      };
+    }),
     target: targetDocs.map((w) => {
       const attributes = w.attributes ?? {};
       const populatedFields = Object.entries(attributes)

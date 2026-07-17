@@ -189,14 +189,13 @@ async function runTickInner(
   // 2. ProofSync notices what changed and runs the real engine over it.
   const sync = await ingestAndSync();
 
-  // 3. Keep the demo bounded — but only every few beats, and never let it wedge
-  //    the beat: trimming touches all three stores and, run every cycle on a
-  //    shared cluster, its DB load can starve connections and hang the whole
-  //    beat (which holds the lock). Occasional + guarded is plenty for a rolling
-  //    window.
-  if ((claim?.tickCount ?? 0) % 12 === 0) {
-    await trimDemo().catch(() => {});
-  }
+  // 3. Keep the demo bounded, every beat. Trimming was gated to every 12th beat
+  //    to spare the shared cluster, but source jobs are created far faster than
+  //    they sync, so between trims the backlog ballooned into the hundreds — which
+  //    floods the target panel with empty work orders and buries the synced ones.
+  //    Once the window is at size the trims are near-free (they early-return on
+  //    count <= keep), so running every beat holds it steady without real cost.
+  await trimDemo().catch(() => {});
 
   return {
     ran: true,
