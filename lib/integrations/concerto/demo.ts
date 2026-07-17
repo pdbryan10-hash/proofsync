@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db/prisma';
 import {
   DocumentTransferError,
   IntegrationUnavailableError,
+  ValidationError,
 } from '@/lib/errors/integration-errors';
 import { targetWorkOrders } from '@/lib/demo/mongo';
 import { withSession } from '@/lib/demo/session';
@@ -94,6 +95,14 @@ export class DemoConcertoConnector implements ConcertoConnector {
           { $set: { simulateUpdateFailure: false } },
         );
         throw new IntegrationUnavailableError('Concerto returned HTTP 503 (service unavailable).');
+      }
+
+      if (wo.demoBlock) {
+        // A PERSISTENT validation rejection (non-retryable): the client's system
+        // won't accept this save until a person corrects it. It stays "needs a
+        // person" until the resolve endpoint clears the block, at which point the
+        // very next sync goes through — nothing self-heals.
+        throw new ValidationError(wo.demoBlock.message, [wo.demoBlock.label]);
       }
 
       // Merge into the attribute bag: a sync updates the fields it owns and

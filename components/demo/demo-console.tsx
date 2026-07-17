@@ -19,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, formatDuration, formatTime, timeAgo } from '@/lib/utils';
-import type { DemoState, LedgerRow, SourceRow, TargetRow } from '@/lib/demo/state';
+import type { DemoState, ExceptionItem, LedgerRow, SourceRow, TargetRow } from '@/lib/demo/state';
 import type { ShotSummary } from '@/lib/demo/screenshots';
 import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-state';
 
@@ -33,10 +33,12 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick, resolve } = useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
+  // The exception a coordinator is currently resolving (drives the modal).
+  const [resolving, setResolving] = useState<ExceptionItem | null>(null);
 
   // Two acts. Act 1 follows ONE real job end to end at human speed, so a viewer
   // understands exactly what happens. Act 2 reveals the same thing running flat
@@ -140,6 +142,7 @@ export function DemoConsole() {
             onForce={forceTick}
             onBack={() => setAct('human')}
             onFreeze={freeze}
+            onFix={setResolving}
           />
         )}
 
@@ -150,6 +153,13 @@ export function DemoConsole() {
       </div>
 
       {finale && <FinaleCard data={finale} onClose={() => setFinale(null)} />}
+      {resolving && (
+        <ResolveModal
+          item={resolving}
+          onClose={() => setResolving(null)}
+          onSubmit={(value) => resolve(resolving.reference, value)}
+        />
+      )}
     </div>
   );
 }
@@ -538,6 +548,7 @@ function MachineFloor({
   onForce,
   onBack,
   onFreeze,
+  onFix,
 }: {
   state: DemoState;
   activity: ActivityLine[];
@@ -547,11 +558,13 @@ function MachineFloor({
   onForce: () => void;
   onBack: () => void;
   onFreeze: () => void;
+  onFix: (item: ExceptionItem) => void;
 }) {
   return (
     <>
       <MachineHeader busy={busy} onForce={onForce} onBack={onBack} onFreeze={onFreeze} />
-      <KpiBar stats={state.stats} />
+      <KpiBar stats={state.stats} exceptionCount={state.exceptions.length} />
+      <ExceptionsQueue exceptions={state.exceptions} onFix={onFix} />
       <BrowserTheatre ledger={state.ledger} target={state.target} onActive={onActive} />
       <ActivityFeed activity={activity} />
       <div className="grid gap-4 lg:grid-cols-3">
@@ -638,11 +651,13 @@ function MachineHeader({
 }
 
 /** The live KPI counters — big, tabular, and visibly spinning as figures land. */
-function KpiBar({ stats }: { stats: DemoState['stats'] }) {
+function KpiBar({ stats, exceptionCount }: { stats: DemoState['stats']; exceptionCount: number }) {
   const synced = useCountUp(stats.synced);
   const minutes = useCountUp(stats.adminMinutesSaved);
   const complete = useCountUp(stats.sourceComplete);
-  const flagged = useCountUp(stats.openExceptions);
+  // The honest "needs a person" figure is the count of unresolved blocks — it
+  // only moves when someone actually clears one.
+  const flagged = useCountUp(exceptionCount);
 
   const items = [
     { label: 'Synced to Concerto', value: synced.toLocaleString(), tone: 'success' as const },
@@ -678,6 +693,157 @@ function KpiBar({ stats }: { stats: DemoState['stats'] }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// --- Exceptions: the human-in-the-loop queue ---------------------------------
+
+/** The jobs Concerto refused, waiting for a person. Empty = nothing to do. */
+function ExceptionsQueue({
+  exceptions,
+  onFix,
+}: {
+  exceptions: ExceptionItem[];
+  onFix: (item: ExceptionItem) => void;
+}) {
+  if (exceptions.length === 0) {
+    return (
+      <div className="mb-4 flex items-center gap-2 rounded-xl border border-success-soft bg-success-soft/50 px-4 py-3 text-sm text-success-text">
+        <CheckCircle2 className="size-4" />
+        Nothing waiting for a person — every job Concerto could accept is in.
+      </div>
+    );
+  }
+  return (
+    <section className="mb-4 overflow-hidden rounded-xl border border-warning-soft bg-card">
+      <div className="flex items-center gap-2 border-b border-warning-soft bg-warning-soft/60 px-4 py-2.5">
+        <FileWarning className="size-4 text-warning-text" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-warning-text">
+          Waiting for a person — {exceptions.length}
+        </span>
+        <span className="ml-auto text-[11px] text-warning-text/80">
+          ProofSync refused to guess. Fix each one and it crosses.
+        </span>
+      </div>
+      <ul className="divide-y divide-border">
+        {exceptions.map((e) => (
+          <li key={e.reference} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-medium text-navy-800">{e.jobNumber}</span>
+                <span className="text-xs text-muted-foreground">→ {e.reference}</span>
+              </div>
+              <p className="mt-0.5 truncate text-sm text-foreground">{e.summary}</p>
+              <p className="mt-0.5 text-[11px] text-warning-text">{e.message}</p>
+            </div>
+            <Button size="sm" onClick={() => onFix(e)}>
+              Fix &amp; resubmit
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** The dialog a coordinator uses to supply/correct the field and resubmit. */
+function ResolveModal({
+  item,
+  onClose,
+  onSubmit,
+}: {
+  item: ExceptionItem;
+  onClose: () => void;
+  onSubmit: (value: string) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [value, setValue] = useState(item.kind === 'INVALID_VALUE' ? (item.badValue ?? '') : '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    if (!value.trim()) {
+      setError('Please enter a value.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const res = await onSubmit(value.trim());
+    setSaving(false);
+    if (res.ok) onClose();
+    else setError(res.error ?? 'Could not resolve that job.');
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy-900/70 p-5 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 border-b border-border bg-warning-soft/50 px-5 py-3">
+          <FileWarning className="size-4 text-warning-text" />
+          <span className="text-sm font-semibold text-warning-text">Concerto refused this save</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-mono font-medium text-navy-800">{item.jobNumber}</span>
+            <span>→ {item.reference}</span>
+          </div>
+          <p className="mt-1 text-sm font-medium text-foreground">{item.summary}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{item.propertyName}</p>
+
+          <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning-text">
+            {item.message}
+          </p>
+
+          <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {item.label}
+          </label>
+          {item.kind === 'INVALID_VALUE' ? (
+            <textarea
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              rows={3}
+              className="mt-1.5 w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
+              placeholder="Re-enter clean text…"
+            />
+          ) : (
+            <input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
+              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
+              placeholder={`Enter the ${item.label.toLowerCase()}…`}
+            />
+          )}
+
+          {error && <p className="mt-2 text-xs text-danger-text">{error}</p>}
+
+          <div className="mt-4 flex items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={submit} disabled={saving}>
+              {saving ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
+              Resubmit to Concerto
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

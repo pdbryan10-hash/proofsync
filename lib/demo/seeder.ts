@@ -1,19 +1,20 @@
 import { sourceJobs, sourceUsers, targetWorkOrders, targetUsers, demoControl, ensureDemoIndexes } from './mongo';
 import { DEMO_SOURCE_LOGIN, DEMO_TARGET_LOGIN } from './config';
-import type { SourceJobDoc, SourceAttachmentDoc, TargetWorkOrderDoc } from './schema';
+import type { SourceJobDoc, SourceAttachmentDoc, TargetWorkOrderDoc, TargetWorkOrderBlock } from './schema';
 
 /**
- * Drives the two stand-in systems.
+ * Seeds the two stand-in systems with ONE fixed batch of work.
  *
- * The source system runs a real job lifecycle — Allocated → Travelling → On Site
- * → Complete — rather than spawning finished work. That matters: a viewer sees a
- * job sitting in Joblogic that ProofSync deliberately ignores, watches the
- * engineer complete it, and only then sees it cross. "It only moves completed
- * work" is demonstrated instead of asserted.
+ * The demo is deliberately not a perpetual motion machine: "Start over" lays
+ * down the same deterministic set of completed jobs every time, ProofSync runs
+ * it end to end once, and the result is the result. There is no drip, no burst
+ * and no trim — nothing is created or destroyed after the seed, so no counter
+ * can drift on its own and every exception stays put until a person clears it.
  *
- * Faults are seeded at realistic rates (see FAULT_RATES). A demo where
- * everything succeeds proves nothing about what happens when it doesn't, and the
- * exception paths are the part a client actually cares about.
+ * Most jobs sync cleanly. A fixed few are set up to fail in ONE honest, human-
+ * resolvable way: the client's system (Concerto) refuses the save until a field
+ * it mandates — a cost centre Joblogic never captured — is supplied. That job
+ * sits in "needs a person" until someone provides the value and resubmits.
  */
 
 const SITES = [
@@ -170,60 +171,48 @@ const ENGINEERS = [
   { engineerId: 'ENG-455', engineerName: 'A. Petrescu' },
 ];
 
-/**
- * Seeded fault rates.
- *
- * Tuned DOWN for a clean demo recording: the success path should dominate, with
- * one instructive exception type (a missing client reference — "it refuses to
- * guess") showing up occasionally rather than six different failures at once,
- * which reads as chaos instead of control. Override any of them by env, e.g.
- * DEMO_FAULT_MISSING_REF=0.2, to dial the drama up for a specific audience.
- */
-function faultRate(envKey: string, fallback: number): number {
-  const raw = Number(process.env[envKey]);
-  return Number.isFinite(raw) && raw >= 0 && raw <= 1 ? raw : fallback;
-}
-
-const FAULT_RATES = {
-  /** Engineer left the client's order reference blank. The one we keep visible. */
-  missingReference: faultRate('DEMO_FAULT_MISSING_REF', 0.08),
-  /** Reference typed in a format Concerto never issues. */
-  malformedReference: faultRate('DEMO_FAULT_MALFORMED_REF', 0.03),
-  /** Reference looks right but no such work order exists in the client's system. */
-  targetNotFound: faultRate('DEMO_FAULT_TARGET_MISSING', 0.02),
-  /** Concerto rejects the first write with a 503. Rare — it reads as FAILED
-   *  until an operator retries, so a little goes a long way on camera. */
-  transientTargetOutage: faultRate('DEMO_FAULT_OUTAGE', 0.03),
-  /** One attachment is rejected — core data syncs, document doesn't (PARTIAL). */
-  documentRejected: faultRate('DEMO_FAULT_DOC_REJECT', 0.04),
-};
-
-const pick = <T>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
-const between = ([lo, hi]: number[]): number => Math.round(lo! + Math.random() * (hi! - lo!));
-const chance = (p: number): boolean => Math.random() < p;
-
 const CONTROL_ID = 'demo-control';
 
-async function nextSequence(count = 1): Promise<number> {
-  const control = await demoControl();
-  const doc = await control.findOneAndUpdate(
-    { _id: CONTROL_ID },
-    { $inc: { jobSequence: count } },
-    { upsert: true, returnDocument: 'after' },
-  );
-  const after = doc?.jobSequence ?? count;
-  return after - count; // first value of the reserved block
-}
+/** The fixed batch. Size and the exact jobs that need a person are constant. */
+const BATCH_SIZE = 20;
+/** Concerto attribute the cost-centre exceptions write to. */
+export const COST_CENTRE_ATTR = 'clientCostCentre';
+
+/**
+ * The fixed exceptions — a small, varied set so the queue reads like a real
+ * morning, not one scripted fault repeated. Keyed by batch index; every other
+ * job syncs cleanly.
+ */
+const BLOCKS: Record<number, TargetWorkOrderBlock> = {
+  4: {
+    kind: 'MISSING_FIELD',
+    label: 'Cost centre',
+    message: 'Cost centre is required for this contract before the work order can be updated.',
+    attribute: COST_CENTRE_ATTR,
+  },
+  16: {
+    kind: 'MISSING_FIELD',
+    label: 'Cost centre',
+    message: 'Cost centre is required for this contract before the work order can be updated.',
+    attribute: COST_CENTRE_ATTR,
+  },
+  11: {
+    kind: 'INVALID_VALUE',
+    label: 'Engineer’s completion notes',
+    message: 'Completion notes contain characters Concerto could not accept — please review and re-enter.',
+    sourceField: 'engineerComments',
+    badValue: 'Serviced OK â€” pressures checked, all units firing ??? no further action reqd ��',
+  },
+};
+/** One job whose site photo Concerto rejects — core data syncs, document doesn't (PARTIAL). */
+const DOCUMENT_REJECTED = new Set([8]);
+
+// A fixed spread of minutes-ago so the batch reads like a real morning's work,
+// deterministic so every reset is identical.
+const between = ([lo, hi]: number[]): number => Math.round((lo! + hi!) / 2);
 
 // --- Seeding ----------------------------------------------------------------
 
-/**
- * Wipe both stand-in systems and lay down a starting state.
- *
- * The baseline deliberately includes work at every stage, so the console has
- * something to show on the first frame and something to complete on the first
- * beat — rather than an empty screen for the first 30 seconds.
- */
 export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: number }> {
   const [jobs, users, wos, tUsers, control] = await Promise.all([
     sourceJobs(),
@@ -249,7 +238,6 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
 
   await ensureDemoIndexes();
 
-  // The fake logins each system knows about.
   await users.insertOne({
     username: DEMO_SOURCE_LOGIN.username,
     password: DEMO_SOURCE_LOGIN.password,
@@ -269,151 +257,103 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
     _id: CONTROL_ID,
     lastTickAt: null,
     tickCount: 0,
-    jobSequence: 0,
+    jobSequence: BATCH_SIZE,
     seededAt: new Date(),
     orgEpoch: nextEpoch,
   });
 
-  // Baseline: four already complete (first beat has real work), five mid-flight
-  // (they visibly progress), three freshly allocated (the pipe keeps filling).
-  const created: SourceJobDoc[] = [];
-  created.push(...(await createJobs(4, 'Complete')));
-  created.push(...(await createJobs(5, 'On Site')));
-  created.push(...(await createJobs(3, 'Allocated')));
-
-  return { jobs: created.length, workOrders: await wos.countDocuments({}) };
-}
-
-/**
- * Inject a burst of already-completed jobs (each with a matching work order), so
- * a viewer who has just opened the console sees real records land within a second
- * or two rather than waiting for the lifecycle to produce syncable work. These
- * are ordinary completed jobs — the sync engine treats them exactly like any
- * other, faults and all.
- */
-export async function burstCompletedJobs(count: number): Promise<number> {
-  const created = await createJobs(count, 'Complete');
-  return created.length;
-}
-
-/**
- * Create jobs in the source system at a given lifecycle stage, raising the
- * matching work order in the client's system as the client would have done.
- */
-async function createJobs(count: number, stage: SourceJobDoc['status']): Promise<SourceJobDoc[]> {
-  if (count <= 0) return [];
-  const jobs = await sourceJobs();
-  const wos = await targetWorkOrders();
-  const startSeq = await nextSequence(count);
-
   const jobDocs: SourceJobDoc[] = [];
   const woDocs: TargetWorkOrderDoc[] = [];
+  const now = Date.now();
 
-  for (let i = 0; i < count; i++) {
-    const seq = startSeq + i + 1;
-    const site = pick(SITES);
-    const type = pick(WORK_TYPES);
-    const now = new Date();
+  for (let i = 0; i < BATCH_SIZE; i++) {
+    const site = SITES[i % SITES.length]!;
+    const type = WORK_TYPES[i % WORK_TYPES.length]!;
+    const engineer = ENGINEERS[i % ENGINEERS.length]!;
 
-    const jobNumber = `JL-${100000 + seq}`;
-    const referenceNumber = 280000 + seq * 7;
-    const trueReference = `CON-${referenceNumber}`;
+    const jobNumber = `JL-${100001 + i}`;
+    const reference = `CON-${280000 + (i + 1) * 7}`;
 
-    // Decide this job's fate up front so the source data itself carries the
-    // fault — the engine is never told, it has to find out.
-    const missingRef = chance(FAULT_RATES.missingReference);
-    const malformedRef = !missingRef && chance(FAULT_RATES.malformedReference);
-    const targetMissing = !missingRef && !malformedRef && chance(FAULT_RATES.targetNotFound);
+    // Every job carries its client reference (it's captured in Joblogic on site);
+    // matching is never the failure here.
+    const completedMinsAgo = 8 + i * 6;
+    const completedAt = new Date(now - completedMinsAgo * 60_000);
+    const arrivedAt = new Date(completedAt.getTime() - between(type.minutes) * 60_000);
 
-    const customerOrderRef = missingRef
-      ? null
-      : malformedRef
-        ? // Formats an engineer plausibly types that Concerto never issues.
-          pick([`CON ${referenceNumber}`, `${referenceNumber}`, `CON-${referenceNumber}-A`])
-        : trueReference;
+    const rejectDoc = DOCUMENT_REJECTED.has(i);
+    const attachments = buildAttachments(type.docs, i, rejectDoc);
 
-    const attachments = buildAttachments(type.docs, seq);
-
-    const scheduledDate = new Date(now.getTime() - between([20, 260]) * 60_000);
     const job: SourceJobDoc = {
       jobNumber,
-      customerOrderRef,
+      customerOrderRef: reference,
       siteName: site.siteName,
       siteAddress: site.siteAddress,
-      assetRef: `${site.siteName.split('—')[1]?.trim().slice(0, 3).toUpperCase() ?? 'NGT'}-${type.asset}-${String(seq % 9 + 1).padStart(2, '0')}`,
+      assetRef: `${site.siteName.split('—')[1]?.trim().slice(0, 3).toUpperCase() ?? 'NGT'}-${type.asset}-${String((i % 9) + 1).padStart(2, '0')}`,
       description: type.description,
-      engineer: pick(ENGINEERS),
-      status: stage,
-      scheduledDate,
-      completedAt: null,
-      visit: null,
+      engineer,
+      status: 'Complete',
+      scheduledDate: new Date(arrivedAt.getTime() - 30 * 60_000),
+      completedAt,
+      visit: { arrivedAt, departedAt: completedAt, minutesOnSite: between(type.minutes) },
       completionSheet: null,
       charges: null,
       attachments,
       revision: 1,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: completedAt,
+      updatedAt: completedAt,
     };
+    applyCompletion(job, type, completedAt);
 
-    if (stage === 'On Site') {
-      job.visit = { arrivedAt: new Date(now.getTime() - between([10, 70]) * 60_000), departedAt: null, minutesOnSite: null };
+    const block = BLOCKS[i] ?? null;
+    // For a garbled-value exception, the SOURCE really carries the bad text — the
+    // demo doesn't fake the fault, it plants it where a real one would live.
+    if (block?.kind === 'INVALID_VALUE' && block.sourceField && job.completionSheet) {
+      job.completionSheet[block.sourceField] = block.badValue ?? '';
     }
-    if (stage === 'Complete') {
-      applyCompletion(job, type);
-    }
-
     jobDocs.push(job);
 
-    // The client raised the work order — unless this job is the "reference
-    // points at nothing" case, where there is deliberately no target record.
-    if (!targetMissing) {
-      woDocs.push({
-        reference: trueReference,
-        status: 'Awaiting Contractor',
-        property: { propertyName: site.siteName, propertyAddress: site.siteAddress },
-        assetId: job.assetRef,
-        summary: type.description,
-        // Starts empty: this is precisely what a client's CAFM looks like while
-        // it waits for someone to re-key the contractor's paperwork into it.
-        attributes: {},
-        documents: [],
-        lastUpdatedBy: null,
-        simulateUpdateFailure: chance(FAULT_RATES.transientTargetOutage),
-        createdAt: new Date(now.getTime() - between([60, 2880]) * 60_000),
-        updatedAt: now,
-      });
-    }
+    woDocs.push({
+      reference,
+      status: 'Awaiting Contractor',
+      property: { propertyName: site.siteName, propertyAddress: site.siteAddress },
+      assetId: job.assetRef,
+      summary: type.description,
+      attributes: {},
+      documents: [],
+      lastUpdatedBy: null,
+      demoBlock: block,
+      createdAt: new Date(completedAt.getTime() - 6 * 60 * 60_000),
+      updatedAt: completedAt,
+    });
   }
 
-  if (jobDocs.length) await jobs.insertMany(jobDocs);
-  if (woDocs.length) await wos.insertMany(woDocs);
-  return jobDocs;
+  await jobs.insertMany(jobDocs);
+  await wos.insertMany(woDocs);
+
+  return { jobs: jobDocs.length, workOrders: woDocs.length };
 }
 
-function buildAttachments(categories: string[], seq: number): SourceAttachmentDoc[] {
-  const rejectIndex = chance(FAULT_RATES.documentRejected) ? Math.floor(Math.random() * categories.length) : -1;
-  return categories.map((category, i) => ({
-    attachmentId: `JL-ATT-${100000 + seq}-${i + 1}`,
-    fileName: `${category.replace(/\s+/g, '-').toLowerCase()}-${100000 + seq}.pdf`,
+function buildAttachments(categories: string[], i: number, rejectDoc: boolean): SourceAttachmentDoc[] {
+  // Deterministically reject the LAST attachment of the flagged job.
+  const rejectIndex = rejectDoc ? categories.length - 1 : -1;
+  return categories.map((category, idx) => ({
+    attachmentId: `JL-ATT-${100001 + i}-${idx + 1}`,
+    fileName: `${category.replace(/\s+/g, '-').toLowerCase()}-${100001 + i}.pdf`,
     contentType: 'application/pdf',
     category,
-    bytes: between([48_000, 2_400_000]),
-    rejectOnUpload: i === rejectIndex,
+    bytes: 120_000 + idx * 40_000 + i * 1_000,
+    rejectOnUpload: idx === rejectIndex,
   }));
 }
 
-/** Fill in the completion sheet — what the engineer does before leaving site. */
-function applyCompletion(job: SourceJobDoc, type: (typeof WORK_TYPES)[number]): void {
+/** Fill in the completion sheet — what the engineer records before leaving site. */
+function applyCompletion(job: SourceJobDoc, type: (typeof WORK_TYPES)[number], completedAt: Date): void {
   const minutes = between(type.minutes);
-  const arrivedAt = job.visit?.arrivedAt ?? new Date(Date.now() - (minutes + between([5, 40])) * 60_000);
-  const departedAt = new Date(arrivedAt.getTime() + minutes * 60_000);
   const labour = between(type.labour);
   const materials = between(type.materials);
-  const followOn = type.followOnLikely ? chance(0.7) : chance(0.15);
+  const followOn = !!type.followOnLikely;
 
-  job.status = 'Complete';
-  job.completedAt = departedAt;
-  job.visit = { arrivedAt, departedAt, minutesOnSite: minutes };
+  job.completedAt = completedAt;
   job.completionSheet = {
     workCarriedOut: type.work,
     engineerComments: type.notes,
@@ -425,72 +365,4 @@ function applyCompletion(job: SourceJobDoc, type: (typeof WORK_TYPES)[number]): 
     materialsCharge: materials,
     totalCharge: labour + materials,
   };
-  job.updatedAt = new Date();
-}
-
-// --- The drip ---------------------------------------------------------------
-
-export interface DripResult {
-  progressed: number;
-  completed: number;
-  created: number;
-  completedJobNumbers: string[];
-}
-
-/**
- * One beat of source-system activity: engineers move along, some finish, and new
- * work lands. Called by the tick before ingest, so each beat has fresh work to
- * find — which is what makes the console look alive rather than replayed.
- */
-export async function dripSourceActivity(maxNew: number): Promise<DripResult> {
-  const jobs = await sourceJobs();
-  const result: DripResult = { progressed: 0, completed: 0, created: 0, completedJobNumbers: [] };
-
-  // 1. Allocated → Travelling → On Site.
-  for (const [from, to] of [['Allocated', 'Travelling'], ['Travelling', 'On Site']] as const) {
-    const candidates = await jobs.find({ status: from }).limit(2).toArray();
-    for (const job of candidates) {
-      if (!chance(0.6)) continue;
-      const patch: Partial<SourceJobDoc> = { status: to, updatedAt: new Date() };
-      if (to === 'On Site') patch.visit = { arrivedAt: new Date(), departedAt: null, minutesOnSite: null };
-      await jobs.updateOne({ jobNumber: job.jobNumber }, { $set: patch });
-      result.progressed += 1;
-    }
-  }
-
-  // 2. Some on-site jobs finish. This is the moment that matters: the record
-  //    becomes syncable, and the next stage of this same tick will move it.
-  const onSite = await jobs.find({ status: 'On Site' }).limit(3).toArray();
-  for (const job of onSite) {
-    if (!chance(0.55)) continue;
-    const type = WORK_TYPES.find((t) => t.description === job.description) ?? WORK_TYPES[0]!;
-    applyCompletion(job, type);
-    await jobs.updateOne(
-      { jobNumber: job.jobNumber },
-      {
-        $set: {
-          status: 'Complete',
-          completedAt: job.completedAt,
-          visit: job.visit,
-          completionSheet: job.completionSheet,
-          charges: job.charges,
-          updatedAt: new Date(),
-        },
-        // A completed sheet is a new revision — this is what the idempotency key
-        // is built from, so an edited sheet re-syncs and an unchanged one does not.
-        $inc: { revision: 1 },
-      },
-    );
-    result.completed += 1;
-    result.completedJobNumbers.push(job.jobNumber);
-  }
-
-  // 3. Keep the pipe full.
-  const newCount = Math.min(maxNew, Math.random() < 0.35 ? 0 : between([1, Math.max(1, maxNew)]));
-  if (newCount > 0) {
-    const created = await createJobs(newCount, 'Allocated');
-    result.created = created.length;
-  }
-
-  return result;
 }

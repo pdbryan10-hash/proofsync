@@ -119,6 +119,29 @@ export function useDemoState() {
     }
   }, [refresh]);
 
+  const resolve = useCallback(
+    async (reference: string, value: string): Promise<{ ok: boolean; error?: string }> => {
+      try {
+        const res = await fetch('/api/demo/exceptions/resolve', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({ reference, value }),
+        });
+        const body = await res.json();
+        if (body?.ok) {
+          pushActivity({ text: `A coordinator resolved ${reference} — resubmitting to Concerto.`, tone: 'ok' });
+          await refresh();
+          return { ok: true };
+        }
+        return { ok: false, error: body?.error ?? 'Could not resolve that job.' };
+      } catch {
+        return { ok: false, error: 'Lost contact with the server.' };
+      }
+    },
+    [refresh, pushActivity],
+  );
+
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
@@ -149,7 +172,7 @@ export function useDemoState() {
     };
   }, [refresh, tick]);
 
-  return { state, error, busy, activity, refresh, reset, forceTick };
+  return { state, error, busy, activity, refresh, reset, forceTick, resolve };
 }
 
 /**

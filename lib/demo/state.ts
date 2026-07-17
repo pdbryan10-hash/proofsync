@@ -75,6 +75,18 @@ export interface TargetRow {
   updatedAt: string;
 }
 
+export interface ExceptionItem {
+  reference: string;
+  jobNumber: string;
+  summary: string;
+  propertyName: string;
+  kind: 'MISSING_FIELD' | 'INVALID_VALUE';
+  label: string;
+  message: string;
+  /** For INVALID_VALUE: the current garbled value, to pre-fill the correction. */
+  badValue: string | null;
+}
+
 export interface DemoState {
   transport: DemoTransport;
   databases: { source: string; target: string; ledger: string };
@@ -88,6 +100,8 @@ export interface DemoState {
   source: SourceRow[];
   ledger: LedgerRow[];
   target: TargetRow[];
+  /** Jobs Concerto refused, waiting for a person to correct and resubmit. */
+  exceptions: ExceptionItem[];
   stats: {
     sourceTotal: number;
     sourceComplete: number;
@@ -193,6 +207,27 @@ export async function getDemoState(): Promise<DemoState> {
     : [];
   const woByRef = new Map(ledgerWos.map((w) => [w.reference, w]));
 
+  // Open exceptions: work orders Concerto still refuses, each waiting for a
+  // person. Joined back to the source job for a human-readable label.
+  const blockedWos = await wosCol.find({ demoBlock: { $ne: null } }).sort({ reference: 1 }).toArray();
+  const blockedRefs = blockedWos.map((w) => w.reference);
+  const blockedJobs = blockedRefs.length
+    ? await jobsCol.find({ customerOrderRef: { $in: blockedRefs } }).toArray()
+    : [];
+  const jobByRef = new Map(blockedJobs.map((j) => [j.customerOrderRef, j]));
+  const exceptions: ExceptionItem[] = blockedWos
+    .filter((w) => w.demoBlock)
+    .map((w) => ({
+      reference: w.reference,
+      jobNumber: jobByRef.get(w.reference)?.jobNumber ?? '—',
+      summary: w.summary,
+      propertyName: w.property?.propertyName ?? '—',
+      kind: w.demoBlock!.kind,
+      label: w.demoBlock!.label,
+      message: w.demoBlock!.message,
+      badValue: w.demoBlock!.badValue ?? null,
+    }));
+
   // Evidence is keyed by whatever the connector could name at the time — a job
   // number in the source, a work-order reference in the target — so a ledger row
   // collects shots under either of its two identities.
@@ -262,6 +297,7 @@ export async function getDemoState(): Promise<DemoState> {
         targetFields,
       };
     }),
+    exceptions,
     target: targetDocs.map((w) => {
       const attributes = w.attributes ?? {};
       const populatedFields = Object.entries(attributes)

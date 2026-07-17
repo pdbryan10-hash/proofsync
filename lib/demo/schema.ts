@@ -108,8 +108,35 @@ export interface TargetWorkOrderDoc {
   lastUpdatedBy: string | null;
   /** Demo hook: reject the next update once, exercising retry. */
   simulateUpdateFailure?: boolean;
+  /**
+   * Demo hook: a PERSISTENT reason Concerto refuses this save — it stays "needs a
+   * person" until someone corrects it and resubmits. Different jobs carry
+   * different kinds so the exception queue reads like real life, not one scripted
+   * fault. Cleared on resolve.
+   */
+  demoBlock?: TargetWorkOrderBlock | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface TargetWorkOrderBlock {
+  /**
+   *  - MISSING_FIELD: the client mandates a field Joblogic never captured (e.g. a
+   *    cost centre). Resolved by supplying it (written straight to Concerto).
+   *  - INVALID_VALUE: a completion field is garbled/invalid and Concerto's
+   *    validation rejects it. Resolved by correcting it AT SOURCE and re-syncing.
+   */
+  kind: 'MISSING_FIELD' | 'INVALID_VALUE';
+  /** Human label for the field to fix. */
+  label: string;
+  /** What Concerto's validation says — shown verbatim in the exception. */
+  message: string;
+  /** MISSING_FIELD: the Concerto attribute to set on resolve. */
+  attribute?: string;
+  /** INVALID_VALUE: which Joblogic completion field to correct on resolve. */
+  sourceField?: 'engineerComments' | 'workCarriedOut';
+  /** INVALID_VALUE: the current garbled value, shown pre-filled for correction. */
+  badValue?: string | null;
 }
 
 export interface TargetUserDoc {

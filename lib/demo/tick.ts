@@ -1,11 +1,6 @@
 import { demoControl } from './mongo';
-import { getTickSeconds, getDripPerTick } from './config';
-import { dripSourceActivity, burstCompletedJobs, type DripResult } from './seeder';
+import { getTickSeconds } from './config';
 import { ingestAndSync, type IngestResult } from './ingest';
-import { trimDemo } from './trim';
-
-/** Jobs guaranteed to complete-and-cross on every beat, so nothing feels dead. */
-const BASELINE_BURST = 2;
 
 /**
  * One beat of the demo.
@@ -30,7 +25,6 @@ export interface TickResult {
   reason: string;
   tickCount: number;
   nextTickInMs: number;
-  drip?: DripResult;
   sync?: IngestResult;
   durationMs?: number;
 }
@@ -176,25 +170,11 @@ async function runTickInner(
     { returnDocument: 'after' },
   );
 
-  // 0. Bound everything FIRST, so the rest of the beat operates on a small, fast
-  //    set. Trimming used to run LAST — but ingest below mirrors every completed
-  //    job in the source, and once the backlog grew into the hundreds that mirror
-  //    ate the whole 60s budget and the function was killed before trim ever
-  //    committed. So the backlog grew without limit and the target panel filled
-  //    with empty work orders. Pruning up front keeps each beat cheap and steady.
-  await trimDemo().catch(() => {});
-
-  // 1. Every beat lands a baseline of freshly-completed jobs (plus any explicit
-  //    burst from an open/button press), so there is ALWAYS something crossing —
-  //    no dead beats where the lifecycle happened to complete nothing.
-  const burst = BASELINE_BURST + (options.burst ?? 0);
-  await burstCompletedJobs(Math.min(burst, 10));
-
-  // 2. The source system also does its thing: engineers travel, finish, new work
-  //    lands — so there's a visible pipeline behind the burst, not just landings.
-  const drip = await dripSourceActivity(getDripPerTick());
-
-  // 3. ProofSync notices what changed and runs the real engine over it.
+  // Run-once model: the batch is fixed and seeded whole. A beat simply advances
+  // whatever is still pending through the real engine (paced, up to the per-beat
+  // cap), and once every job is terminal the beat has nothing left to do and
+  // quietly no-ops. Nothing is created, dripped or trimmed here — so the result
+  // is the result, and no counter moves unless a job actually changes state.
   const sync = await ingestAndSync();
 
   return {
@@ -202,7 +182,6 @@ async function runTickInner(
     reason: 'ok',
     tickCount: claim?.tickCount ?? 0,
     nextTickInMs: tickSeconds * 1000,
-    drip,
     sync,
     durationMs: Date.now() - startedAt,
   };
