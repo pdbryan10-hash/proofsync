@@ -36,6 +36,8 @@ export interface SourceRow {
   completedAt: string | null;
   revision: number;
   updatedAt: string;
+  /** The paperwork the engineer attached — job sheet, certificates, photos. */
+  attachments: { fileName: string; category: string }[];
 }
 
 export interface LedgerRow {
@@ -341,6 +343,7 @@ export async function getDemoState(): Promise<DemoState> {
       completedAt: iso(d.completedAt),
       revision: d.revision ?? 1,
       updatedAt: iso(d.updatedAt) ?? new Date().toISOString(),
+      attachments: (d.attachments ?? []).map((a) => ({ fileName: a.fileName, category: a.category })),
     })),
     ledger: runs.map((r) => {
       const wo = r.job.concertoJobReference ? woByRef.get(r.job.concertoJobReference) : undefined;

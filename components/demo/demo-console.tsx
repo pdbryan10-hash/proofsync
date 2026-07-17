@@ -12,8 +12,10 @@ import {
   FileWarning,
   Loader2,
   Lock,
+  Paperclip,
   Rocket,
   RotateCcw,
+  Search,
   X,
   Zap,
 } from 'lucide-react';
@@ -104,6 +106,7 @@ export function DemoConsole() {
       <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} act={act} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
+        <CrossSystemSearch />
         {act === 'human' ? (
           <SpotlightStage
             spotlight={state.spotlight}
@@ -137,6 +140,118 @@ export function DemoConsole() {
           onClose={() => setResolving(null)}
           onSubmit={(value) => resolve(resolving.reference, value)}
         />
+      )}
+    </div>
+  );
+}
+
+// --- Cross-system search -----------------------------------------------------
+
+interface SearchHit {
+  system: 'Joblogic' | 'Concerto';
+  kind: 'job' | 'work order' | 'file';
+  title: string;
+  subtitle: string;
+  reference: string;
+}
+
+/**
+ * One box that searches BOTH systems (and finds files in either). The point it
+ * makes: ProofSync is signed into both, so from here you can find any record or
+ * document without logging into each system separately.
+ */
+function CrossSystemSearch() {
+  const [q, setQ] = useState('');
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) {
+      setHits([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/demo/search?q=${encodeURIComponent(term)}`, { cache: 'no-store' });
+        const body = await res.json();
+        if (body?.ok) setHits(body.data.hits as SearchHit[]);
+      } catch {
+        /* ignore — search is best-effort */
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
+    return () => clearTimeout(id);
+  }, [q]);
+
+  const showPanel = open && q.trim().length >= 2;
+
+  return (
+    <div className="relative my-4">
+      <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 shadow-sm focus-within:ring-2 focus-within:ring-info/30">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="Search either system — a job, a work order, a certificate…"
+          className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+        />
+        {loading && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
+        {q && !loading && (
+          <button
+            type="button"
+            onClick={() => setQ('')}
+            className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+            aria-label="Clear"
+          >
+            <X className="size-4" />
+          </button>
+        )}
+        <span className="ml-1 hidden shrink-0 rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
+          connected to both systems
+        </span>
+      </div>
+
+      {showPanel && (
+        <div className="absolute z-20 mt-1.5 max-h-[22rem] w-full overflow-auto rounded-xl border border-border bg-card shadow-xl">
+          {hits.length === 0 && !loading && (
+            <div className="px-4 py-3 text-sm text-muted-foreground">
+              Nothing matches &ldquo;{q.trim()}&rdquo; in either system.
+            </div>
+          )}
+          <ul className="divide-y divide-border">
+            {hits.map((h, i) => (
+              <li key={`${h.system}-${h.reference}-${i}`} className="flex items-start gap-3 px-4 py-2.5">
+                <span
+                  className={cn(
+                    'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md',
+                    h.kind === 'file'
+                      ? 'bg-muted text-muted-foreground'
+                      : h.system === 'Joblogic'
+                        ? 'bg-slate-700 text-white'
+                        : 'bg-emerald-600 text-white',
+                  )}
+                >
+                  {h.kind === 'file' ? <Paperclip className="size-3.5" /> : <Database className="size-3.5" />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{h.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">{h.subtitle}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  <Badge tone={h.system === 'Joblogic' ? 'neutral' : 'success'}>{h.system}</Badge>
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{h.kind}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
@@ -1467,6 +1582,21 @@ function SourcePanel({
             )}
             {row.completedAt && <span>completed {timeAgo(row.completedAt)}</span>}
           </div>
+
+          {row.attachments.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {row.attachments.map((a) => (
+                <span
+                  key={a.fileName}
+                  title={a.fileName}
+                  className="inline-flex max-w-full items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  <Paperclip className="size-2.5 shrink-0" />
+                  <span className="truncate">{a.category}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </Panel>
