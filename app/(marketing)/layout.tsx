@@ -37,7 +37,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               href="/book"
               className="hidden text-sm font-medium text-[#5f6068] transition-colors hover:text-[#1a1b1f] sm:block"
             >
-              Book a session
+              Book a discovery session
             </Link>
             <Link
               href="/demo"
@@ -68,7 +68,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <nav className="grid grid-cols-2 gap-x-12 gap-y-2.5 text-sm">
               <Link href="/demo" className="text-[#33343a] hover:text-[#0e6b3f]">Watch it sync — live</Link>
               <Link href="/how-it-works" className="text-[#33343a] hover:text-[#0e6b3f]">How it works</Link>
-              <Link href="/book" className="text-[#33343a] hover:text-[#0e6b3f]">Book a session</Link>
+              <Link href="/book" className="text-[#33343a] hover:text-[#0e6b3f]">Book a discovery session</Link>
               <a href="https://proof-works.co.uk" target="_blank" rel="noreferrer" className="text-[#33343a] hover:text-[#0e6b3f]">
                 ProofWorks
               </a>

@@ -102,7 +102,7 @@ export default function SalesPage() {
             </div>
             <ProcessMap />
           </div>
-          <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#8a8578]">
+          <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
             The landscape ProofSync is built for. Connector availability varies by platform and by your
             client&apos;s authorisation. Ask us about yours.
           </p>
@@ -257,8 +257,8 @@ export default function SalesPage() {
             </table>
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-[#767680]">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Show your working — </span>
+          <p className="mt-4 text-sm leading-relaxed text-[#5f6068]">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[#6f6f78]">Show your working — </span>
             Basis: <span className="font-mono text-[#33343a]">{MINUTES_PER_JOB} min</span> of duplicated admin
             per completed job; <span className="font-mono text-[#33343a]">{FTE_HOURS_PER_MONTH} hrs</span> per
             full-time month. This is an <strong className="text-[#33343a]">estimate, not an audited saving</strong>{' '}
@@ -320,7 +320,7 @@ export default function SalesPage() {
             <p className={EYEBROW}>Prove it first</p>
             <h2 className={`mx-auto mt-5 max-w-3xl font-display text-3xl font-bold leading-[1.1] text-[#1a1b1f] sm:text-[2.6rem]`}>
               Tell us one client system you&apos;re re-keying into.
-              <span className="block text-[#0e6b3f]">We&apos;ll prove the sync on your real data.</span>
+              <span className="block text-[#0b5531]">We&apos;ll prove the sync on your real data.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-lg text-[#5f6068]">
               One client, one job type, your actual data. No procurement exercise, no rip-and-replace.
