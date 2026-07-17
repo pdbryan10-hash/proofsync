@@ -5,6 +5,7 @@ import { ensureDemoOrg, resetDemoLedger } from '@/lib/demo/org';
 import { clearSessions } from '@/lib/demo/session';
 import { clearShots } from '@/lib/demo/screenshots';
 import { isBrowserTransport } from '@/lib/demo/config';
+import { runWithDemoLock } from '@/lib/demo/tick';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -24,36 +25,36 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
   if (!hasWriteKey(req)) return fail('Unauthorised', 401);
 
-  // Temporary: report which step fails and why, so the generic 500 isn't opaque.
-  const steps: string[] = [];
   try {
-    steps.push('ensureDemoOrg');
-    const { organisationId } = await ensureDemoOrg();
-    steps.push('resetDemoLedger');
-    await resetDemoLedger(organisationId);
-    steps.push('clearShots');
-    await clearShots();
-    steps.push('seedDemoSystems');
-    const seeded = await seedDemoSystems();
-    clearSessions();
+    // Hold the beat lock across the whole wipe+reseed, so no sync is running —
+    // and mutating a run mid-delete — while we do it.
+    const outcome = await runWithDemoLock(async () => {
+      const { organisationId } = await ensureDemoOrg();
+      await resetDemoLedger(organisationId);
+      await clearShots();
+      const seeded = await seedDemoSystems();
+      clearSessions();
 
-    if (isBrowserTransport()) {
-      // The browser holds cookies for users that no longer exist after a reseed.
-      // Drop it so the next beat signs in again — and so the audience actually
-      // sees the login happen rather than a context silently carrying over.
-      const { closeBrowser } = await import('@/lib/demo/browser');
-      await closeBrowser();
+      if (isBrowserTransport()) {
+        // The browser holds cookies for users that no longer exist after a
+        // reseed. Drop it so the next beat signs in again.
+        const { closeBrowser } = await import('@/lib/demo/browser');
+        await closeBrowser();
+      }
+      return seeded;
+    });
+
+    if (!outcome.ok || !outcome.result) {
+      return fail('The demo is mid-sync right now — give it a moment and press Start over again.', 409);
     }
 
+    const seeded = outcome.result;
     return ok({
       reset: true,
       ...seeded,
       message: `Both demo systems re-seeded — ${seeded.jobs} jobs in the source, ${seeded.workOrders} work orders in the target.`,
     });
   } catch (error) {
-    const e = error as Error;
-    return fail(`reset failed at step "${steps[steps.length - 1]}": ${e?.name} — ${e?.message}`, 500, {
-      step: steps[steps.length - 1],
-    });
+    return handleRouteError(error);
   }
 }

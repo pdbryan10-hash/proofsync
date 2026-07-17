@@ -90,6 +90,40 @@ export async function runTick(
   }
 }
 
+/**
+ * Run `fn` holding the beat lock, so no sync runs while it executes. Used by
+ * reset: wiping the ledger while a beat is mid-sync (adding events to a run
+ * being deleted) is what caused the required-relation violations. Waits briefly
+ * for an in-flight beat to finish. Returns { ok: false } only if it can't get
+ * the lock in time. If the demo isn't seeded yet, no beat can run, so it just
+ * proceeds.
+ */
+export async function runWithDemoLock<T>(fn: () => Promise<T>): Promise<{ ok: boolean; result?: T }> {
+  const control = await demoControl();
+  const doc = await control.findOne({ _id: CONTROL_ID });
+  if (!doc) return { ok: true, result: await fn() };
+
+  const deadline = Date.now() + 9_000;
+  while (Date.now() < deadline) {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - LOCK_TTL_MS);
+    const acquired = await control.findOneAndUpdate(
+      { _id: CONTROL_ID, $or: [{ lockedAt: null }, { lockedAt: { $lte: cutoff } }] },
+      { $set: { lockedAt: now } },
+      { returnDocument: 'after' },
+    );
+    if (acquired) {
+      try {
+        return { ok: true, result: await fn() };
+      } finally {
+        await control.updateOne({ _id: CONTROL_ID }, { $set: { lockedAt: null } }).catch(() => {});
+      }
+    }
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  return { ok: false };
+}
+
 async function runTickInner(
   options: { force?: boolean; burst?: number },
   now: Date,
