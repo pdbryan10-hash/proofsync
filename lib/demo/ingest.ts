@@ -54,7 +54,8 @@ const LOOKBACK_MINUTES = 60 * 24;
  * beat that truncates says so.
  */
 
-export async function ingestAndSync(): Promise<IngestResult> {
+export async function ingestAndSync(opts: { maxDispatches?: number } = {}): Promise<IngestResult> {
+  const cap = opts.maxDispatches ?? getMaxDispatchesPerTick();
   const { organisationId, clientId } = await ensureDemoOrg();
   const joblogic = createJoblogicConnector();
   const dispatcher = getSyncDispatcher();
@@ -97,7 +98,7 @@ export async function ingestAndSync(): Promise<IngestResult> {
     // Only feed work that is waiting. Terminal states are never re-driven.
     if (!['PENDING', 'READY'].includes(job.syncStatus)) continue;
 
-    if (pending.length >= getMaxDispatchesPerTick()) {
+    if (pending.length >= cap) {
       result.deferred += 1;
       continue;
     }

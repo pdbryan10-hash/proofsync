@@ -56,9 +56,6 @@ export default async function TerminalPage() {
               Every completed job, where it sits in each system, and anything still waiting on you.
             </p>
           </div>
-          <span className="rounded-full border border-border bg-white px-3 py-1 font-mono text-[11px] text-muted-foreground">
-            auth coming — this is your live data
-          </span>
         </div>
 
         {/* Summary */}
@@ -161,8 +158,7 @@ export default async function TerminalPage() {
         </div>
 
         <p className="mt-4 text-xs text-muted-foreground">
-          This terminal reads your Joblogic and Concerto records directly, alongside ProofSync&apos;s own
-          audit. Sign-in and per-user access come next.
+          This terminal reads your Joblogic and Concerto records directly, alongside ProofSync&apos;s own audit.
         </p>
       </main>
     </div>

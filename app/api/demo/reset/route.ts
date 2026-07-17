@@ -37,13 +37,12 @@ export async function POST(req: NextRequest) {
       clearSessions();
       // Run the batch to completion so the RESTING state is a finished run: land
       // on /dashboard, /jobs or /terminal directly and they're already populated,
-      // with no need to open the live console. Bounded iterations; each processes
-      // the per-beat cap (concurrently on the direct transport), so ~a few passes.
+      // with no need to open the live console. One big PARALLEL pass (cap raised
+      // past the batch size) so it finishes in ~one sync's time rather than many
+      // sequential beats — the 8-beat loop was too slow and hit the 60s ceiling.
       if (!isBrowserTransport()) {
-        for (let i = 0; i < 8; i++) {
-          const r = await ingestAndSync();
-          if (r.dispatched === 0 && r.deferred === 0) break;
-        }
+        await ingestAndSync({ maxDispatches: 40 });
+        await ingestAndSync({ maxDispatches: 40 }); // mop up any retryable stragglers
       } else {
         const { closeBrowser } = await import('@/lib/demo/browser');
         await closeBrowser();
