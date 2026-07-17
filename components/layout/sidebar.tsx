@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ListChecks, TriangleAlert, PlugZap, SlidersHorizontal, Inbox, Play } from 'lucide-react';
+import { LayoutDashboard, ListChecks, TriangleAlert, PlugZap, SlidersHorizontal, Inbox, Play, SquareTerminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProductLockup } from '@/components/brand/proofsync-logo';
 
 const NAV = [
   { href: '/demo', label: 'Live sync demo', icon: Play, exact: true },
+  { href: '/terminal', label: 'User terminal', icon: SquareTerminal, exact: true },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/jobs', label: 'Jobs', icon: ListChecks },
   { href: '/exceptions', label: 'Exceptions', icon: TriangleAlert },
