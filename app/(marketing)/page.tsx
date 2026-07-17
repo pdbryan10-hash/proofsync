@@ -24,7 +24,7 @@ export const metadata = {
 };
 
 /** Working assumption for all value figures on this page. Shown inline, always. */
-const MINUTES_PER_JOB = 15;
+const MINUTES_PER_JOB = 7;
 const FTE_HOURS_PER_MONTH = 162.5; // 37.5h week × 52 ÷ 12
 
 const ROI_ROWS = [500, 1000, 2000].map((jobs) => {

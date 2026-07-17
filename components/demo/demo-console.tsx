@@ -78,18 +78,19 @@ export function DemoConsole() {
     }
     if (finaleFired.current || finale) return;
     finaleFired.current = true;
-    const t = setTimeout(() => {
-      setFinale({
-        jobs: state.stats.synced + state.stats.partial,
-        fields: state.stats.fieldsWritten,
-        certs: state.stats.certificatesUploaded,
-        minutes: state.stats.adminMinutesSaved,
-        exceptions: state.exceptions.length,
-        avgSyncMs: state.stats.avgSyncMs,
-        totalSyncMs: state.stats.totalSyncMs,
-      });
-    }, 1400);
-    return () => clearTimeout(t);
+    // Snapshot the completed figures and schedule WITHOUT a cleanup: the 1s poll
+    // re-runs this effect, and a cleanup would clearTimeout the pending fire every
+    // time (1s < 1.4s), so it never landed. finaleFired guards against duplicates.
+    const snapshot = {
+      jobs: state.stats.synced + state.stats.partial,
+      fields: state.stats.fieldsWritten,
+      certs: state.stats.certificatesUploaded,
+      minutes: state.stats.adminMinutesSaved,
+      exceptions: state.exceptions.length,
+      avgSyncMs: state.stats.avgSyncMs,
+      totalSyncMs: state.stats.totalSyncMs,
+    };
+    setTimeout(() => setFinale(snapshot), 1400);
   }, [state, act, finale]);
 
   if (error && !state) {
