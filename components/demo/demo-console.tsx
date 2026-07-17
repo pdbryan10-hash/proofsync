@@ -71,7 +71,10 @@ export function DemoConsole() {
   // the close lands without anyone reaching for the Freeze button. Re-arms when a
   // new run starts (awaiting climbs back up).
   useEffect(() => {
-    if (!state || act !== 'machine') return;
+    // While preparing (rewind in flight) the panels still show the batch that
+    // finished behind Act 1 — don't read that as "done" and fire the finale
+    // instantly. Wait until the rewind has cleared and the live run completes.
+    if (!state || act !== 'machine' || preparing) return;
     const done = state.stats.awaitingSync === 0 && state.stats.synced + state.stats.partial > 0;
     if (!done) {
       finaleFired.current = false;
@@ -92,7 +95,7 @@ export function DemoConsole() {
       totalSyncMs: state.stats.totalSyncMs,
     };
     setTimeout(() => setFinale(snapshot), 1400);
-  }, [state, act, finale]);
+  }, [state, act, finale, preparing]);
 
   if (error && !state) {
     return (
@@ -712,10 +715,12 @@ function MachineFloor({
   return (
     <div className="relative">
       {preparing && (
-        <div className="absolute inset-0 z-30 -mx-4 flex flex-col items-center justify-center gap-3 rounded-xl bg-muted/70 backdrop-blur-sm">
-          <Loader2 className="size-6 animate-spin text-info" />
-          <p className="text-sm font-medium text-navy-800">Rewinding the batch…</p>
-          <p className="text-xs text-muted-foreground">Emptying Concerto and re-queueing every job</p>
+        <div className="absolute inset-0 z-30 -mx-4 flex flex-col items-center justify-center gap-3 rounded-xl bg-[#f4f5f7]">
+          <div className="flex items-center gap-2.5 rounded-full border border-info-soft bg-white px-5 py-2.5 shadow-sm">
+            <Loader2 className="size-4 animate-spin text-info" />
+            <span className="text-sm font-medium text-navy-800">Setting the batch back to the start…</span>
+          </div>
+          <p className="text-xs text-muted-foreground">A moment, then watch it run</p>
         </div>
       )}
       <MachineHeader busy={busy} onReplay={onReplay} onBack={onBack} onFreeze={onFreeze} />

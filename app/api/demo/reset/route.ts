@@ -6,6 +6,7 @@ import { clearSessions } from '@/lib/demo/session';
 import { clearShots } from '@/lib/demo/screenshots';
 import { isBrowserTransport } from '@/lib/demo/config';
 import { runWithDemoLock } from '@/lib/demo/tick';
+import { ingestAndSync } from '@/lib/demo/ingest';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -34,11 +35,16 @@ export async function POST(req: NextRequest) {
       await ensureDemoOrg(); // create the fresh (new-epoch) org + client + mappings
       await clearShots();
       clearSessions();
-      // No warm-up here on purpose: real syncs are slow on this tier and would
-      // blow the reset time. The seed lays down jobs already at every lifecycle
-      // stage (some Complete), and the console's open-burst + cadence fill it in
-      // within a couple of seconds — reset stays a fast, bulletproof reseed.
-      if (isBrowserTransport()) {
+      // Run the batch to completion so the RESTING state is a finished run: land
+      // on /dashboard, /jobs or /terminal directly and they're already populated,
+      // with no need to open the live console. Bounded iterations; each processes
+      // the per-beat cap (concurrently on the direct transport), so ~a few passes.
+      if (!isBrowserTransport()) {
+        for (let i = 0; i < 8; i++) {
+          const r = await ingestAndSync();
+          if (r.dispatched === 0 && r.deferred === 0) break;
+        }
+      } else {
         const { closeBrowser } = await import('@/lib/demo/browser');
         await closeBrowser();
       }
