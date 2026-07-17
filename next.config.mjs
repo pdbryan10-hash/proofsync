@@ -17,10 +17,10 @@ const nextConfig = {
   },
   // Keep the Prisma client external to the server bundle.
   //
-  // Playwright is here for the demo's browser transport. It is a devDependency,
-  // imported dynamically, and only ever loaded when DEMO_TRANSPORT=browser — a
-  // production deployment never touches that path. Marking it external stops the
-  // bundler trying to trace a package that will not be installed there.
+  // Playwright powers the demo's browser transport. `playwright-core` is a real
+  // dependency now — it connects to the remote Browserbase Chromium in
+  // production; full `playwright` stays a devDependency for the local-launch
+  // fallback. Both external so the bundler doesn't trace browser binaries.
   serverExternalPackages: ['@prisma/client', 'prisma', 'playwright', 'playwright-core'],
 };
 

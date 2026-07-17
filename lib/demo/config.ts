@@ -62,6 +62,25 @@ export function getDemoBaseUrl(): string {
 }
 
 /**
+ * Remote-browser (Browserbase) config. When present, the browser transport
+ * connects to a hosted Chromium over CDP instead of launching a local one — so
+ * the "log in like a person" transport runs on serverless / anywhere, not just a
+ * machine with Chromium installed. Absent → fall back to a local Playwright
+ * launch (dev). Requires DEMO_BASE_URL to be a public URL the remote browser can
+ * reach (e.g. https://www.proofsync.co.uk), not localhost.
+ */
+export function getBrowserbaseConfig(): { apiKey: string; projectId: string } | null {
+  const apiKey = process.env.BROWSERBASE_API_KEY;
+  const projectId = process.env.BROWSERBASE_PROJECT_ID;
+  if (apiKey && projectId) return { apiKey, projectId };
+  return null;
+}
+
+export function isRemoteBrowser(): boolean {
+  return getBrowserbaseConfig() !== null;
+}
+
+/**
  * Show the browser window. Headed is the point of a live demo — a prospect
  * watching Chromium type into the client's system is the whole argument. Set
  * DEMO_HEADLESS=1 to run it invisibly (the screenshots still land in the ledger).

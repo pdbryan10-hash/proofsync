@@ -1,5 +1,5 @@
-import type { Browser, BrowserContext, Page } from 'playwright';
-import { getDemoBaseUrl, isHeadedBrowser } from './config';
+import type { Browser, BrowserContext, Page } from 'playwright-core';
+import { getBrowserbaseConfig, getDemoBaseUrl, isHeadedBrowser } from './config';
 import { saveShot, type ShotStage } from './screenshots';
 import { IntegrationUnavailableError } from '@/lib/errors/integration-errors';
 
@@ -12,13 +12,15 @@ import { IntegrationUnavailableError } from '@/lib/errors/integration-errors';
  * the site, sign in, read the screen, type into the screen. This module owns the
  * Chromium instance that does that.
  *
- * WHY IT CANNOT RUN ON VERCEL
- * ---------------------------
- * There is no Chromium binary in the serverless runtime, and the function size
- * limits make shipping one a losing fight. This is a local — or containerised
- * worker — transport. A Vercel deployment stays on DEMO_TRANSPORT=direct.
- * `playwright` is a devDependency and is imported dynamically below precisely so
- * that a production build never has to resolve it.
+ * RUNNING IT ANYWHERE (Browserbase)
+ * ---------------------------------
+ * Serverless runtimes have no Chromium binary, so the browser transport used to
+ * be local-only. With BROWSERBASE_API_KEY + BROWSERBASE_PROJECT_ID set, `launch`
+ * instead CONNECTS over CDP to a hosted Chromium (Browserbase) — the exact same
+ * driving code, but the browser lives in the cloud, so "sign in like a person"
+ * runs on Vercel or anywhere. Without those vars it falls back to a local
+ * Playwright launch (dev). Note: the remote browser must be able to reach the
+ * stand-in systems, so DEMO_BASE_URL must be a public URL, not localhost.
  *
  * ONE BROWSER, TWO CONTEXTS
  * -------------------------
@@ -37,8 +39,34 @@ type BrowserCache = {
 const cache = globalThis as unknown as BrowserCache;
 
 async function launch(): Promise<Browser> {
-  // Dynamic so the module is only ever resolved when the browser transport is
-  // actually selected. See serverExternalPackages in next.config.mjs.
+  const bb = getBrowserbaseConfig();
+
+  // Remote browser (Browserbase): connect over CDP to a hosted Chromium. This is
+  // what lets the "log in like a person" transport run on serverless / anywhere.
+  if (bb) {
+    const { chromium } = await import('playwright-core');
+    try {
+      const res = await fetch('https://api.browserbase.com/v1/sessions', {
+        method: 'POST',
+        headers: { 'X-BB-API-Key': bb.apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: bb.projectId, browserSettings: { viewport: { width: 1280, height: 800 } } }),
+      });
+      if (!res.ok) {
+        throw new Error(`Browserbase session request failed (${res.status}): ${await res.text()}`);
+      }
+      const session = (await res.json()) as { id: string; connectUrl?: string };
+      const connectUrl =
+        session.connectUrl ??
+        `wss://connect.browserbase.com?apiKey=${bb.apiKey}&sessionId=${session.id}`;
+      return await chromium.connectOverCDP(connectUrl);
+    } catch (error) {
+      throw new IntegrationUnavailableError(
+        `Could not connect to the remote browser (Browserbase): ${(error as Error).message}`,
+      );
+    }
+  }
+
+  // Local fallback (dev): a real Chromium on this machine via full Playwright.
   const { chromium } = await import('playwright');
   try {
     return await chromium.launch({
