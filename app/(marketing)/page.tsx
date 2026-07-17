@@ -58,13 +58,15 @@ export default function SalesPage() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Link
-              href="/demo"
+            <a
+              href="https://proofsync-demo.vercel.app/demo"
+              target="_blank"
+              rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-success px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-success-text"
             >
               Watch it sync — live
               <ArrowRight className="size-4" />
-            </Link>
+            </a>
             <Link
               href="/dashboard"
               className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 text-base font-medium text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/5 hover:text-white"
