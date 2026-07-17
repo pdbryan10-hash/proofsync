@@ -6,6 +6,8 @@ import { clearSessions } from '@/lib/demo/session';
 import { clearShots } from '@/lib/demo/screenshots';
 import { isBrowserTransport } from '@/lib/demo/config';
 import { runWithDemoLock } from '@/lib/demo/tick';
+import { burstCompletedJobs } from '@/lib/demo/seeder';
+import { ingestAndSync } from '@/lib/demo/ingest';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +36,15 @@ export async function POST(req: NextRequest) {
       await ensureDemoOrg(); // create the fresh (new-epoch) org + client + mappings
       await clearShots();
       clearSessions();
+
+      // Land one light batch so it opens already in train, not sparse. Best-effort
+      // and cheap (no deletes in the reset now) — a hiccup here never fails reset.
+      try {
+        await burstCompletedJobs(5);
+        await ingestAndSync();
+      } catch {
+        /* seed already succeeded; warmup is a bonus */
+      }
       if (isBrowserTransport()) {
         const { closeBrowser } = await import('@/lib/demo/browser');
         await closeBrowser();
