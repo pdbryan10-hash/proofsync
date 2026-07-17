@@ -4,7 +4,7 @@ import { createJoblogicConnector } from '@/lib/integrations/joblogic/connector';
 import { getSyncDispatcher } from '@/lib/sync/dispatcher';
 import { buildIdempotencyKey } from '@/lib/sync/idempotency';
 import { ensureDemoOrg } from './org';
-import { getMaxDispatchesPerTick } from './config';
+import { getMaxDispatchesPerTick, isBrowserTransport } from './config';
 import type { NormalisedJob, NormalisedCompletion } from '@/lib/integrations/types';
 
 /**
@@ -74,6 +74,9 @@ export async function ingestAndSync(): Promise<IngestResult> {
     deferred: 0,
   };
 
+  // Phase 1: mirror every completed job into ProofSync's tables and collect the
+  // ones still waiting to sync, up to the per-beat cap.
+  const pending: { jobId: string; joblogicJobId: string; completionVersion: string }[] = [];
   for (const remote of completed) {
     const completion = await joblogic.getJobCompletion(remote.joblogicJobId);
     if (!completion) continue;
@@ -91,36 +94,47 @@ export async function ingestAndSync(): Promise<IngestResult> {
 
     const job = await prisma.job.findUnique({ where: { id: jobId } });
     if (!job) continue;
-
-    // Only feed work that is waiting. Terminal states are never re-driven — a
-    // synced job stays synced until the engineer actually changes something.
+    // Only feed work that is waiting. Terminal states are never re-driven.
     if (!['PENDING', 'READY'].includes(job.syncStatus)) continue;
 
-    // Leave the overflow PENDING for the next beat rather than risk the function
-    // being killed mid-sync with a job stuck in SYNCING.
-    if (result.dispatched >= getMaxDispatchesPerTick()) {
+    if (pending.length >= getMaxDispatchesPerTick()) {
       result.deferred += 1;
       continue;
     }
+    pending.push({ jobId, joblogicJobId: remote.joblogicJobId, completionVersion: completion.completionVersion ?? '1' });
+  }
 
-    const completionVersion = completion.completionVersion ?? '1';
-    const dispatch = await dispatcher.dispatch({
-      jobId,
+  // Phase 2: run this beat's syncs. On the direct transport they're independent
+  // records, so run them CONCURRENTLY — on the slow demo cluster that turns a beat
+  // from sequential (cap × ~2.5s) into roughly one sync's time. The browser
+  // transport drives ONE shared Chromium, so it must stay sequential.
+  const runOne = (p: (typeof pending)[number]) =>
+    dispatcher.dispatch({
+      jobId: p.jobId,
       triggerType: 'POLLING',
       idempotencyKey: buildIdempotencyKey({
-        joblogicJobId: remote.joblogicJobId,
+        joblogicJobId: p.joblogicJobId,
         eventType: 'job.completed',
-        completionVersion,
+        completionVersion: p.completionVersion,
       }),
       eventType: 'job.completed',
-      completionVersion,
+      completionVersion: p.completionVersion,
     });
 
+  const tally = (d: Awaited<ReturnType<typeof runOne>> | null) => {
     result.dispatched += 1;
-    if (dispatch.status === 'SUCCESS') result.synced += 1;
-    else if (dispatch.status === 'PARTIAL') result.partial += 1;
-    else if (dispatch.skipped) result.ignored += 1;
+    if (!d) result.exceptions += 1;
+    else if (d.status === 'SUCCESS') result.synced += 1;
+    else if (d.status === 'PARTIAL') result.partial += 1;
+    else if (d.skipped) result.ignored += 1;
     else result.exceptions += 1;
+  };
+
+  if (isBrowserTransport()) {
+    for (const p of pending) tally(await runOne(p).catch(() => null));
+  } else {
+    const settled = await Promise.all(pending.map((p) => runOne(p).catch(() => null)));
+    for (const d of settled) tally(d);
   }
 
   await prisma.integrationConnection.updateMany({

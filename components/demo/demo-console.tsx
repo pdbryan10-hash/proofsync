@@ -65,6 +65,7 @@ export function DemoConsole() {
     totalSyncMs: number;
   } | null>(null);
   const finaleFired = useRef(false);
+  const [preparing, setPreparing] = useState(false);
 
   // Auto-fire the "what just happened" card once the batch finishes in Act 2, so
   // the close lands without anyone reaching for the Freeze button. Re-arms when a
@@ -117,14 +118,14 @@ export function DemoConsole() {
     );
   }
 
-  // Entering the machine floor rewinds the batch FIRST (Concerto emptied, jobs
-  // re-queued), THEN switches in — so Act 2 opens on the cleared state and
-  // trickles the jobs across, rather than briefly flashing the fully-synced
-  // batch that quietly finished behind Act 1.
-  const enterMachine = async () => {
+  // Enter Act 2 INSTANTLY and rewind in the background. A "rewinding" cover sits
+  // over the floor until the batch is cleared, so there's no wait on the click and
+  // no flash of the fully-synced state that quietly finished behind Act 1.
+  const enterMachine = () => {
     finaleFired.current = false;
-    await replay();
+    setPreparing(true);
     setAct('machine');
+    replay().finally(() => setPreparing(false));
   };
 
   // The applause screen states the batch result — all real, straight from state.
@@ -158,6 +159,7 @@ export function DemoConsole() {
             activeRefs={activeRefs}
             onActive={setActiveRefs}
             busy={busy}
+            preparing={preparing}
             onReplay={replay}
             onBack={() => setAct('human')}
             onFreeze={freeze}
@@ -690,6 +692,7 @@ function MachineFloor({
   activeRefs,
   onActive,
   busy,
+  preparing,
   onReplay,
   onBack,
   onFreeze,
@@ -700,13 +703,21 @@ function MachineFloor({
   activeRefs: Set<string>;
   onActive: (refs: Set<string>) => void;
   busy: boolean;
+  preparing: boolean;
   onReplay: () => void;
   onBack: () => void;
   onFreeze: () => void;
   onFix: (item: ExceptionItem) => void;
 }) {
   return (
-    <>
+    <div className="relative">
+      {preparing && (
+        <div className="absolute inset-0 z-30 -mx-4 flex flex-col items-center justify-center gap-3 rounded-xl bg-muted/70 backdrop-blur-sm">
+          <Loader2 className="size-6 animate-spin text-info" />
+          <p className="text-sm font-medium text-navy-800">Rewinding the batch…</p>
+          <p className="text-xs text-muted-foreground">Emptying Concerto and re-queueing every job</p>
+        </div>
+      )}
       <MachineHeader busy={busy} onReplay={onReplay} onBack={onBack} onFreeze={onFreeze} />
       <KpiBar stats={state.stats} exceptionCount={state.exceptions.length} />
       <ExceptionsQueue exceptions={state.exceptions} onFix={onFix} />
@@ -730,7 +741,7 @@ function MachineFloor({
           activeRefs={activeRefs}
         />
       </div>
-    </>
+    </div>
   );
 }
 
