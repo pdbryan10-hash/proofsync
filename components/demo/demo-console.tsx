@@ -177,18 +177,18 @@ function Explainer({
  */
 const THEATRE_KEYFRAMES = `
 @keyframes psWinLife {
-  0%   { transform: translateY(12px) scale(.92); opacity: 0; }
-  5%   { opacity: 1; }
-  9%   { transform: translateY(0) scale(1); opacity: 1; }
-  91%  { transform: translateY(0) scale(1); opacity: 1; }
-  100% { transform: translateY(-10px) scale(.96); opacity: 0; }
+  0%   { transform: translateY(10px) scale(.92); opacity: 0; }
+  7%   { opacity: 1; }
+  13%  { transform: translateY(0) scale(1); opacity: 1; }
+  88%  { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-8px) scale(.96); opacity: 0; }
 }
 @keyframes psRowIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
-@keyframes psSignOff { 0%,14%{opacity:1;} 22%,100%{opacity:0;} }
+@keyframes psSignOff { 0%,18%{opacity:1;} 30%,100%{opacity:0;} }
 @keyframes psGear { to { transform: rotate(360deg); } }
-.ps-win { animation: psWinLife 3.6s ease forwards; }
-.ps-row { opacity: 0; animation: psRowIn .3s ease forwards; }
-.ps-sign { animation: psSignOff 3.6s ease forwards; }
+.ps-win { animation: psWinLife 2.4s ease forwards; }
+.ps-row { opacity: 0; animation: psRowIn .22s ease forwards; }
+.ps-sign { animation: psSignOff 2.4s ease forwards; }
 @media (prefers-reduced-motion: reduce) {
   /* Snapping a 1ms duration would leave the window at its closed (opacity 0)
      end-state — invisible. Instead disable the motion and hold everything at
@@ -223,7 +223,7 @@ function BrowserTheatre({ ledger, target }: { ledger: LedgerRow[]; target: Targe
     const fieldsFor = (reference: string | null) => {
       if (!reference) return [];
       const row = target.find((t) => t.reference === reference);
-      return (row?.populatedFields ?? []).slice(0, 5).map((f) => ({ label: f.label, value: f.preview }));
+      return (row?.populatedFields ?? []).slice(0, 4).map((f) => ({ label: f.label, value: f.preview }));
     };
 
     const first = seen.current === null;
@@ -253,7 +253,7 @@ function BrowserTheatre({ ledger, target }: { ledger: LedgerRow[]; target: Targe
       // Cap concurrent windows so a burst doesn't stack twenty at once.
       setWindows((w) => [...w, ...fresh].slice(-3));
       for (const win of fresh) {
-        setTimeout(() => setWindows((w) => w.filter((x) => x.id !== win.id)), 3600);
+        setTimeout(() => setWindows((w) => w.filter((x) => x.id !== win.id)), 2500);
       }
     }
   }, [ledger, target]);
@@ -285,7 +285,8 @@ function BrowserTheatre({ ledger, target }: { ledger: LedgerRow[]; target: Targe
 
 /** One pop-open browser window that signs in, types the fields, saves, closes. */
 function BrowserWindow({ win }: { win: TheatreWindow }) {
-  const savedDelay = 0.7 + win.fields.length * 0.25 + 0.15;
+  const rowDelay = (i: number) => 0.5 + i * 0.16;
+  const savedDelay = 0.5 + win.fields.length * 0.16 + 0.12;
   return (
     <div
       className="ps-win absolute w-[30%] min-w-[230px] overflow-hidden rounded-lg border border-black/20 bg-white shadow-2xl"
@@ -317,7 +318,7 @@ function BrowserWindow({ win }: { win: TheatreWindow }) {
             </p>
             <dl className="space-y-1.5">
               {win.fields.length === 0 && (
-                <div className="ps-row text-[11px] text-slate-500" style={{ animationDelay: '0.7s' }}>
+                <div className="ps-row text-[11px] text-slate-500" style={{ animationDelay: '0.5s' }}>
                   Updating fields&hellip;
                 </div>
               )}
@@ -325,7 +326,7 @@ function BrowserWindow({ win }: { win: TheatreWindow }) {
                 <div
                   key={f.label}
                   className="ps-row flex items-baseline justify-between gap-2 border-b border-slate-100 pb-1"
-                  style={{ animationDelay: `${0.7 + i * 0.25}s` }}
+                  style={{ animationDelay: `${rowDelay(i)}s` }}
                 >
                   <dt className="text-[10px] uppercase tracking-wide text-slate-400">{f.label}</dt>
                   <dd className="max-w-[60%] truncate text-[11px] font-medium text-slate-700">{f.value}</dd>

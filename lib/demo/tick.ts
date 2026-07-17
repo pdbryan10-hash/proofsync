@@ -2,6 +2,10 @@ import { demoControl } from './mongo';
 import { getTickSeconds, getDripPerTick } from './config';
 import { dripSourceActivity, burstCompletedJobs, type DripResult } from './seeder';
 import { ingestAndSync, type IngestResult } from './ingest';
+import { trimDemo } from './trim';
+
+/** Jobs guaranteed to complete-and-cross on every beat, so nothing feels dead. */
+const BASELINE_BURST = 2;
 
 /**
  * One beat of the demo.
@@ -118,17 +122,21 @@ async function runTickInner(
     { returnDocument: 'after' },
   );
 
-  // 0. Burst: inject a handful of already-completed jobs so a viewer who just
-  //    opened the console (or pressed the button) sees real records land at once.
-  if (options.burst && options.burst > 0) {
-    await burstCompletedJobs(Math.min(options.burst, 8));
-  }
+  // 0. Every beat lands a baseline of freshly-completed jobs (plus any explicit
+  //    burst from an open/button press), so there is ALWAYS something crossing —
+  //    no dead beats where the lifecycle happened to complete nothing.
+  const burst = BASELINE_BURST + (options.burst ?? 0);
+  await burstCompletedJobs(Math.min(burst, 10));
 
-  // 1. The source system does its thing: engineers travel, finish, new work lands.
+  // 1. The source system also does its thing: engineers travel, finish, new work
+  //    lands — so there's a visible pipeline behind the burst, not just landings.
   const drip = await dripSourceActivity(getDripPerTick());
 
   // 2. ProofSync notices what changed and runs the real engine over it.
   const sync = await ingestAndSync();
+
+  // 3. Keep the demo bounded — rolling window of recent jobs, believable stats.
+  await trimDemo();
 
   return {
     ran: true,
