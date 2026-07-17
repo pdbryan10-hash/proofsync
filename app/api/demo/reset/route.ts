@@ -6,6 +6,8 @@ import { clearSessions } from '@/lib/demo/session';
 import { clearShots } from '@/lib/demo/screenshots';
 import { isBrowserTransport } from '@/lib/demo/config';
 import { runWithDemoLock } from '@/lib/demo/tick';
+import { burstCompletedJobs } from '@/lib/demo/seeder';
+import { ingestAndSync } from '@/lib/demo/ingest';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +38,14 @@ export async function POST(req: NextRequest) {
       await clearShots();
       const seeded = await seedDemoSystems();
       clearSessions();
+
+      // Warm it up: run a few sync passes so the demo opens ALREADY in train —
+      // Concerto partly populated and the ledger holding recent SUCCESS — rather
+      // than sparse for the first few seconds. Runs under the lock, so it's clean.
+      for (let i = 0; i < 4; i++) {
+        await burstCompletedJobs(4);
+        await ingestAndSync();
+      }
       if (isBrowserTransport()) {
         const { closeBrowser } = await import('@/lib/demo/browser');
         await closeBrowser();

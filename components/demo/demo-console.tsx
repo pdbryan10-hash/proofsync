@@ -65,7 +65,7 @@ export function DemoConsole() {
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <Explainer tickSeconds={state.tick.tickSeconds} busy={busy} onForce={forceTick} />
-        <BrowserTheatre ledger={state.ledger} />
+        <BrowserTheatre ledger={state.ledger} target={state.target} />
         <ActivityFeed activity={activity} />
         <StatsRow state={state} />
 
@@ -208,13 +208,13 @@ interface TheatreWindow {
   jobNumber: string;
   reference: string | null;
   kind: 'ok' | 'fail';
-  fieldCount: number;
-  docCount: number;
+  fields: { label: string; value: string }[];
   slot: number;
   detail: 'full' | 'brief';
+  lifeMs: number;
 }
 
-function BrowserTheatre({ ledger }: { ledger: LedgerRow[] }) {
+function BrowserTheatre({ ledger, target }: { ledger: LedgerRow[]; target: TargetRow[] }) {
   const [windows, setWindows] = useState<TheatreWindow[]>([]);
   const seen = useRef<Map<string, string> | null>(null);
   const winId = useRef(0);
@@ -222,6 +222,33 @@ function BrowserTheatre({ ledger }: { ledger: LedgerRow[] }) {
   const fullShown = useRef(0);
 
   useEffect(() => {
+    // The real field values written to this job's work order — so the window
+    // shows the actual data being entered, the manual re-keying we automate.
+    const fieldsFor = (reference: string | null) => {
+      if (!reference) return [];
+      const row = target.find((t) => t.reference === reference);
+      return (row?.populatedFields ?? []).map((f) => ({ label: f.label, value: f.preview }));
+    };
+    const makeWin = (r: LedgerRow, detail: 'full' | 'brief'): TheatreWindow => {
+      const ok = r.status === 'SUCCESS' || r.status === 'PARTIAL';
+      const fields = ok ? fieldsFor(r.reference) : [];
+      const gap = detail === 'brief' ? 0.16 : 0.22;
+      const life = ok ? 0.5 + fields.length * gap + (detail === 'brief' ? 0.9 : 1.2) : 2.8;
+      return {
+        id: winId.current++,
+        jobNumber: r.jobNumber,
+        reference: r.reference,
+        kind: ok ? 'ok' : 'fail',
+        fields,
+        slot: slotIx.current++ % THEATRE_SLOTS.length,
+        detail,
+        lifeMs: Math.round(life * 1000),
+      };
+    };
+    const removeAfter = (win: TheatreWindow) => {
+      setTimeout(() => setWindows((w) => w.filter((x) => x.id !== win.id)), win.lifeMs + 200);
+    };
+
     const first = seen.current === null;
     const prev = seen.current ?? new Map<string, string>();
     const next = new Map<string, string>();
@@ -232,49 +259,53 @@ function BrowserTheatre({ ledger }: { ledger: LedgerRow[] }) {
       const wasTerminal = TERMINAL.includes(prev.get(r.id) ?? '');
       const isTerminal = TERMINAL.includes(r.status);
       if (!first && isTerminal && !wasTerminal) {
-        const ok = r.status === 'SUCCESS' || r.status === 'PARTIAL';
         // Front-load the theatre: the first couple of syncs get the full
         // step-by-step parade (the "oh, I see what it's doing" moment); after
         // that it settles into a lighter rhythm so it never becomes a repetitive
         // show that outstays its welcome.
         const detail: 'full' | 'brief' = fullShown.current < 2 ? 'full' : 'brief';
         fullShown.current += 1;
-        fresh.push({
-          id: winId.current++,
-          jobNumber: r.jobNumber,
-          reference: r.reference,
-          kind: ok ? 'ok' : 'fail',
-          fieldCount: r.fieldsUpdated,
-          docCount: r.documentsTransferred,
-          slot: slotIx.current++ % THEATRE_SLOTS.length,
-          detail,
-        });
+        fresh.push(makeWin(r, detail));
       }
     }
     seen.current = next;
 
+    if (first) {
+      // Open with a few workers already mid-job, so the stage is busy on arrival
+      // rather than "waiting for the next completed job". Uses the most recent
+      // real syncs from the ledger.
+      const recent = ledger.filter((r) => TERMINAL.includes(r.status)).slice(0, 3);
+      const initial = recent.map((r) => makeWin(r, fullShown.current++ < 2 ? 'full' : 'brief'));
+      if (initial.length) {
+        setWindows(initial);
+        initial.forEach(removeAfter);
+      }
+      return;
+    }
+
     if (fresh.length) {
       // Cap concurrent windows so a burst doesn't stack twenty at once.
       setWindows((w) => [...w, ...fresh].slice(-3));
-      for (const win of fresh) {
-        const life = win.kind === 'fail' ? 2800 : win.detail === 'brief' ? 2400 : 4000;
-        setTimeout(() => setWindows((w) => w.filter((x) => x.id !== win.id)), life);
-      }
+      fresh.forEach(removeAfter);
     }
-  }, [ledger]);
+  }, [ledger, target]);
 
   return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-gradient-to-b from-navy-900 to-navy-800">
+    <section className="relative mb-4 overflow-hidden rounded-xl border border-navy-900/40 bg-[radial-gradient(120%_120%_at_50%_-10%,#2a2f6e_0%,#1b1e49_45%,#12142f_100%)] shadow-inner">
       <style>{THEATRE_KEYFRAMES}</style>
-      <div className="flex items-center gap-2 px-4 py-2 text-white/70">
-        <Cog className="ps-gear size-3.5" style={{ animation: 'psGear 3s linear infinite' }} />
-        <span className="text-[11px] font-semibold uppercase tracking-wide">
+      {/* soft glow behind the workers for depth */}
+      <div className="pointer-events-none absolute inset-x-0 top-8 mx-auto h-40 w-2/3 rounded-full bg-info/10 blur-3xl" />
+      <div className="relative flex items-center gap-2 px-4 py-2.5 text-white/80">
+        <Cog className="ps-gear size-4 text-info" style={{ animation: 'psGear 3s linear infinite' }} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider">
           ProofSync signing in &amp; filling the client&rsquo;s system
         </span>
-        <span className="ml-auto text-[10px] text-white/40">the way a person would — where there&rsquo;s no API</span>
+        <span className="ml-auto hidden text-[10px] text-white/40 sm:inline">
+          the way a person would — where there&rsquo;s no API
+        </span>
       </div>
 
-      <div className="relative h-[210px] px-3 pb-3">
+      <div className="relative h-[290px] px-3 pb-3">
         {windows.length === 0 && (
           <div className="flex h-full items-center justify-center text-xs text-white/30">
             waiting for the next completed job&hellip;
@@ -288,82 +319,73 @@ function BrowserTheatre({ ledger }: { ledger: LedgerRow[] }) {
   );
 }
 
-/** One pop-open browser window that signs in, types the fields, saves, closes. */
+/** Per-worker accent so the three cards read as distinct and the stage has depth. */
+const THEATRE_ACCENTS = [
+  { bar: 'from-teal-400 to-emerald-500', badge: 'bg-emerald-600', glow: 'shadow-emerald-500/30', dt: 'text-emerald-600/80' },
+  { bar: 'from-sky-400 to-indigo-500', badge: 'bg-indigo-600', glow: 'shadow-indigo-500/30', dt: 'text-indigo-600/80' },
+  { bar: 'from-fuchsia-400 to-violet-500', badge: 'bg-violet-600', glow: 'shadow-violet-500/30', dt: 'text-violet-600/80' },
+];
+
+/** One pop-open browser window: a worker filling the client's form, field by field. */
 function BrowserWindow({ win }: { win: TheatreWindow }) {
   const worker = `ProofSync Worker ${String(win.slot + 1).padStart(2, '0')}`;
-  const brief = win.detail === 'brief';
-  const fld = `${win.fieldCount} field${win.fieldCount === 1 ? '' : 's'}`;
-
-  // Faithful to the real pipeline — Validate → Match → Transform → Update →
-  // Upload → Verify → done — using THIS job's actual counts. The upload step
-  // only appears when documents genuinely transferred; nothing is invented.
-  const fullSteps = [
-    'Logging in',
-    'Validating the completed job',
-    win.reference ? `Matching to ${win.reference}` : 'Matching the record',
-    'Transforming the fields',
-    `Writing ${fld}`,
-    ...(win.docCount > 0
-      ? [`Uploading ${win.docCount} certificate${win.docCount === 1 ? '' : 's'}`]
-      : []),
-    'Verifying the record',
-    'Complete',
-  ];
-  // After the first couple, drop to the essentials — same real stages, fewer of
-  // them — so repeated syncs read as brisk work, not a re-run of the full show.
-  const briefSteps = [
-    win.reference ? `Matched ${win.reference}` : 'Matched the record',
-    `Wrote ${fld}, verified`,
-    'Complete',
-  ];
-  const failSteps = ['Logging in', 'Checking client reference'];
-  const steps = win.kind === 'fail' ? failSteps : brief ? briefSteps : fullSteps;
-
-  // Brisk on purpose — real work happening fast reads as genuine; slow dramatic
-  // ticks read as a scripted animation.
-  const gap = brief ? 0.26 : 0.32;
-  const stepDelay = (i: number) => 0.25 + i * gap;
-  const lifeS = win.kind === 'fail' ? 2.8 : brief ? 2.4 : 4.0;
+  const accent = THEATRE_ACCENTS[win.slot % THEATRE_ACCENTS.length]!;
+  const gap = win.detail === 'brief' ? 0.16 : 0.22;
+  const rowDelay = (i: number) => 0.4 + i * gap;
+  const savedDelay = 0.4 + win.fields.length * gap + 0.12;
 
   return (
     <div
-      className="ps-win absolute w-[30%] min-w-[240px] overflow-hidden rounded-lg border border-black/20 bg-white shadow-2xl"
-      style={{ left: THEATRE_SLOTS[win.slot], top: `${8 + win.slot * 6}px`, animationDuration: `${lifeS}s` }}
+      className={cn(
+        'ps-win absolute w-[31%] min-w-[248px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-2xl',
+        accent.glow,
+      )}
+      style={{ left: THEATRE_SLOTS[win.slot], top: `${10 + win.slot * 10}px`, animationDuration: `${win.lifeMs / 1000}s` }}
     >
-      {/* browser chrome + the named worker doing the job */}
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-3 py-1.5">
+      {/* accent stripe + browser chrome + the named worker */}
+      <div className={cn('h-1 w-full bg-gradient-to-r', accent.bar)} />
+      <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-1.5">
         <span className="size-2 rounded-full bg-red-400" />
         <span className="size-2 rounded-full bg-amber-400" />
         <span className="size-2 rounded-full bg-emerald-400" />
-        <span className="ml-1 flex-1 truncate rounded bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500">
+        <span className="ml-1 flex-1 truncate rounded bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200">
           concerto&thinsp;·&thinsp;{win.reference ?? 'work order'}
         </span>
-        <span className="whitespace-nowrap rounded bg-navy-800 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+        <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[9px] font-semibold text-white', accent.badge)}>
           {worker}
         </span>
       </div>
 
-      {/* the worker ticking through its checklist */}
-      <div className="space-y-1.5 p-3">
-        {steps.map((label, i) => {
-          const last = win.kind === 'ok' && i === steps.length - 1;
-          return (
+      {/* the client's form being filled in, field by field, like manual re-keying */}
+      <div className="p-3">
+        <p className="mb-2 text-[9px] font-semibold uppercase tracking-widest text-slate-400">Contractor update</p>
+        {win.kind === 'ok' ? (
+          <>
+            <dl className="space-y-1.5">
+              {win.fields.length === 0 && (
+                <div className="ps-row text-[11px] text-slate-500" style={{ animationDelay: '0.4s' }}>
+                  Entering completion details&hellip;
+                </div>
+              )}
+              {win.fields.map((f, i) => (
+                <div key={f.label} className="ps-row" style={{ animationDelay: `${rowDelay(i)}s` }}>
+                  <dt className={cn('text-[9px] font-medium uppercase tracking-wide', accent.dt)}>{f.label}</dt>
+                  <dd className="truncate text-[11px] font-medium text-slate-700">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
             <div
-              key={label}
-              className="ps-row flex items-center gap-2 text-[11px]"
-              style={{ animationDelay: `${stepDelay(i)}s` }}
+              className="ps-row mt-2.5 flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200"
+              style={{ animationDelay: `${savedDelay}s` }}
             >
-              <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" />
-              <span className={cn('text-slate-600', last && 'font-semibold text-emerald-700')}>
-                {label}
-              </span>
+              <CheckCircle2 className="size-3.5" />
+              Saved to Concerto
             </div>
-          );
-        })}
-        {win.kind === 'fail' && (
+          </>
+        ) : (
           <div
-            className="ps-row flex items-start gap-2 rounded bg-amber-50 px-2 py-1.5 text-[11px] font-medium text-amber-800"
-            style={{ animationDelay: `${stepDelay(steps.length)}s` }}
+            className="ps-row flex items-start gap-2 rounded-md bg-amber-50 px-2 py-1.5 text-[11px] font-medium text-amber-800 ring-1 ring-amber-200"
+            style={{ animationDelay: '0.5s' }}
           >
             <FileWarning className="mt-0.5 size-3.5 shrink-0" />
             {win.reference
