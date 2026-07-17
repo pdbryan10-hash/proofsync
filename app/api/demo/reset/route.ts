@@ -6,6 +6,7 @@ import { clearSessions } from '@/lib/demo/session';
 import { clearShots } from '@/lib/demo/screenshots';
 import { isBrowserTransport } from '@/lib/demo/config';
 import { runWithDemoLock } from '@/lib/demo/tick';
+import { prisma } from '@/lib/db/prisma';
 import { demoGuard, hasWriteKey } from '../_guard';
 
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,11 @@ export async function POST(req: NextRequest) {
       await ensureDemoOrg(); // create the fresh (new-epoch) org + client + mappings
       await clearShots();
       clearSessions();
+      // Clear the idempotency ledger for the batch's job numbers. The seed re-uses
+      // the SAME job numbers every time, so without this the engine sees them as
+      // already-processed and SKIPS every sync (dispatched but 0 synced). Replay
+      // already does this; reset must too.
+      await prisma.processedEvent.deleteMany({ where: { joblogicJobId: { startsWith: 'JL-' } } });
       // Deliberately NO syncing inside reset: the slow cluster can't finish the
       // batch in the 60s budget, and trying left half-run, inconsistent state.
       // Reset stays a fast, bulletproof reseed; the console cadence and the
