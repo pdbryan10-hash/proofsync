@@ -19,29 +19,41 @@ function keepCount(): number {
 
 export async function trimDemo(): Promise<void> {
   const keep = keepCount();
-  await Promise.all([trimSource(keep), trimTarget(keep), trimLedger(keep)]);
+  // Source + target must be trimmed TOGETHER: the ledger trim is independent
+  // (below) and safe, but pruning the two stand-in systems by unrelated keys
+  // orphans jobs from their work orders and makes the next sync raise spurious
+  // "no matching work order" exceptions.
+  await trimSourceAndTarget(keep);
+  await trimLedger(keep).catch(() => {});
 }
 
-async function trimSource(keep: number): Promise<void> {
+/**
+ * Keep the newest `keep` source jobs and every work order that belongs to one of
+ * them. The source is the spine; the target is pruned to MATCH by reference so no
+ * surviving job ever loses its work order. (The target's own createdAt is
+ * randomly backdated for display, so trimming it independently by createdAt
+ * deleted work orders of freshly-created jobs — the cause of the exception flood.)
+ */
+async function trimSourceAndTarget(keep: number): Promise<void> {
   const jobs = await sourceJobs();
-  const count = await jobs.countDocuments({});
-  if (count <= keep) return;
-  const old = await jobs
-    .find({}, { projection: { _id: 1 }, sort: { createdAt: 1 } })
-    .limit(count - keep)
-    .toArray();
-  if (old.length) await jobs.deleteMany({ _id: { $in: old.map((o) => o._id) } });
-}
+  const total = await jobs.countDocuments({});
+  if (total <= keep) return;
 
-async function trimTarget(keep: number): Promise<void> {
-  const wos = await targetWorkOrders();
-  const count = await wos.countDocuments({});
-  if (count <= keep) return;
-  const old = await wos
-    .find({}, { projection: { _id: 1 }, sort: { createdAt: 1 } })
-    .limit(count - keep)
+  const kept = await jobs
+    .find({}, { projection: { jobNumber: 1, customerOrderRef: 1 }, sort: { createdAt: -1 } })
+    .limit(keep)
     .toArray();
-  if (old.length) await wos.deleteMany({ _id: { $in: old.map((o) => o._id) } });
+  const keptJobNumbers = kept.map((j) => j.jobNumber);
+  const keptRefs = kept.map((j) => j.customerOrderRef).filter((r): r is string => !!r);
+
+  await jobs.deleteMany({ jobNumber: { $nin: keptJobNumbers } });
+
+  // Only prune the target once we actually have a reference set to keep, so an
+  // unlucky all-faulted window can't wipe every work order.
+  if (keptRefs.length) {
+    const wos = await targetWorkOrders();
+    await wos.deleteMany({ reference: { $nin: keptRefs } });
+  }
 }
 
 /**
