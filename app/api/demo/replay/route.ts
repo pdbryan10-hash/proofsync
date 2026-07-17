@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
 
       // 2. Clear ProofSync's ledger for this org and re-queue every job.
       const { organisationId } = await ensureDemoOrg();
-      const jobs = await prisma.job.findMany({ where: { organisationId }, select: { id: true } });
+      const jobs = await prisma.job.findMany({
+        where: { organisationId },
+        select: { id: true, joblogicJobId: true },
+      });
       const jobIds = jobs.map((j) => j.id);
       if (jobIds.length) {
         const runs = await prisma.syncRun.findMany({
@@ -53,6 +56,11 @@ export async function POST(req: NextRequest) {
         if (runIds.length) await prisma.syncEvent.deleteMany({ where: { syncRunId: { in: runIds } } });
         await prisma.exception.deleteMany({ where: { jobId: { in: jobIds } } });
         if (runIds.length) await prisma.syncRun.deleteMany({ where: { id: { in: runIds } } });
+        // Clear the idempotency ledger too — otherwise the engine correctly sees
+        // these jobs as already processed and skips the whole re-run.
+        await prisma.processedEvent.deleteMany({
+          where: { joblogicJobId: { in: jobs.map((j) => j.joblogicJobId) } },
+        });
         await prisma.job.updateMany({
           where: { id: { in: jobIds } },
           data: { syncStatus: SyncStatus.PENDING },
