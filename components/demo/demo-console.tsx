@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   Camera,
   CheckCircle2,
   Chrome,
+  Cog,
   Database,
   ExternalLink,
   FileWarning,
@@ -64,6 +65,7 @@ export function DemoConsole() {
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <Explainer tickSeconds={state.tick.tickSeconds} busy={busy} onForce={forceTick} />
+        <FlowDeck ledger={state.ledger} />
         <ActivityFeed activity={activity} />
         <StatsRow state={state} />
 
@@ -155,6 +157,147 @@ function Explainer({
           </>
         )}
       </button>
+    </section>
+  );
+}
+
+/**
+ * The visual centrepiece: jobs fly across as chips.
+ *
+ * Every job that finishes a sync launches a chip that travels from the Joblogic
+ * side, through the ProofSync hub, into Concerto — turning "some rows changed"
+ * into a thing you can watch move. Jobs that fail veer to the hub and drop out,
+ * so an exception reads as "it didn't make it across" at a glance.
+ */
+const FLOW_KEYFRAMES = `
+@keyframes psFly {
+  0%   { left: 4%;  opacity: 0; }
+  10%  { opacity: 1; }
+  50%  { transform: translate(-50%, -16px) scale(1.06); }
+  90%  { opacity: 1; }
+  100% { left: 94%; opacity: 0; }
+}
+@keyframes psFlag {
+  0%   { left: 4%;  top: var(--lane); opacity: 0; }
+  12%  { opacity: 1; }
+  50%  { left: 49%; top: var(--lane); opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+  100% { left: 49%; top: 150%; opacity: 0; transform: translate(-50%, 0) scale(0.8); }
+}
+@keyframes psGear { to { transform: rotate(360deg); } }
+@keyframes psHubPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(29,78,216,.35); } 50% { box-shadow: 0 0 0 10px rgba(29,78,216,0); } }
+.ps-chip { animation-timing-function: cubic-bezier(.55,.1,.45,.9); animation-fill-mode: forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .ps-chip { animation-duration: 1ms !important; }
+  .ps-gear { animation: none !important; }
+}
+`;
+
+interface FlowChip {
+  id: number;
+  label: string;
+  kind: 'ok' | 'flag';
+  lane: number;
+}
+
+const TERMINAL = ['SUCCESS', 'PARTIAL', 'FAILED', 'EXCEPTION'];
+const LANES = [26, 58, 90]; // px from the top of the band, three lanes
+
+function FlowDeck({ ledger }: { ledger: LedgerRow[] }) {
+  const [chips, setChips] = useState<FlowChip[]>([]);
+  const [active, setActive] = useState(false);
+  const seen = useRef<Map<string, string> | null>(null);
+  const chipId = useRef(0);
+  const laneIx = useRef(0);
+  const activeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const first = seen.current === null;
+    const prev = seen.current ?? new Map<string, string>();
+    const next = new Map<string, string>();
+    const fresh: FlowChip[] = [];
+
+    for (const r of ledger) {
+      next.set(r.id, r.status);
+      const wasTerminal = TERMINAL.includes(prev.get(r.id) ?? '');
+      const isTerminal = TERMINAL.includes(r.status);
+      // A job that has just reached a terminal state is a job that just crossed
+      // (or just failed). First render seeds the set without launching anything,
+      // so opening the page doesn't fire a chip for every historic row.
+      if (!first && isTerminal && !wasTerminal) {
+        fresh.push({
+          id: chipId.current++,
+          label: r.reference ? `${r.jobNumber} → ${r.reference}` : r.jobNumber,
+          kind: r.status === 'SUCCESS' || r.status === 'PARTIAL' ? 'ok' : 'flag',
+          lane: LANES[laneIx.current++ % LANES.length]!,
+        });
+      }
+    }
+    seen.current = next;
+
+    if (fresh.length) {
+      setChips((c) => [...c, ...fresh]);
+      setActive(true);
+      if (activeTimer.current) clearTimeout(activeTimer.current);
+      activeTimer.current = setTimeout(() => setActive(false), 1900);
+      for (const ch of fresh) {
+        setTimeout(() => setChips((c) => c.filter((x) => x.id !== ch.id)), 2000);
+      }
+    }
+  }, [ledger]);
+
+  return (
+    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-gradient-to-b from-card to-muted/30">
+      <style>{FLOW_KEYFRAMES}</style>
+      <div className="relative h-[132px]">
+        {/* the connecting track */}
+        <div className="absolute inset-x-[6%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-navy-200 via-info/40 to-success/50" />
+
+        {/* end zones + hub */}
+        <div className="absolute left-4 top-3 text-[11px] font-semibold uppercase tracking-wide text-navy-700">
+          Joblogic
+          <div className="mt-0.5 text-[10px] font-normal normal-case text-muted-foreground">contractor · jobs done</div>
+        </div>
+        <div className="absolute right-4 top-3 text-right text-[11px] font-semibold uppercase tracking-wide text-success-text">
+          Concerto
+          <div className="mt-0.5 text-[10px] font-normal normal-case text-muted-foreground">client · updated</div>
+        </div>
+
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+          <div
+            className="flex size-12 items-center justify-center rounded-full border border-info/30 bg-card"
+            style={{ animation: active ? 'psHubPulse 1s ease-out infinite' : undefined }}
+          >
+            <Cog
+              className="ps-gear size-6 text-info"
+              style={{ animation: `psGear ${active ? '1.1s' : '4s'} linear infinite` }}
+            />
+          </div>
+          <span className="mt-1.5 text-[11px] font-semibold text-navy-800">ProofSync</span>
+        </div>
+
+        {/* flying chips */}
+        {chips.map((ch) => (
+          <span
+            key={ch.id}
+            className={cn(
+              'ps-chip pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold shadow-lg',
+              ch.kind === 'ok'
+                ? 'bg-info text-white shadow-info/30'
+                : 'bg-warning text-white shadow-warning/30',
+            )}
+            style={
+              {
+                top: ch.kind === 'ok' ? `${ch.lane}px` : undefined,
+                ['--lane' as string]: `${ch.lane}px`,
+                animation: `${ch.kind === 'ok' ? 'psFly' : 'psFlag'} ${ch.kind === 'ok' ? '1.9s' : '1.6s'}`,
+              } as React.CSSProperties
+            }
+          >
+            {ch.kind === 'flag' && <FileWarning className="mr-1 inline size-3 align-[-2px]" />}
+            {ch.label}
+          </span>
+        ))}
+      </div>
     </section>
   );
 }
