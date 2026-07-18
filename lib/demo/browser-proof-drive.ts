@@ -92,6 +92,7 @@ export async function runBrowserProofDrive(
     note('browser: connected');
   } catch (e) {
     note(`browser: FAILED ${(e as Error).message}`);
+    await closeBrowser().catch(() => {});
     return steps;
   }
 
@@ -168,5 +169,11 @@ export async function runBrowserProofDrive(
 
   // Linger a beat so the live view isn't cut to black the instant it ends.
   await wait(1_500);
+
+  // End the session so it doesn't linger against the concurrent-session cap
+  // (Browserbase free plan allows only a few at once). The login — the watchable
+  // part — has already played by now; the curtain's "signed in" overlay covers
+  // the brief blank as the session closes.
+  await closeBrowser().catch(() => {});
   return steps;
 }
