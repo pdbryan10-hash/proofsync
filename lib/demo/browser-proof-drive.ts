@@ -17,26 +17,26 @@ import { getDemoBaseUrl, DEMO_SOURCE_LOGIN, DEMO_TARGET_LOGIN } from './config';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Type into a field one key at a time, but blisteringly fast — machine keying. */
+/** Type into a field at machine pace — visible characters, near-instant. */
 async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
     await locator.fill('');
-    await locator.pressSequentially(text, { delay: 5 });
+    await locator.pressSequentially(text, { delay: 1 });
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
 }
 
-/** Sign one already-on-its-login-page tab in, keying the credentials visibly. */
+/** Sign one already-on-its-login-page tab in, keying the credentials at machine pace. */
 async function loginTab(
   page: Page,
   p: { userLabel: string; submitLabel: RegExp; username: string; password: string },
 ): Promise<void> {
   await keyInto(page.getByLabel(p.userLabel, { exact: true }), p.username);
-  await wait(60);
+  await wait(20);
   await keyInto(page.getByLabel('Password', { exact: true }), p.password);
-  await wait(90);
+  await wait(25);
   await page.getByRole('button', { name: p.submitLabel }).click();
   await page.waitForLoadState('domcontentloaded').catch(() => {});
 }
@@ -81,7 +81,7 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   // Publish a live-view URL per tab so the curtain can embed both, then hold just
   // long enough for both embedded views to connect before the keying starts.
   await recordDualLiveViews();
-  await wait(1_200);
+  await wait(700);
 
   // Sign into BOTH systems at once.
   const [jl, co] = await Promise.allSettled([
@@ -102,6 +102,6 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   note(`concerto: ${co.status} at ${coPage.url()}`);
 
   // Linger a beat on the signed-in state; the session auto-releases on its timeout.
-  await wait(600);
+  await wait(350);
   return steps;
 }

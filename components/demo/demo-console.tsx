@@ -93,7 +93,7 @@ export function DemoConsole() {
       await Promise.race([runLogin(), capped]);
       setLogin((l) => (l ? { ...l, done: true } : l));
       // Hold on "Signed in" for a beat, then lift the curtain.
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 700));
       setLogin(null);
     },
     [runLogin, state?.remoteBrowserAvailable],
