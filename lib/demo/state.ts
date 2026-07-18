@@ -27,7 +27,7 @@ import type { SourceJobDoc } from './schema';
  * If DB2 says a field is populated, it is because DB2 was asked.
  */
 
-const PANEL_LIMIT = 14;
+const PANEL_LIMIT = 45;
 
 export interface SourceRow {
   jobNumber: string;
