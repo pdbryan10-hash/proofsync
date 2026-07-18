@@ -34,7 +34,8 @@ async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
     await locator.fill('');
-    await locator.pressSequentially(text, { delay: 75 });
+    // Brisk but still visibly typing — "machine speed, not too quick".
+    await locator.pressSequentially(text, { delay: 35 });
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
@@ -62,14 +63,14 @@ async function signedIn(
   if (!page.url().includes(params.loginPath)) return; // already signed in
 
   await keyInto(page.getByLabel(params.userLabel, { exact: true }), params.username);
-  await wait(500);
+  await wait(250);
   await keyInto(page.getByLabel('Password', { exact: true }), params.password);
-  await wait(700);
+  await wait(350);
   // Each vendor names its submit button differently — Joblogic "Sign in",
   // Concerto "Log in" — so the caller supplies the label to match.
   await page.getByRole('button', { name: params.submitLabel }).click();
   await page.waitForLoadState('domcontentloaded');
-  await wait(2_400);
+  await wait(1_100);
 }
 
 export async function runBrowserProofDrive(
@@ -103,10 +104,9 @@ export async function runBrowserProofDrive(
   page.setDefaultTimeout(20_000);
   note(`page: ${context.pages().length} page(s), url=${page.url()}`);
 
-  // Hold before anything moves, so the embedded live view has connected and the
-  // viewer is watching an idle browser BEFORE the keying starts — otherwise the
-  // logins are already done by the time the live view paints its first frame.
-  await wait(6_000);
+  // Hold just long enough for the embedded live view to connect before the keying
+  // starts — otherwise the first keystrokes happen before the view paints.
+  await wait(3_500);
 
   // Each phase is best-effort: a step that fails (a selector that moved, a slow
   // page) must never abort the whole proof or 500 the request.
@@ -121,7 +121,7 @@ export async function runBrowserProofDrive(
       password: DEMO_SOURCE_LOGIN.password,
     });
     note(`joblogic: at ${page.url()}`);
-    await wait(2_500);
+    await wait(1_200);
   } catch (e) {
     note(`joblogic: FAILED ${(e as Error).message}`);
   }
@@ -137,7 +137,7 @@ export async function runBrowserProofDrive(
       password: DEMO_TARGET_LOGIN.password,
     });
     note(`concerto: at ${page.url()}`);
-    await wait(2_000);
+    await wait(900);
   } catch (e) {
     note(`concerto: FAILED ${(e as Error).message}`);
   }
@@ -167,13 +167,11 @@ export async function runBrowserProofDrive(
     }
   }
 
-  // Linger a beat so the live view isn't cut to black the instant it ends.
-  await wait(1_500);
-
-  // End the session so it doesn't linger against the concurrent-session cap
-  // (Browserbase free plan allows only a few at once). The login — the watchable
-  // part — has already played by now; the curtain's "signed in" overlay covers
-  // the brief blank as the session closes.
-  await closeBrowser().catch(() => {});
+  // Do NOT force-close here: dropping the session while the curtain is still
+  // showing it disconnects the live-view WebSocket in the viewer's face. The
+  // session carries its own 180s timeout (see browser.ts) and auto-releases, and
+  // the next drive's opening closeBrowser reclaims this instance's slot — so
+  // nothing piles up without us cutting the view mid-watch.
+  await wait(800);
   return steps;
 }

@@ -96,7 +96,15 @@ async function launch(): Promise<Browser> {
       const res = await fetch('https://api.browserbase.com/v1/sessions', {
         method: 'POST',
         headers: { 'X-BB-API-Key': bb.apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, browserSettings: { viewport: { width: 1280, height: 800 } } }),
+        // Give the session its own short timeout so it auto-releases (and frees
+        // the concurrent-session slot) without us having to force-close it — a
+        // force-close mid-run is what dropped the live-view WebSocket while it was
+        // still being watched. 180s comfortably covers a login plus viewing.
+        body: JSON.stringify({
+          projectId,
+          timeout: 180,
+          browserSettings: { viewport: { width: 1280, height: 800 } },
+        }),
       });
       if (!res.ok) {
         throw new Error(`Browserbase session request failed (${res.status}): ${await res.text()}`);
