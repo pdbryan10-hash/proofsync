@@ -117,7 +117,14 @@ export function getMaxDispatchesPerTick(): number {
   // Deliberately a slow trickle in direct mode: syncing the whole batch in one
   // or two beats reads as "everything succeeded at once". A few per beat lets a
   // viewer watch the Joblogic jobs cross into Concerto one cluster at a time.
-  return isBrowserTransport() ? 2 : 3;
+  //
+  // Browser mode drives ONE job per beat. A browser-driven sync (Browserbase
+  // connect + login + fill + save + verify) is ~20-30s; two of them plus the
+  // route's overhead overran the 60s function limit, so beats were killed before
+  // recording the run or its screenshots — which is why the evidence filmstrip
+  // stayed empty and the demo "showed just cards". One per beat finishes well
+  // inside budget and captures its screenshots every time.
+  return isBrowserTransport() ? 1 : 3;
 }
 
 /**
