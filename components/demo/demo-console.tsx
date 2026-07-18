@@ -1558,14 +1558,41 @@ function BrowserProofButton({
   onStart: () => void;
 }) {
   const [launching, setLaunching] = useState(false);
+  // A tab opened on click (a user gesture, so it isn't popup-blocked) and pointed
+  // at the live view the moment its URL arrives — so the presenter never has to
+  // catch a link mid-run; the browser just appears in a new tab and they watch.
+  const proofWindow = useRef<Window | null>(null);
 
-  // The live link arriving is the signal the browser is up — stop the spinner.
   useEffect(() => {
-    if (proof?.liveUrl) setLaunching(false);
+    if (!proof?.liveUrl) return;
+    setLaunching(false);
+    const w = proofWindow.current;
+    if (w && !w.closed) {
+      try {
+        w.location.href = proof.liveUrl;
+      } catch {
+        /* cross-origin set can throw in some browsers; the green link is the fallback */
+      }
+      proofWindow.current = null;
+    }
   }, [proof?.liveUrl]);
 
   const start = () => {
     setLaunching(true);
+    // Open the tab NOW, in the click handler, so the browser allows it. It shows a
+    // holding message until the live-view URL lands (a few seconds) and the effect
+    // above redirects it.
+    try {
+      const w = window.open('about:blank', '_blank');
+      if (w) {
+        w.document.write(
+          '<title>Live browser</title><body style="margin:0;font-family:system-ui,sans-serif;background:#0b1220;color:#e6edf6;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><div style="font-size:15px;opacity:.85">Starting a real browser…</div><div style="font-size:13px;opacity:.55;margin-top:.5rem">The live view will appear here in a few seconds.</div></div></body>',
+        );
+      }
+      proofWindow.current = w;
+    } catch {
+      proofWindow.current = null;
+    }
     onStart();
     // Safety: never spin forever if the session never publishes a link.
     setTimeout(() => setLaunching(false), 90_000);

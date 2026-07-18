@@ -93,8 +93,10 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   page.setDefaultTimeout(20_000);
   note(`page: ${context.pages().length} page(s), url=${page.url()}`);
 
-  // Give whoever clicked a moment to open the live-view link before anything moves.
-  await wait(6_000);
+  // Hold before anything moves, so the auto-opened live-view tab has connected and
+  // the viewer is watching an idle browser BEFORE the keying starts — otherwise
+  // the logins are already done by the time the live view paints its first frame.
+  await wait(10_000);
 
   // Each phase is best-effort: a step that fails (a selector that moved, a slow
   // page) must never abort the whole proof or 500 the request.
