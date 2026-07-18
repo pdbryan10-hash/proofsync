@@ -81,12 +81,16 @@ export function getDemoBaseUrl(): string {
  * machine with Chromium installed. Absent → fall back to a local Playwright
  * launch (dev). Requires DEMO_BASE_URL to be a public URL the remote browser can
  * reach (e.g. https://www.proofsync.co.uk), not localhost.
+ *
+ * Only the API KEY is required: modern Browserbase resolves the project from the
+ * key itself, so BROWSERBASE_PROJECT_ID is optional. If it isn't set, the browser
+ * connector resolves a project id from the key at launch (GET /v1/projects) — the
+ * user never has to find or paste one.
  */
-export function getBrowserbaseConfig(): { apiKey: string; projectId: string } | null {
+export function getBrowserbaseConfig(): { apiKey: string; projectId: string | null } | null {
   const apiKey = process.env.BROWSERBASE_API_KEY;
-  const projectId = process.env.BROWSERBASE_PROJECT_ID;
-  if (apiKey && projectId) return { apiKey, projectId };
-  return null;
+  if (!apiKey) return null;
+  return { apiKey, projectId: process.env.BROWSERBASE_PROJECT_ID || null };
 }
 
 export function isRemoteBrowser(): boolean {

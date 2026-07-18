@@ -15,7 +15,7 @@ import { IntegrationUnavailableError } from '@/lib/errors/integration-errors';
  * RUNNING IT ANYWHERE (Browserbase)
  * ---------------------------------
  * Serverless runtimes have no Chromium binary, so the browser transport used to
- * be local-only. With BROWSERBASE_API_KEY + BROWSERBASE_PROJECT_ID set, `launch`
+ * be local-only. With BROWSERBASE_API_KEY set, `launch`
  * instead CONNECTS over CDP to a hosted Chromium (Browserbase) — the exact same
  * driving code, but the browser lives in the cloud, so "sign in like a person"
  * runs on Vercel or anywhere. Without those vars it falls back to a local
@@ -34,9 +34,35 @@ import { IntegrationUnavailableError } from '@/lib/errors/integration-errors';
 type BrowserCache = {
   demoBrowser?: Promise<Browser>;
   demoContexts?: Map<string, BrowserContext>;
+  browserbaseProjectId?: string;
 };
 
 const cache = globalThis as unknown as BrowserCache;
+
+/**
+ * Resolve a Browserbase project id from the API key alone.
+ *
+ * The REST session-create still wants a projectId, but a user only ever has an
+ * API key now — Browserbase resolves the project from it. So if BROWSERBASE_-
+ * PROJECT_ID isn't set, ask the API which projects the key owns and use the
+ * first. Cached for the life of the process; the key maps to one account.
+ */
+async function resolveProjectId(apiKey: string, explicit: string | null): Promise<string> {
+  if (explicit) return explicit;
+  if (cache.browserbaseProjectId) return cache.browserbaseProjectId;
+
+  const res = await fetch('https://api.browserbase.com/v1/projects', {
+    headers: { 'X-BB-API-Key': apiKey },
+  });
+  if (!res.ok) {
+    throw new Error(`Could not resolve a Browserbase project from the API key (${res.status}): ${await res.text()}`);
+  }
+  const projects = (await res.json()) as Array<{ id: string }>;
+  const id = projects?.[0]?.id;
+  if (!id) throw new Error('The Browserbase API key has no projects.');
+  cache.browserbaseProjectId = id;
+  return id;
+}
 
 async function launch(): Promise<Browser> {
   const bb = getBrowserbaseConfig();
@@ -46,10 +72,11 @@ async function launch(): Promise<Browser> {
   if (bb) {
     const { chromium } = await import('playwright-core');
     try {
+      const projectId = await resolveProjectId(bb.apiKey, bb.projectId);
       const res = await fetch('https://api.browserbase.com/v1/sessions', {
         method: 'POST',
         headers: { 'X-BB-API-Key': bb.apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: bb.projectId, browserSettings: { viewport: { width: 1280, height: 800 } } }),
+        body: JSON.stringify({ projectId, browserSettings: { viewport: { width: 1280, height: 800 } } }),
       });
       if (!res.ok) {
         throw new Error(`Browserbase session request failed (${res.status}): ${await res.text()}`);
