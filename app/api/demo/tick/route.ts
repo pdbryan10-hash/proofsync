@@ -4,8 +4,11 @@ import { runTick } from '@/lib/demo/tick';
 import { demoGuard } from '../_guard';
 
 export const dynamic = 'force-dynamic';
-// A beat completes several syncs, each paced through seven stages.
-export const maxDuration = 60;
+// A beat completes one or more syncs, each paced through seven stages. The
+// browser transport is slow (Browserbase connect + login + fill + save + verify
+// against cold pages runs 60-90s for a single job), so this needs headroom
+// beyond the 60s default — requires a Vercel plan that permits it (Pro: 300s).
+export const maxDuration = 180;
 
 /**
  * Advance the demo by one beat, if one is due.
