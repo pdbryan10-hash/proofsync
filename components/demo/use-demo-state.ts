@@ -68,19 +68,21 @@ export function useDemoState() {
     setActivity((prev) => [{ id: lineId.current++, time, ...line }, ...prev].slice(0, 8));
   }, []);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<DemoState | null> => {
     try {
       const res = await fetch('/api/demo/state', { cache: 'no-store' });
       const body = await res.json();
-      if (!mounted.current) return;
+      if (!mounted.current) return null;
       if (!body.ok) {
         setError(body.error ?? 'Could not read the demo state.');
-        return;
+        return null;
       }
       setError(null);
       setState(body.data as DemoState);
+      return body.data as DemoState;
     } catch {
       if (mounted.current) setError('Lost contact with the server.');
+      return null;
     }
   }, []);
 
@@ -211,24 +213,23 @@ export function useDemoState() {
    * Stops as soon as a beat has nothing left to do.
    */
   const runMachineBatch = useCallback(async () => {
-    for (let i = 0; i < 12; i++) {
-      let dispatched = 0;
-      let deferred = 0;
+    // Drive until the batch is genuinely drained. The break is on the ACTUAL
+    // awaiting count, never on a single beat reporting nothing — a beat can report
+    // nothing simply because the previous beat still holds the cluster lock while
+    // its syncs finish (they overlap), which is not "done". Looping past those and
+    // checking awaiting is what stops the run bailing early and leaving jobs behind.
+    for (let i = 0; i < 20; i++) {
       try {
         const res = await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
         const body = await res.json();
-        const sync = body?.data?.sync ?? {};
-        dispatched = sync.dispatched ?? 0;
-        deferred = sync.deferred ?? 0;
         const line = narrate(body?.data ?? {});
         if (line) pushActivity(line);
-        await refresh();
       } catch {
-        // keep going — a transient beat failure shouldn't stall the run
+        // transient — keep going
       }
-      // Batch drained: nothing dispatched and nothing waiting behind the cap.
-      if (dispatched === 0 && deferred === 0) break;
-      await new Promise((r) => setTimeout(r, 1_100));
+      await new Promise((r) => setTimeout(r, 1_800));
+      const st = await refresh();
+      if (st && st.stats.awaitingSync === 0) break;
     }
   }, [refresh, pushActivity]);
 
