@@ -33,10 +33,9 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
-    await locator.fill('');
-    // Near-instant — a machine keying, not a person. Just enough of a delay that
-    // the characters still visibly appear rather than snapping in all at once.
-    await locator.pressSequentially(text, { delay: 2 });
+    // Machine speed: set the whole value at once (instant), the way an automation
+    // fills a field — no per-character delay. A person types; a machine doesn't.
+    await locator.fill(text);
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
@@ -60,18 +59,18 @@ async function signedIn(
   },
 ): Promise<void> {
   await page.goto(params.target, { waitUntil: 'domcontentloaded' });
-  await wait(1_600);
+  await wait(500);
   if (!page.url().includes(params.loginPath)) return; // already signed in
 
   await keyInto(page.getByLabel(params.userLabel, { exact: true }), params.username);
-  await wait(120);
+  await wait(60);
   await keyInto(page.getByLabel('Password', { exact: true }), params.password);
-  await wait(150);
+  await wait(80);
   // Each vendor names its submit button differently — Joblogic "Sign in",
   // Concerto "Log in" — so the caller supplies the label to match.
   await page.getByRole('button', { name: params.submitLabel }).click();
   await page.waitForLoadState('domcontentloaded');
-  await wait(650);
+  await wait(400);
 }
 
 export async function runBrowserProofDrive(
@@ -107,7 +106,7 @@ export async function runBrowserProofDrive(
 
   // Hold just long enough for the embedded live view to connect before the keying
   // starts — otherwise the first keystrokes happen before the view paints.
-  await wait(2_500);
+  await wait(1_500);
 
   // Each phase is best-effort: a step that fails (a selector that moved, a slow
   // page) must never abort the whole proof or 500 the request.
@@ -122,7 +121,7 @@ export async function runBrowserProofDrive(
       password: DEMO_SOURCE_LOGIN.password,
     });
     note(`joblogic: at ${page.url()}`);
-    await wait(500);
+    await wait(300);
   } catch (e) {
     note(`joblogic: FAILED ${(e as Error).message}`);
   }
@@ -138,7 +137,7 @@ export async function runBrowserProofDrive(
       password: DEMO_TARGET_LOGIN.password,
     });
     note(`concerto: at ${page.url()}`);
-    await wait(500);
+    await wait(300);
   } catch (e) {
     note(`concerto: FAILED ${(e as Error).message}`);
   }
@@ -173,6 +172,6 @@ export async function runBrowserProofDrive(
   // session carries its own 180s timeout (see browser.ts) and auto-releases, and
   // the next drive's opening closeBrowser reclaims this instance's slot — so
   // nothing piles up without us cutting the view mid-watch.
-  await wait(800);
+  await wait(400);
   return steps;
 }
