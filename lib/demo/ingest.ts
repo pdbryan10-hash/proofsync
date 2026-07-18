@@ -4,7 +4,7 @@ import { createJoblogicConnector } from '@/lib/integrations/joblogic/connector';
 import { getSyncDispatcher } from '@/lib/sync/dispatcher';
 import { buildIdempotencyKey } from '@/lib/sync/idempotency';
 import { ensureDemoOrg } from './org';
-import { getMaxDispatchesPerTick } from './config';
+import { getMaxDispatchesPerTick, isConcurrentSync } from './config';
 import type { NormalisedJob, NormalisedCompletion } from '@/lib/integrations/types';
 
 /**
@@ -131,10 +131,17 @@ export async function ingestAndSync(opts: { maxDispatches?: number } = {}): Prom
     else result.exceptions += 1;
   };
 
-  // Sequential, always. Running the demo connectors concurrently produced zero
-  // syncs and no runs on the shared cluster (they share a session/dispatch path),
-  // so this is dispatched one at a time — correctness over the small speed win.
-  for (const p of pending) tally(await runOne(p).catch(() => null));
+  // Concurrency is gated (see isConcurrentSync). On the free M0 cluster, running
+  // the direct syncs in parallel exhausted its tiny connection pool and produced
+  // zero completions, so the default is one-at-a-time. On a dedicated cluster the
+  // pool is no longer the bottleneck, and running the whole beat in parallel is
+  // what makes the batch land almost at once — the "humming" Act 2.
+  if (isConcurrentSync()) {
+    const results = await Promise.all(pending.map((p) => runOne(p).catch(() => null)));
+    for (const d of results) tally(d);
+  } else {
+    for (const p of pending) tally(await runOne(p).catch(() => null));
+  }
 
   await prisma.integrationConnection.updateMany({
     where: { organisationId },

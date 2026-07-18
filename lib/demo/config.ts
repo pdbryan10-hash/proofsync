@@ -128,6 +128,20 @@ export function getMaxDispatchesPerTick(): number {
 }
 
 /**
+ * Run a beat's direct syncs CONCURRENTLY rather than one at a time.
+ *
+ * Off by default and gated: on the free M0 cluster, concurrent syncs exhausted
+ * the tiny connection pool and produced zero completions, so the demo has always
+ * dispatched sequentially. On a dedicated cluster (M10+) that limit is gone, and
+ * running the batch in parallel is what makes Act 2 actually "hum" — every job
+ * crossing at once instead of trickling. Flip DEMO_CONCURRENT_SYNC=1 only when
+ * the demo is on a cluster that can take it.
+ */
+export function isConcurrentSync(): boolean {
+  return process.env.DEMO_CONCURRENT_SYNC === '1';
+}
+
+/**
  * Swap the database name on a Mongo connection string, preserving credentials
  * and options verbatim.
  *

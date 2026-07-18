@@ -4,6 +4,7 @@ import {
   getTargetDbUri,
   getSourceDbName,
   getTargetDbName,
+  isConcurrentSync,
 } from './config';
 import type { SourceJobDoc, SourceUserDoc, TargetWorkOrderDoc, TargetUserDoc } from './schema';
 
@@ -32,10 +33,11 @@ function connect(uri: string): Promise<MongoClient> {
     // Two stand-in systems × many short-lived serverless instances add up fast
     // on a shared cluster. Keep each pool tiny so the demo can't exhaust Atlas
     // connections and hang beats waiting for one.
-    // Enough headroom for a beat's concurrent syncs (direct transport runs the
-    // per-beat batch in parallel), but still small so many serverless instances
-    // can't exhaust the shared cluster's connections.
-    maxPoolSize: 6,
+    // Small by default so many serverless instances can't exhaust a shared
+    // cluster's connections. When concurrent sync is on (a dedicated cluster that
+    // can take it), widen the pool so a whole beat's syncs genuinely run in
+    // parallel rather than queueing on a handful of connections.
+    maxPoolSize: isConcurrentSync() ? 24 : 6,
     minPoolSize: 0,
     maxIdleTimeMS: 10_000,
     serverSelectionTimeoutMS: 8_000,
