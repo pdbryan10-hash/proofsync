@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await runBrowserProofDrive();
-    return ok({ signedIn: true });
+    const steps = await runBrowserProofDrive();
+    return ok({ signedIn: true, steps });
   } catch (error) {
     return handleRouteError(error);
   }

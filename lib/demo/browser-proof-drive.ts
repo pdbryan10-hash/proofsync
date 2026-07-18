@@ -63,38 +63,61 @@ async function signedIn(
   await wait(2_400);
 }
 
-export async function runBrowserProofDrive(): Promise<void> {
+export async function runBrowserProofDrive(): Promise<string[]> {
+  const steps: string[] = [];
+  const note = (s: string) => steps.push(s);
   const base = getDemoBaseUrl();
-  const browser = await getBrowser();
+
+  let browser;
+  try {
+    browser = await getBrowser();
+    note('browser: connected');
+  } catch (e) {
+    note(`browser: FAILED ${(e as Error).message}`);
+    return steps;
+  }
 
   // The DEFAULT context/page of the connected session — the one the published
   // live-view URL renders. Reuse it; only create if the session somehow has none.
   const context = browser.contexts()[0] ?? (await browser.newContext());
   const page = context.pages()[0] ?? (await context.newPage());
   page.setDefaultTimeout(20_000);
+  note(`page: ${context.pages().length} page(s), url=${page.url()}`);
 
   // Give whoever clicked a moment to open the live-view link before anything moves.
   await wait(6_000);
 
+  // Each phase is best-effort: a step that fails (a selector that moved, a slow
+  // page) must never abort the whole proof or 500 the request.
   // --- Joblogic (the contractor's system) ---
-  await signedIn(page, {
-    target: `${base}/systems/joblogic/jobs?status=Complete`,
-    loginPath: '/systems/joblogic/login',
-    userLabel: 'Username',
-    username: DEMO_SOURCE_LOGIN.username,
-    password: DEMO_SOURCE_LOGIN.password,
-  });
-  await wait(2_500);
+  try {
+    await signedIn(page, {
+      target: `${base}/systems/joblogic/jobs?status=Complete`,
+      loginPath: '/systems/joblogic/login',
+      userLabel: 'Username',
+      username: DEMO_SOURCE_LOGIN.username,
+      password: DEMO_SOURCE_LOGIN.password,
+    });
+    note(`joblogic: at ${page.url()}`);
+    await wait(2_500);
+  } catch (e) {
+    note(`joblogic: FAILED ${(e as Error).message}`);
+  }
 
   // --- Concerto (the client's CAFM) ---
-  await signedIn(page, {
-    target: `${base}/systems/concerto/work-orders`,
-    loginPath: '/systems/concerto/login',
-    userLabel: 'User ID',
-    username: DEMO_TARGET_LOGIN.username,
-    password: DEMO_TARGET_LOGIN.password,
-  });
-  await wait(2_000);
+  try {
+    await signedIn(page, {
+      target: `${base}/systems/concerto/work-orders`,
+      loginPath: '/systems/concerto/login',
+      userLabel: 'User ID',
+      username: DEMO_TARGET_LOGIN.username,
+      password: DEMO_TARGET_LOGIN.password,
+    });
+    note(`concerto: at ${page.url()}`);
+    await wait(2_000);
+  } catch (e) {
+    note(`concerto: FAILED ${(e as Error).message}`);
+  }
 
   // Open the first work order and type into it — the keying a person would do.
   try {
@@ -105,16 +128,19 @@ export async function runBrowserProofDrive(): Promise<void> {
       await wait(2_000);
     }
     const boxes = page.getByRole('textbox');
+    const count = await boxes.count();
     const sample = ['Completed and verified on site', 'Parts fitted; follow-on booked'];
-    const n = Math.min(await boxes.count(), sample.length);
+    const n = Math.min(count, sample.length);
     for (let i = 0; i < n; i++) {
       await keyInto(boxes.nth(i), sample[i] ?? 'Confirmed on site');
       await wait(800);
     }
-  } catch {
-    // The login is the proof; typing is the flourish. Don't fail the run over it.
+    note(`work-order: typed into ${n} of ${count} field(s) at ${page.url()}`);
+  } catch (e) {
+    note(`work-order: FAILED ${(e as Error).message}`);
   }
 
   // Linger on the result so the live view isn't cut to black the instant it ends.
   await wait(3_000);
+  return steps;
 }
