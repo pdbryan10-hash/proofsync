@@ -192,34 +192,60 @@ export function useDemoState() {
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
-      // Pressing the button injects a fresh batch so a burst of real jobs lands
-      // on cue, rather than syncing only whatever happens to be pending.
-      await tick({ force: true, burst: 5 });
+      // Sync whatever is pending — do NOT inject new jobs (burst), which inflated
+      // the batch past its fixed 10 and left the ledger churning with retries.
+      await tick({ force: true });
       await refresh();
     } finally {
       if (mounted.current) setBusy(false);
     }
   }, [tick, refresh]);
 
+  /**
+   * Drive the (re-queued) batch to completion at a watchable machine pace.
+   *
+   * Act 2 owns its run rather than leaning on the 30s background cadence: after a
+   * replay re-queues all jobs PENDING, this forces beats a beat at a time with a
+   * short gap, so a viewer actually watches the jobs cross — instead of the batch
+   * being already done (or finishing in one invisible flash) by the time they look.
+   * Stops as soon as a beat has nothing left to do.
+   */
+  const runMachineBatch = useCallback(async () => {
+    for (let i = 0; i < 12; i++) {
+      let dispatched = 0;
+      let deferred = 0;
+      try {
+        const res = await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
+        const body = await res.json();
+        const sync = body?.data?.sync ?? {};
+        dispatched = sync.dispatched ?? 0;
+        deferred = sync.deferred ?? 0;
+        const line = narrate(body?.data ?? {});
+        if (line) pushActivity(line);
+        await refresh();
+      } catch {
+        // keep going — a transient beat failure shouldn't stall the run
+      }
+      // Batch drained: nothing dispatched and nothing waiting behind the cap.
+      if (dispatched === 0 && deferred === 0) break;
+      await new Promise((r) => setTimeout(r, 1_100));
+    }
+  }, [refresh, pushActivity]);
+
   useEffect(() => {
     mounted.current = true;
     void refresh();
-    // Land a burst of real jobs the instant the page opens, so a visitor sees
-    // records crossing within a second or two — not an idle screen.
-    void tick({ force: true, burst: 6 });
-    // Poll for movement, and ping the sync gate. Kept modest so many open tabs
-    // don't spin up a swarm of serverless instances (each opens DB connections);
-    // the server gates the actual cadence anyway.
+    // Deliberately do NOT auto-sync on load. The batch is seeded and STAYS put
+    // until the presenter runs it (Act 1 spotlight, then Act 2 machine run), so a
+    // fresh page never opens with the jobs already "Success". Only read.
     const readLoop = setInterval(() => void refresh(), 1_000);
-    const tickLoop = setInterval(() => void tick(), 2_000);
     return () => {
       mounted.current = false;
       clearInterval(readLoop);
-      clearInterval(tickLoop);
     };
-  }, [refresh, tick]);
+  }, [refresh]);
 
-  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport, runLogin };
+  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport, runLogin, runMachineBatch };
 }
 
 /**

@@ -44,7 +44,8 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick, resolve, replay, runLogin } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick, resolve, replay, runLogin, runMachineBatch } =
+    useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
@@ -84,10 +85,13 @@ export function DemoConsole() {
       if (loginFired.current[act] || !state?.remoteBrowserAvailable) return;
       loginFired.current[act] = true;
       setLogin({ act, done: false });
-      await runLogin();
+      // Never let a slow or failed browser wedge the demo: cap the whole sign-in.
+      // Whichever comes first — the login finishing or the cap — the curtain lifts.
+      const capped = new Promise((r) => setTimeout(r, 22_000));
+      await Promise.race([runLogin(), capped]);
       setLogin((l) => (l ? { ...l, done: true } : l));
       // Hold on "Signed in" for a beat, then lift the curtain.
-      await new Promise((r) => setTimeout(r, 1600));
+      await new Promise((r) => setTimeout(r, 1200));
       setLogin(null);
     },
     [runLogin, state?.remoteBrowserAvailable],
@@ -165,7 +169,12 @@ export function DemoConsole() {
     machineSawPending.current = false;
     setPreparing(true);
     setAct('machine');
-    replay().finally(() => setPreparing(false));
+    // Re-queue the whole batch PENDING, then drive it to completion at a watchable
+    // pace. This is why the floor doesn't open already-finished: the run starts
+    // here, on cue, not from a background cadence.
+    await replay();
+    setPreparing(false);
+    await runMachineBatch();
   };
 
   // The applause screen states the batch result — all real, straight from state.

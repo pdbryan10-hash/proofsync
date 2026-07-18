@@ -5,10 +5,6 @@
     {
       "path": "/api/cron/poll-completions",
       "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/demo-tick",
-      "schedule": "* * * * *"
     }
   ]
 }
