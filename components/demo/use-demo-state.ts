@@ -218,7 +218,11 @@ export function useDemoState() {
     // nothing simply because the previous beat still holds the cluster lock while
     // its syncs finish (they overlap), which is not "done". Looping past those and
     // checking awaiting is what stops the run bailing early and leaving jobs behind.
-    for (let i = 0; i < 20; i++) {
+    // Awaiting the beat is what paces this: a beat that actually runs blocks for
+    // its syncs (a few seconds on the free cluster), so a short gap is enough and
+    // beats don't stack. Generous iteration cap so the whole batch drains even
+    // when the cluster is slow; the loop still exits the instant awaiting hits 0.
+    for (let i = 0; i < 40; i++) {
       try {
         const res = await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
         const body = await res.json();
@@ -227,7 +231,7 @@ export function useDemoState() {
       } catch {
         // transient — keep going
       }
-      await new Promise((r) => setTimeout(r, 1_800));
+      await new Promise((r) => setTimeout(r, 600));
       const st = await refresh();
       if (st && st.stats.awaitingSync === 0) break;
     }
