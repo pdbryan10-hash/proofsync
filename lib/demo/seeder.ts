@@ -174,7 +174,7 @@ const ENGINEERS = [
 const CONTROL_ID = 'demo-control';
 
 /** The fixed batch. Size and the exact jobs that need a person are constant. */
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 40;
 /** Concerto attribute the cost-centre exceptions write to. */
 export const COST_CENTRE_ATTR = 'clientCostCentre';
 
@@ -183,13 +183,18 @@ export const COST_CENTRE_ATTR = 'clientCostCentre';
  * quickly and the "needs a person" moment is clear. Keyed by batch index; every
  * other job syncs cleanly.
  */
+const COST_CENTRE_BLOCK: TargetWorkOrderBlock = {
+  kind: 'MISSING_FIELD',
+  label: 'Cost centre',
+  message: 'Cost centre is required for this contract before the work order can be updated.',
+  attribute: COST_CENTRE_ATTR,
+};
+// Spread a few across the batch so, at 40 jobs flying past, the "needs a person"
+// moment is visible through the waves rather than a single early blip.
 const BLOCKS: Record<number, TargetWorkOrderBlock> = {
-  6: {
-    kind: 'MISSING_FIELD',
-    label: 'Cost centre',
-    message: 'Cost centre is required for this contract before the work order can be updated.',
-    attribute: COST_CENTRE_ATTR,
-  },
+  6: COST_CENTRE_BLOCK,
+  21: COST_CENTRE_BLOCK,
+  34: COST_CENTRE_BLOCK,
 };
 /** Jobs whose site photo Concerto rejects — core data syncs, document doesn't (PARTIAL). */
 const DOCUMENT_REJECTED = new Set<number>();
