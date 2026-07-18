@@ -70,6 +70,8 @@ export function DemoConsole() {
   // flight, so the finale can't fire on the previous run's leftover "done" state.
   const machineSawPending = useRef(false);
   const [preparing, setPreparing] = useState(false);
+  // True while the on-demand Act 2 batch run is in flight (the "Run the sync" button).
+  const [syncing, setSyncing] = useState(false);
 
   // The real-browser login that opens each act. `login` drives the embedded
   // live-view curtain; the ref guards it to ONE sign-in per act, so it doesn't
@@ -162,8 +164,6 @@ export function DemoConsole() {
   // Enter Act 2 INSTANTLY and rewind in the background. A "rewinding" cover sits
   // over the floor until the batch is cleared, so there's no wait on the click and
   // no flash of the fully-synced state that quietly finished behind Act 1.
-  const [syncing, setSyncing] = useState(false);
-
   const enterMachine = async () => {
     // Act 2 opens with one real sign-in (embedded), then sits EMPTY and READY:
     // the batch is re-queued PENDING and Concerto is empty, waiting for the
