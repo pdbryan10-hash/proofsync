@@ -119,7 +119,34 @@ export interface DemoControlDoc {
    */
   browserProofSessionId?: string | null;
   browserProofLiveUrl?: string | null;
+  /** Per-tab live-view URLs, so both systems can be watched signing in at once. */
+  browserProofJoblogicUrl?: string | null;
+  browserProofConcertoUrl?: string | null;
   browserProofAt?: Date | null;
+}
+
+/** Record per-system live-view URLs for the side-by-side "both signing in" view. */
+export async function recordDualBrowserProof(
+  sessionId: string,
+  joblogicUrl: string | null,
+  concertoUrl: string | null,
+): Promise<void> {
+  try {
+    await (await demoControl()).updateOne(
+      { _id: 'demo-control' },
+      {
+        $set: {
+          browserProofSessionId: sessionId,
+          browserProofJoblogicUrl: joblogicUrl,
+          browserProofConcertoUrl: concertoUrl,
+          browserProofAt: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+  } catch {
+    // Non-fatal.
+  }
 }
 
 /**

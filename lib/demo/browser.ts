@@ -36,6 +36,7 @@ type BrowserCache = {
   demoBrowser?: Promise<Browser>;
   demoContexts?: Map<string, BrowserContext>;
   browserbaseProjectId?: string;
+  browserbaseSessionId?: string;
 };
 
 const cache = globalThis as unknown as BrowserCache;
@@ -84,6 +85,36 @@ async function publishLiveView(apiKey: string, sessionId: string): Promise<void>
   }
 }
 
+/**
+ * Publish a PER-TAB live-view URL for each system, so the demo can show both
+ * systems signing in side by side. Call it after the two tabs have navigated to
+ * their login pages, so the debug endpoint can report each tab's URL and we can
+ * match it to a system. Best-effort.
+ */
+export async function recordDualLiveViews(): Promise<void> {
+  const bb = getBrowserbaseConfig();
+  const sessionId = cache.browserbaseSessionId;
+  if (!bb || !sessionId) return;
+  try {
+    const res = await fetch(`https://api.browserbase.com/v1/sessions/${sessionId}/debug`, {
+      headers: { 'X-BB-API-Key': bb.apiKey },
+    });
+    if (!res.ok) return;
+    const debug = (await res.json()) as {
+      pages?: Array<{ url?: string; debuggerFullscreenUrl?: string; debuggerUrl?: string }>;
+    };
+    const pages = debug.pages ?? [];
+    const urlFor = (needle: string) => {
+      const p = pages.find((x) => (x.url ?? '').includes(needle));
+      return p?.debuggerFullscreenUrl ?? p?.debuggerUrl ?? null;
+    };
+    const { recordDualBrowserProof } = await import('./mongo');
+    await recordDualBrowserProof(sessionId, urlFor('/systems/joblogic'), urlFor('/systems/concerto'));
+  } catch {
+    // Non-fatal.
+  }
+}
+
 async function launch(): Promise<Browser> {
   const bb = getBrowserbaseConfig();
 
@@ -110,6 +141,7 @@ async function launch(): Promise<Browser> {
         throw new Error(`Browserbase session request failed (${res.status}): ${await res.text()}`);
       }
       const session = (await res.json()) as { id: string; connectUrl?: string };
+      cache.browserbaseSessionId = session.id;
 
       // Publish the session's public live-view URL for the on-demand proof, so a
       // buyer can watch this exact browser sign in without a Browserbase login.

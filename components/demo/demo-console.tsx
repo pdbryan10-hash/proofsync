@@ -227,7 +227,8 @@ export function DemoConsole() {
         <LiveLoginCurtain
           act={login.act}
           done={login.done}
-          liveUrl={state.browserProof?.liveUrl ?? null}
+          joblogicUrl={state.browserProof?.joblogicUrl ?? null}
+          concertoUrl={state.browserProof?.concertoUrl ?? null}
         />
       )}
       {finale && <FinaleCard data={finale} onClose={() => setFinale(null)} />}
@@ -1599,17 +1600,19 @@ function ConsoleHeader({
 function LiveLoginCurtain({
   act,
   done,
-  liveUrl,
+  joblogicUrl,
+  concertoUrl,
 }: {
   act: 'human' | 'machine';
   done: boolean;
-  liveUrl: string | null;
+  joblogicUrl: string | null;
+  concertoUrl: string | null;
 }) {
   const heading = act === 'human' ? 'Act 1 · one job' : 'Act 2 · full floor';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 p-4 backdrop-blur-sm">
-      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-navy-950 shadow-2xl">
+      <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-navy-950 shadow-2xl">
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3">
           <span className="rounded-full bg-info/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-info-soft">
             {heading}
@@ -1624,41 +1627,68 @@ function LiveLoginCurtain({
               ) : (
                 <>
                   <Loader2 className="size-4 animate-spin text-info-soft" />
-                  Signing in to the live systems…
+                  Signing in to both systems at once…
                 </>
               )}
             </p>
             <p className="truncate text-xs text-white/50">
-              A real browser is keying in — Joblogic, then Concerto. No API, no shortcut.
+              Two real browser tabs keying in side by side — Joblogic and Concerto. No API, no shortcut.
             </p>
           </div>
           <Chrome className="ml-auto size-4 shrink-0 text-white/40" />
         </div>
 
-        <div className="relative aspect-[16/9] w-full bg-black">
-          {liveUrl ? (
-            <iframe
-              key={liveUrl}
-              src={liveUrl}
-              title="Live browser signing in"
-              className="absolute inset-0 size-full"
-              allow="clipboard-read; clipboard-write"
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50">
-              <Loader2 className="size-6 animate-spin" />
-              <span className="text-sm">Opening a real browser in the cloud…</span>
-            </div>
-          )}
-          {done && (
-            <div className="absolute inset-0 flex items-center justify-center bg-navy-950/70">
-              <div className="flex items-center gap-2 rounded-full bg-success-soft px-4 py-2 text-sm font-semibold text-success-text">
-                <CheckCircle2 className="size-4" />
-                Signed in — handing over to the sync
-              </div>
-            </div>
-          )}
+        <div className="grid gap-px bg-white/10 sm:grid-cols-2">
+          <LoginPane label="Joblogic" sub="contractor's system" url={joblogicUrl} done={done} />
+          <LoginPane label="Concerto" sub="client's system" url={concertoUrl} done={done} />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** One system's live-view tab inside the sign-in curtain. */
+function LoginPane({
+  label,
+  sub,
+  url,
+  done,
+}: {
+  label: string;
+  sub: string;
+  url: string | null;
+  done: boolean;
+}) {
+  return (
+    <div className="relative bg-navy-950">
+      <div className="flex items-center gap-2 px-3 py-1.5 text-white/70">
+        <Chrome className="size-3.5 text-white/40" />
+        <span className="text-xs font-semibold">{label}</span>
+        <span className="text-[10px] text-white/40">{sub}</span>
+      </div>
+      <div className="relative aspect-[4/3] w-full bg-black">
+        {url ? (
+          <iframe
+            key={url}
+            src={url}
+            title={`${label} signing in`}
+            className="absolute inset-0 size-full"
+            allow="clipboard-read; clipboard-write"
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/40">
+            <Loader2 className="size-5 animate-spin" />
+            <span className="text-xs">Opening {label}…</span>
+          </div>
+        )}
+        {done && (
+          <div className="absolute inset-0 flex items-center justify-center bg-navy-950/70">
+            <div className="flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success-text">
+              <CheckCircle2 className="size-3.5" />
+              Signed in
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

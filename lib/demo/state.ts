@@ -114,10 +114,16 @@ export interface DemoState {
   remoteBrowserAvailable: boolean;
   /**
    * A live "watch a real browser sign in" session, if one is running right now.
-   * `liveUrl` is a public Browserbase live-view page (no login needed). Present
-   * only while fresh — it goes away once the session has ended.
+   * Each URL is a public Browserbase live-view page (no login needed) for one
+   * system's tab, so both can be watched signing in side by side. Present only
+   * while fresh — it goes away once the session has ended.
    */
-  browserProof: { liveUrl: string; sessionId: string; at: string } | null;
+  browserProof: {
+    joblogicUrl: string | null;
+    concertoUrl: string | null;
+    sessionId: string;
+    at: string;
+  } | null;
   databases: { source: string; target: string; ledger: string };
   /** Where the stand-in systems' own UIs live, so the console can link to them. */
   systemUrls: { source: string; target: string };
@@ -271,11 +277,14 @@ export async function getDemoState(): Promise<DemoState> {
   // stale — the session has ended and the URL would 404.
   const PROOF_FRESH_MS = 3 * 60_000;
   const proofAt = controlDoc?.browserProofAt ? new Date(controlDoc.browserProofAt) : null;
+  const jlUrl = controlDoc?.browserProofJoblogicUrl ?? controlDoc?.browserProofLiveUrl ?? null;
+  const coUrl = controlDoc?.browserProofConcertoUrl ?? null;
   const browserProof =
-    controlDoc?.browserProofLiveUrl && proofAt && Date.now() - proofAt.getTime() < PROOF_FRESH_MS
+    (jlUrl || coUrl) && proofAt && Date.now() - proofAt.getTime() < PROOF_FRESH_MS
       ? {
-          liveUrl: controlDoc.browserProofLiveUrl,
-          sessionId: controlDoc.browserProofSessionId ?? '',
+          joblogicUrl: jlUrl,
+          concertoUrl: coUrl,
+          sessionId: controlDoc?.browserProofSessionId ?? '',
           at: proofAt.toISOString(),
         }
       : null;
