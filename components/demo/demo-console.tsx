@@ -789,7 +789,6 @@ function MachineFloor({
       <MachineHeader busy={busy} onReplay={onReplay} onBack={onBack} onFreeze={onFreeze} />
       <KpiBar stats={state.stats} exceptionCount={state.exceptions.length} />
       <ExceptionsQueue exceptions={state.exceptions} onFix={onFix} />
-      <BrowserTheatre ledger={state.ledger} target={state.target} onActive={onActive} />
       <ActivityFeed activity={activity} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SourcePanel
@@ -1944,6 +1943,28 @@ function LedgerPanel({
               {row.documentsTransferred > 0 && <span>{row.documentsTransferred} doc(s)</span>}
               {row.attemptNumber > 1 && <span>attempt {row.attemptNumber}</span>}
               {row.startedAt && <span>{timeAgo(row.startedAt)}</span>}
+            </div>
+
+            <div className="mt-2 flex items-center gap-1.5 text-[11px]">
+              <span className="text-muted-foreground">Open this job in</span>
+              <a
+                href={`/systems/joblogic/jobs/${row.jobNumber}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-navy-800 transition-colors hover:bg-muted"
+              >
+                Joblogic <span aria-hidden>↗</span>
+              </a>
+              {row.reference && (
+                <a
+                  href={`/systems/concerto/work-orders/${row.reference}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-emerald-700 transition-colors hover:bg-muted"
+                >
+                  Concerto <span aria-hidden>↗</span>
+                </a>
+              )}
             </div>
 
             {row.errorMessage && (

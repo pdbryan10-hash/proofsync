@@ -33,9 +33,10 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
-    // Machine speed: set the whole value at once (instant), the way an automation
-    // fills a field — no per-character delay. A person types; a machine doesn't.
-    await locator.fill(text);
+    await locator.fill('');
+    // Letters appear one by one, but at machine speed — a fast, deliberate type,
+    // not a person's pace and not an instant paste.
+    await locator.pressSequentially(text, { delay: 14 });
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
