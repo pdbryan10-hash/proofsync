@@ -1187,7 +1187,7 @@ function FinaleCard({
   const totalSec = (data.totalSyncMs / 1000).toFixed(1);
   // Extrapolate at a typical mid-market volume so the tiny demo figure lands as a
   // real annual saving. Uses the same minutes-per-job basis as the run itself.
-  const perJobMin = data.jobs > 0 ? data.minutes / data.jobs : 15;
+  const perJobMin = data.jobs > 0 ? data.minutes / data.jobs : 10;
   const annualHours = Math.round((500 * 52 * perJobMin) / 60).toLocaleString();
   return (
     <div
@@ -1233,6 +1233,9 @@ function FinaleCard({
           <div className="mt-0.5 text-sm text-white/75">given back to your team in this run</div>
           <p className="mt-2 border-t border-white/10 pt-2 text-xs text-white/60">
             At 500 completed jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
+          </p>
+          <p className="mt-1.5 text-[11px] text-white/40">
+            Basis: {Math.round(perJobMin)} min of duplicated admin per job — the same figure across the site.
           </p>
         </div>
 
