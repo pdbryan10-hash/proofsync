@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   Camera,
@@ -44,7 +44,7 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick, resolve, replay, startBrowserProof } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick, resolve, replay, runLogin } = useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
@@ -66,6 +66,29 @@ export function DemoConsole() {
   } | null>(null);
   const finaleFired = useRef(false);
   const [preparing, setPreparing] = useState(false);
+
+  // The real-browser login that opens each act. `login` drives the embedded
+  // live-view curtain; the ref guards it to ONE sign-in per act, so it doesn't
+  // re-fire on re-runs or re-renders.
+  const [login, setLogin] = useState<{ act: 'human' | 'machine'; done: boolean } | null>(null);
+  const loginFired = useRef<{ human: boolean; machine: boolean }>({ human: false, machine: false });
+
+  // Show the sign-in curtain, run the real login, then hand off. Only the FIRST
+  // time an act is opened — after that the session is established and re-running
+  // the act shouldn't sign in again.
+  const runActLogin = useCallback(
+    async (act: 'human' | 'machine') => {
+      if (loginFired.current[act] || !state?.remoteBrowserAvailable) return;
+      loginFired.current[act] = true;
+      setLogin({ act, done: false });
+      await runLogin();
+      setLogin((l) => (l ? { ...l, done: true } : l));
+      // Hold on "Signed in" for a beat, then lift the curtain.
+      await new Promise((r) => setTimeout(r, 1600));
+      setLogin(null);
+    },
+    [runLogin, state?.remoteBrowserAvailable],
+  );
 
   // Auto-fire the "what just happened" card once the batch finishes in Act 2, so
   // the close lands without anyone reaching for the Freeze button. Re-arms when a
@@ -124,7 +147,9 @@ export function DemoConsole() {
   // Enter Act 2 INSTANTLY and rewind in the background. A "rewinding" cover sits
   // over the floor until the batch is cleared, so there's no wait on the click and
   // no flash of the fully-synced state that quietly finished behind Act 1.
-  const enterMachine = () => {
+  const enterMachine = async () => {
+    // Act 2 opens with one real sign-in (embedded), then the machine-speed batch.
+    await runActLogin('machine');
     finaleFired.current = false;
     setPreparing(true);
     setAct('machine');
@@ -145,14 +170,7 @@ export function DemoConsole() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <ConsoleHeader
-        state={state}
-        busy={busy}
-        onReset={reset}
-        onForce={forceTick}
-        onBrowserProof={startBrowserProof}
-        act={act}
-      />
+      <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} act={act} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <CrossSystemSearch />
@@ -161,6 +179,7 @@ export function DemoConsole() {
             spotlight={state.spotlight}
             seeded={state.seeded}
             onScaleUp={enterMachine}
+            onStart={() => runActLogin('human')}
           />
         ) : (
           <MachineFloor
@@ -183,6 +202,13 @@ export function DemoConsole() {
         {state.transport === 'browser' && <HonestyNote transport={state.transport} />}
       </div>
 
+      {login && (
+        <LiveLoginCurtain
+          act={login.act}
+          done={login.done}
+          liveUrl={state.browserProof?.liveUrl ?? null}
+        />
+      )}
       {finale && <FinaleCard data={finale} onClose={() => setFinale(null)} />}
       {resolving && (
         <ResolveModal
@@ -327,20 +353,29 @@ function SpotlightStage({
   spotlight,
   seeded,
   onScaleUp,
+  onStart,
 }: {
   spotlight: SpotlightData | null;
   seeded: boolean;
   onScaleUp: () => void;
+  /** Runs once, before the first play — the real sign-in that opens Act 1. */
+  onStart?: () => Promise<void> | void;
 }) {
   const [phase, setPhase] = useState<'idle' | 'running' | 'done'>('idle');
   const [stage, setStage] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const startedOnce = useRef(false);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  // Fired by the presenter — deliberately slow, so every step is readable.
-  const run = () => {
+  // Fired by the presenter — deliberately slow, so every step is readable. The
+  // very first play signs into the live systems first (onStart), then runs.
+  const run = async () => {
     if (!spotlight) return;
+    if (onStart && !startedOnce.current) {
+      startedOnce.current = true;
+      await onStart();
+    }
     timers.current.forEach(clearTimeout);
     timers.current = [];
     setPhase('running');
@@ -1465,14 +1500,12 @@ function ConsoleHeader({
   busy,
   onReset,
   onForce,
-  onBrowserProof,
   act,
 }: {
   state: DemoState;
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
-  onBrowserProof: () => void;
   act: 'human' | 'machine';
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
@@ -1501,10 +1534,6 @@ function ConsoleHeader({
             Two separate systems, checked and kept in step every {state.tick.tickSeconds} seconds.
           </p>
         </div>
-
-        {state.remoteBrowserAvailable && (
-          <BrowserProofButton proof={state.browserProof} onStart={onBrowserProof} />
-        )}
 
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Next check</span>
@@ -1541,93 +1570,79 @@ function ConsoleHeader({
 }
 
 /**
- * On-demand "watch a real browser sign in" proof.
+ * The sign-in curtain that opens each act.
  *
- * Only rendered when a hosted browser (Browserbase) is configured. The main demo
- * stays on the fast Direct transport — this is a separate, read-only artifact for
- * a buyer who wants the literal proof that a real browser signs into both systems
- * (no API, no shortcut). Clicking it opens a real cloud browser; within a few
- * seconds a PUBLIC live-view link appears that anyone can open to watch the
- * sign-in happen, no Browserbase login required.
+ * A real cloud browser (Browserbase) signs into both systems, embedded live in
+ * this overlay, before the act's data movement runs. This is the credibility
+ * beat: no API, no shortcut — a browser keying in credentials exactly as a person
+ * would. Once the sign-in finishes, the curtain lifts and the fast Direct sync
+ * takes over in the demo's own panels.
  */
-function BrowserProofButton({
-  proof,
-  onStart,
+function LiveLoginCurtain({
+  act,
+  done,
+  liveUrl,
 }: {
-  proof: DemoState['browserProof'];
-  onStart: () => void;
+  act: 'human' | 'machine';
+  done: boolean;
+  liveUrl: string | null;
 }) {
-  const [launching, setLaunching] = useState(false);
-  // A tab opened on click (a user gesture, so it isn't popup-blocked) and pointed
-  // at the live view the moment its URL arrives — so the presenter never has to
-  // catch a link mid-run; the browser just appears in a new tab and they watch.
-  const proofWindow = useRef<Window | null>(null);
-
-  useEffect(() => {
-    if (!proof?.liveUrl) return;
-    setLaunching(false);
-    const w = proofWindow.current;
-    if (w && !w.closed) {
-      try {
-        w.location.href = proof.liveUrl;
-      } catch {
-        /* cross-origin set can throw in some browsers; the green link is the fallback */
-      }
-      proofWindow.current = null;
-    }
-  }, [proof?.liveUrl]);
-
-  const start = () => {
-    setLaunching(true);
-    // Open the tab NOW, in the click handler, so the browser allows it. It shows a
-    // holding message until the live-view URL lands (a few seconds) and the effect
-    // above redirects it.
-    try {
-      const w = window.open('about:blank', '_blank');
-      if (w) {
-        w.document.write(
-          '<title>Live browser</title><body style="margin:0;font-family:system-ui,sans-serif;background:#0b1220;color:#e6edf6;display:flex;align-items:center;justify-content:center;height:100vh"><div style="text-align:center"><div style="font-size:15px;opacity:.85">Starting a real browser…</div><div style="font-size:13px;opacity:.55;margin-top:.5rem">The live view will appear here in a few seconds.</div></div></body>',
-        );
-      }
-      proofWindow.current = w;
-    } catch {
-      proofWindow.current = null;
-    }
-    onStart();
-    // Safety: never spin forever if the session never publishes a link.
-    setTimeout(() => setLaunching(false), 90_000);
-  };
-
-  if (proof?.liveUrl) {
-    return (
-      <a
-        href={proof.liveUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex h-8 items-center gap-2 rounded-md border border-success-soft bg-success-soft px-3 text-sm font-semibold text-success-text transition-colors hover:brightness-95"
-        title="Opens the live Browserbase session — watch the real browser sign in to Joblogic and Concerto"
-      >
-        <span className="relative flex size-2">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60" />
-          <span className="relative inline-flex size-2 rounded-full bg-current" />
-        </span>
-        Live browser — watch it sign in
-        <ArrowRight className="size-3.5" />
-      </a>
-    );
-  }
+  const heading = act === 'human' ? 'Act 1 · one job' : 'Act 2 · full floor';
 
   return (
-    <button
-      type="button"
-      onClick={start}
-      disabled={launching}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-70"
-      title="Opens a real cloud browser (Browserbase) that signs into both systems like a person — proof it isn't a database shortcut"
-    >
-      {launching ? <Loader2 className="size-4 animate-spin" /> : <Chrome className="size-4" />}
-      {launching ? 'Starting a real browser…' : 'Watch a real browser sign in'}
-    </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-navy-950 shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3">
+          <span className="rounded-full bg-info/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-info-soft">
+            {heading}
+          </span>
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-semibold text-white">
+              {done ? (
+                <>
+                  <CheckCircle2 className="size-4 text-success" />
+                  Signed in to both systems
+                </>
+              ) : (
+                <>
+                  <Loader2 className="size-4 animate-spin text-info-soft" />
+                  Signing in to the live systems…
+                </>
+              )}
+            </p>
+            <p className="truncate text-xs text-white/50">
+              A real browser is keying in — Joblogic, then Concerto. No API, no shortcut.
+            </p>
+          </div>
+          <Chrome className="ml-auto size-4 shrink-0 text-white/40" />
+        </div>
+
+        <div className="relative aspect-[16/9] w-full bg-black">
+          {liveUrl ? (
+            <iframe
+              key={liveUrl}
+              src={liveUrl}
+              title="Live browser signing in"
+              className="absolute inset-0 size-full"
+              allow="clipboard-read; clipboard-write"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50">
+              <Loader2 className="size-6 animate-spin" />
+              <span className="text-sm">Opening a real browser in the cloud…</span>
+            </div>
+          )}
+          {done && (
+            <div className="absolute inset-0 flex items-center justify-center bg-navy-950/70">
+              <div className="flex items-center gap-2 rounded-full bg-success-soft px-4 py-2 text-sm font-semibold text-success-text">
+                <CheckCircle2 className="size-4" />
+                Signed in — handing over to the sync
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

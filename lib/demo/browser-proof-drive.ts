@@ -1,5 +1,5 @@
 import type { Locator, Page } from 'playwright-core';
-import { getBrowser } from './browser';
+import { getBrowser, closeBrowser } from './browser';
 import { getDemoBaseUrl, DEMO_SOURCE_LOGIN, DEMO_TARGET_LOGIN } from './config';
 
 /**
@@ -72,10 +72,19 @@ async function signedIn(
   await wait(2_400);
 }
 
-export async function runBrowserProofDrive(): Promise<string[]> {
+export async function runBrowserProofDrive(
+  opts: { typeIntoWorkOrder?: boolean } = {},
+): Promise<string[]> {
   const steps: string[] = [];
   const note = (s: string) => steps.push(s);
   const base = getDemoBaseUrl();
+
+  // Force a FRESH session for the proof, so the buyer actually watches the sign-in
+  // every time. (Production reuses the session and logs in once — but the whole
+  // point HERE is to watch it happen, and a reused, already-signed-in session
+  // would skip straight past the login.) A new session also mints a new live-view
+  // URL, which the button auto-opens.
+  await closeBrowser().catch(() => {});
 
   let browser;
   try {
@@ -93,10 +102,10 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   page.setDefaultTimeout(20_000);
   note(`page: ${context.pages().length} page(s), url=${page.url()}`);
 
-  // Hold before anything moves, so the auto-opened live-view tab has connected and
-  // the viewer is watching an idle browser BEFORE the keying starts — otherwise
-  // the logins are already done by the time the live view paints its first frame.
-  await wait(10_000);
+  // Hold before anything moves, so the embedded live view has connected and the
+  // viewer is watching an idle browser BEFORE the keying starts — otherwise the
+  // logins are already done by the time the live view paints its first frame.
+  await wait(6_000);
 
   // Each phase is best-effort: a step that fails (a selector that moved, a slow
   // page) must never abort the whole proof or 500 the request.
@@ -132,28 +141,32 @@ export async function runBrowserProofDrive(): Promise<string[]> {
     note(`concerto: FAILED ${(e as Error).message}`);
   }
 
-  // Open the first work order and type into it — the keying a person would do.
-  try {
-    const firstLink = page.locator('table tbody tr a').first();
-    if ((await firstLink.count()) > 0) {
-      await firstLink.click();
-      await page.waitForLoadState('domcontentloaded');
-      await wait(2_000);
+  // Optional flourish: open a work order and type into it. Off by default — the
+  // act openers only need to PROVE the login; the data movement itself runs on
+  // the fast Direct transport, shown in the demo's own panels.
+  if (opts.typeIntoWorkOrder) {
+    try {
+      const firstLink = page.locator('table tbody tr a').first();
+      if ((await firstLink.count()) > 0) {
+        await firstLink.click();
+        await page.waitForLoadState('domcontentloaded');
+        await wait(2_000);
+      }
+      const boxes = page.getByRole('textbox');
+      const count = await boxes.count();
+      const sample = ['Completed and verified on site', 'Parts fitted; follow-on booked'];
+      const n = Math.min(count, sample.length);
+      for (let i = 0; i < n; i++) {
+        await keyInto(boxes.nth(i), sample[i] ?? 'Confirmed on site');
+        await wait(800);
+      }
+      note(`work-order: typed into ${n} of ${count} field(s) at ${page.url()}`);
+    } catch (e) {
+      note(`work-order: FAILED ${(e as Error).message}`);
     }
-    const boxes = page.getByRole('textbox');
-    const count = await boxes.count();
-    const sample = ['Completed and verified on site', 'Parts fitted; follow-on booked'];
-    const n = Math.min(count, sample.length);
-    for (let i = 0; i < n; i++) {
-      await keyInto(boxes.nth(i), sample[i] ?? 'Confirmed on site');
-      await wait(800);
-    }
-    note(`work-order: typed into ${n} of ${count} field(s) at ${page.url()}`);
-  } catch (e) {
-    note(`work-order: FAILED ${(e as Error).message}`);
   }
 
-  // Linger on the result so the live view isn't cut to black the instant it ends.
-  await wait(3_000);
+  // Linger a beat so the live view isn't cut to black the instant it ends.
+  await wait(1_500);
   return steps;
 }
