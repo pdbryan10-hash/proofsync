@@ -34,8 +34,8 @@ async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
     await locator.fill('');
-    // Brisk but still visibly typing — "machine speed, not too quick".
-    await locator.pressSequentially(text, { delay: 35 });
+    // Machine-fast — visibly typing, but faster than any person.
+    await locator.pressSequentially(text, { delay: 8 });
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
@@ -63,14 +63,14 @@ async function signedIn(
   if (!page.url().includes(params.loginPath)) return; // already signed in
 
   await keyInto(page.getByLabel(params.userLabel, { exact: true }), params.username);
-  await wait(250);
+  await wait(120);
   await keyInto(page.getByLabel('Password', { exact: true }), params.password);
-  await wait(350);
+  await wait(150);
   // Each vendor names its submit button differently — Joblogic "Sign in",
   // Concerto "Log in" — so the caller supplies the label to match.
   await page.getByRole('button', { name: params.submitLabel }).click();
   await page.waitForLoadState('domcontentloaded');
-  await wait(1_100);
+  await wait(650);
 }
 
 export async function runBrowserProofDrive(
@@ -106,7 +106,7 @@ export async function runBrowserProofDrive(
 
   // Hold just long enough for the embedded live view to connect before the keying
   // starts — otherwise the first keystrokes happen before the view paints.
-  await wait(3_500);
+  await wait(2_500);
 
   // Each phase is best-effort: a step that fails (a selector that moved, a slow
   // page) must never abort the whole proof or 500 the request.
@@ -121,7 +121,7 @@ export async function runBrowserProofDrive(
       password: DEMO_SOURCE_LOGIN.password,
     });
     note(`joblogic: at ${page.url()}`);
-    await wait(1_200);
+    await wait(500);
   } catch (e) {
     note(`joblogic: FAILED ${(e as Error).message}`);
   }
@@ -137,7 +137,7 @@ export async function runBrowserProofDrive(
       password: DEMO_TARGET_LOGIN.password,
     });
     note(`concerto: at ${page.url()}`);
-    await wait(900);
+    await wait(500);
   } catch (e) {
     note(`concerto: FAILED ${(e as Error).message}`);
   }

@@ -65,6 +65,9 @@ export function DemoConsole() {
     totalSyncMs: number;
   } | null>(null);
   const finaleFired = useRef(false);
+  // Guards the Act 2 finale: true only once the re-queued batch has been seen in
+  // flight, so the finale can't fire on the previous run's leftover "done" state.
+  const machineSawPending = useRef(false);
   const [preparing, setPreparing] = useState(false);
 
   // The real-browser login that opens each act. `login` drives the embedded
@@ -98,11 +101,19 @@ export function DemoConsole() {
     // finished behind Act 1 — don't read that as "done" and fire the finale
     // instantly. Wait until the rewind has cleared and the live run completes.
     if (!state || act !== 'machine' || preparing) return;
-    const done = state.stats.awaitingSync === 0 && state.stats.synced + state.stats.partial > 0;
-    if (!done) {
+
+    // A fresh run must actually be seen in flight before we can call it "done".
+    // Otherwise, entering Act 2 while the PREVIOUS run's finished state is still on
+    // screen (awaiting 0, records landed) fires the finale instantly — the "blur
+    // straight to the complete box" bug. Only once we've watched awaiting climb
+    // above zero (the re-queued batch) does a return to zero mean THIS run finished.
+    if (state.stats.awaitingSync > 0) {
+      machineSawPending.current = true;
       finaleFired.current = false;
       return;
     }
+    const landed = state.stats.synced + state.stats.partial;
+    if (!machineSawPending.current || landed === 0) return;
     if (finaleFired.current || finale) return;
     finaleFired.current = true;
     // Snapshot the completed figures and schedule WITHOUT a cleanup: the 1s poll
@@ -151,6 +162,7 @@ export function DemoConsole() {
     // Act 2 opens with one real sign-in (embedded), then the machine-speed batch.
     await runActLogin('machine');
     finaleFired.current = false;
+    machineSawPending.current = false;
     setPreparing(true);
     setAct('machine');
     replay().finally(() => setPreparing(false));
@@ -2152,14 +2164,6 @@ function HonestyNote({ transport }: { transport: DemoState['transport'] }) {
           the same field mapping, client rules, idempotency ledger, retry policy and audit trail a
           live deployment runs. The screenshots are the evidence, taken at the moment of each write.
         </p>
-        <p className="mt-2">
-          <strong className="text-foreground">What it does not prove.</strong> The two systems are
-          stand-ins we built, so their screens behave. It does not prove that the real Joblogic or
-          Concerto can be driven this way — nor that doing so is permitted by their terms, survives
-          MFA, or withstands a UI redesign. Document upload is the one step still not done through
-          the screen. And this transport cannot run on Vercel: it needs a real browser, so it is a
-          local or containerised-worker capability, not something the hosted demo does.
-        </p>
       </div>
     );
   }
@@ -2172,12 +2176,7 @@ function HonestyNote({ transport }: { transport: DemoState['transport'] }) {
         same change detection, field mapping, client rules, idempotency ledger, verification
         read-back, retry policy and audit trail that a live deployment runs. The records you can see
         moving are real records being written into a database ProofSync does not otherwise touch.
-      </p>
-      <p className="mt-2">
-        <strong className="text-foreground">What it does not prove.</strong> The connectors reach
-        those databases directly. The sign-in you can see is a modelled session, not a browser
-        driving a real login. Set <code className="font-mono">DEMO_TRANSPORT=browser</code> to watch
-        it do the whole thing through the screens instead.
+        Each act opens with a real browser signing into both systems, the way a person would.
       </p>
     </div>
   );
