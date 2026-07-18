@@ -7,6 +7,7 @@ import {
 import { targetWorkOrders } from '@/lib/demo/mongo';
 import { withSession } from '@/lib/demo/session';
 import type { TargetWorkOrderDoc } from '@/lib/demo/schema';
+import type { IntakeJob } from '@/lib/demo/intake';
 import type {
   ConcertoConnector,
   ConcertoTargetJob,
@@ -37,6 +38,46 @@ const nowIso = () => new Date().toISOString();
 export class DemoConcertoConnector implements ConcertoConnector {
   readonly provider = 'CONCERTO' as const;
   readonly mode = 'demo' as const;
+
+  /**
+   * INBOUND seam — pull work orders the client raised that still need a
+   * contractor and haven't been picked up into the field system yet. This is the
+   * "refresh the jobs page for new work" a person does today, as a connector call.
+   */
+  async receiveNewJobs(): Promise<IntakeJob[]> {
+    return withSession('CONCERTO', async () => {
+      const wos = await targetWorkOrders();
+      const raised = await wos
+        .find({
+          inbound: true,
+          $or: [{ joblogicJobNumber: null }, { joblogicJobNumber: { $exists: false } }],
+        })
+        .sort({ reference: 1 })
+        .toArray();
+      return raised.map((w) => ({
+        reference: w.reference,
+        siteName: w.property.propertyName,
+        siteAddress: w.property.propertyAddress,
+        assetRef: w.assetId ?? null,
+        summary: w.summary,
+      }));
+    });
+  }
+
+  /**
+   * INBOUND seam — acknowledge that a raised job has been picked up into the field
+   * system, so a re-poll never imports it twice. Note it does NOT create a Concerto
+   * record; Concerto owns its own — this only records the pickup on the existing one.
+   */
+  async markReceived(reference: string, joblogicJobNumber: string): Promise<void> {
+    await withSession('CONCERTO', async () => {
+      const wos = await targetWorkOrders();
+      await wos.updateOne(
+        { reference },
+        { $set: { joblogicJobNumber, pickedUpAt: new Date(), status: 'In Progress', updatedAt: new Date() } },
+      );
+    });
+  }
 
   async testConnection(): Promise<ConnectionTestResult> {
     const start = Date.now();

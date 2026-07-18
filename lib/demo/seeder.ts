@@ -175,6 +175,8 @@ const CONTROL_ID = 'demo-control';
 
 /** The fixed batch. Size and the exact jobs that need a person are constant. */
 const BATCH_SIZE = 40;
+/** Jobs the client has raised in Concerto for Work Intake to pull into Joblogic. */
+const INBOUND_BATCH_SIZE = 6;
 /** Concerto attribute the cost-centre exceptions write to. */
 export const COST_CENTRE_ATTR = 'clientCostCentre';
 
@@ -316,6 +318,32 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
       demoBlock: block,
       createdAt: new Date(completedAt.getTime() - 6 * 60 * 60_000),
       updatedAt: completedAt,
+    });
+  }
+
+  // INBOUND (closed loop): a handful of jobs the client has just RAISED in
+  // Concerto, with no Joblogic job yet. Work Intake polls these off Concerto and
+  // creates the matching Joblogic job. They carry `inbound: true` and no
+  // joblogicJobNumber, so the intake engine can find the un-picked-up ones.
+  for (let i = 0; i < INBOUND_BATCH_SIZE; i++) {
+    const site = SITES[(i + 2) % SITES.length]!;
+    const type = WORK_TYPES[(i + 5) % WORK_TYPES.length]!;
+    const reference = `CON-${70001 + i}`;
+    const raisedAt = new Date(now - (i + 1) * 14 * 60_000);
+    woDocs.push({
+      reference,
+      status: 'Awaiting Contractor',
+      property: { propertyName: site.siteName, propertyAddress: site.siteAddress },
+      assetId: `${site.siteName.split('—')[1]?.trim().slice(0, 3).toUpperCase() ?? 'NGT'}-${type.asset}-${String((i % 9) + 1).padStart(2, '0')}`,
+      summary: type.description,
+      attributes: {},
+      documents: [],
+      lastUpdatedBy: null,
+      demoBlock: null,
+      inbound: true,
+      joblogicJobNumber: null,
+      createdAt: raisedAt,
+      updatedAt: raisedAt,
     });
   }
 

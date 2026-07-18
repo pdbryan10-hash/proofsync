@@ -106,6 +106,15 @@ export interface TargetWorkOrderDoc {
   documents: TargetDocumentDoc[];
   /** Stamped by the session that wrote — shows ProofSync's login did the work. */
   lastUpdatedBy: string | null;
+  /**
+   * INBOUND (closed loop): the client raised this work order and it needs a
+   * contractor. ProofSync picks it up off Concerto's list and creates the matching
+   * job in Joblogic. `inbound` marks a seeded raised job; `joblogicJobNumber` is
+   * the Joblogic job ProofSync created for it (null until picked up).
+   */
+  inbound?: boolean;
+  joblogicJobNumber?: string | null;
+  pickedUpAt?: Date | null;
   /** Demo hook: reject the next update once, exercising retry. */
   simulateUpdateFailure?: boolean;
   /**

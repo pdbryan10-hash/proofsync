@@ -7,6 +7,7 @@ import { TargetNotFoundError } from '@/lib/errors/integration-errors';
 import { sourceJobs } from '@/lib/demo/mongo';
 import { withSession } from '@/lib/demo/session';
 import { SOURCE_CATEGORY_TO_DOCUMENT_TYPE, type SourceJobDoc } from '@/lib/demo/schema';
+import type { IntakeJob, IntakeAssignment } from '@/lib/demo/intake';
 import type {
   JoblogicConnector,
   NormalisedJob,
@@ -34,6 +35,47 @@ const toIso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : n
 export class DemoJoblogicConnector implements JoblogicConnector {
   readonly provider = 'JOBLOGIC' as const;
   readonly mode = 'demo' as const;
+
+  /**
+   * INTAKE seam — create a job in the field system from a client-raised work
+   * order, dispatched to an engineer, with the client's reference preserved as the
+   * match key. Idempotent: a job with this number already existing is a no-op, so
+   * re-running intake never double-creates.
+   */
+  async createJob(
+    job: IntakeJob,
+    jobNumber: string,
+    engineer: IntakeAssignment,
+  ): Promise<{ created: boolean; jobNumber: string }> {
+    return withSession('JOBLOGIC', async () => {
+      const jobs = await sourceJobs();
+      const existing = await jobs.findOne({ jobNumber });
+      if (existing) return { created: false, jobNumber };
+
+      const now = new Date();
+      const doc: SourceJobDoc = {
+        jobNumber,
+        customerOrderRef: job.reference,
+        siteName: job.siteName,
+        siteAddress: job.siteAddress,
+        assetRef: job.assetRef,
+        description: job.summary,
+        engineer,
+        status: 'Allocated',
+        scheduledDate: now,
+        completedAt: null,
+        visit: null,
+        completionSheet: null,
+        charges: null,
+        attachments: [],
+        revision: 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await jobs.insertOne(doc);
+      return { created: true, jobNumber };
+    });
+  }
 
   async testConnection(): Promise<ConnectionTestResult> {
     const start = Date.now();
