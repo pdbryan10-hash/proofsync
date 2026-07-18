@@ -61,6 +61,10 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   }
 
   const ctx = browser.contexts()[0] ?? (await browser.newContext());
+  // Clear any carried-over session so BOTH systems actually show their LOGIN
+  // page. With a cookie still set, /login redirects straight to the data (the
+  // jobs / work-orders screen) and the sign-in we're here to show never appears.
+  await ctx.clearCookies().catch(() => {});
   const jlPage = ctx.pages()[0] ?? (await ctx.newPage());
   const coPage = await ctx.newPage();
   jlPage.setDefaultTimeout(20_000);
@@ -74,10 +78,10 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   ]);
   note(`tabs: jl=${jlPage.url()} co=${coPage.url()}`);
 
-  // Publish a live-view URL per tab so the curtain can embed both, then hold long
-  // enough for both embedded views to connect before the keying starts.
+  // Publish a live-view URL per tab so the curtain can embed both, then hold just
+  // long enough for both embedded views to connect before the keying starts.
   await recordDualLiveViews();
-  await wait(2_800);
+  await wait(1_200);
 
   // Sign into BOTH systems at once.
   const [jl, co] = await Promise.allSettled([
