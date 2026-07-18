@@ -44,7 +44,7 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick, resolve, replay } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick, resolve, replay, setTransport } = useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
@@ -145,7 +145,14 @@ export function DemoConsole() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} act={act} />
+      <ConsoleHeader
+        state={state}
+        busy={busy}
+        onReset={reset}
+        onForce={forceTick}
+        onSetTransport={setTransport}
+        act={act}
+      />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <CrossSystemSearch />
@@ -1458,12 +1465,14 @@ function ConsoleHeader({
   busy,
   onReset,
   onForce,
+  onSetTransport,
   act,
 }: {
   state: DemoState;
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
+  onSetTransport: (t: 'direct' | 'browser') => Promise<{ ok: boolean; error?: string }>;
   act: 'human' | 'machine';
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
@@ -1493,7 +1502,11 @@ function ConsoleHeader({
           </p>
         </div>
 
-        {state.transport === 'browser' && <TransportBadge transport={state.transport} />}
+        {state.remoteBrowserAvailable ? (
+          <TransportToggle transport={state.transport} busy={busy} onSetTransport={onSetTransport} />
+        ) : (
+          state.transport === 'browser' && <TransportBadge transport={state.transport} />
+        )}
 
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Next check</span>
@@ -1551,6 +1564,66 @@ function TransportBadge({ transport }: { transport: DemoState['transport'] }) {
       <Database className="size-3" />
       Direct — database transport, login simulated
     </Badge>
+  );
+}
+
+/**
+ * Runtime flip between the two transports — no env change, no redeploy.
+ *
+ * Only rendered when a hosted browser is actually wired up (state.remoteBrowser-
+ * Available), so a presenter can't pick a mode that would fail on serverless.
+ * Lets you sit in front of a buyer on the fast DIRECT trickle, then flip to
+ * BROWSER — "watch it sign in" — and show the same records crossing while a real
+ * Chromium types into both systems.
+ */
+function TransportToggle({
+  transport,
+  busy,
+  onSetTransport,
+}: {
+  transport: DemoState['transport'];
+  busy: boolean;
+  onSetTransport: (t: 'direct' | 'browser') => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [switching, setSwitching] = useState<'direct' | 'browser' | null>(null);
+
+  const pick = async (t: 'direct' | 'browser') => {
+    if (t === transport || switching) return;
+    setSwitching(t);
+    try {
+      await onSetTransport(t);
+    } finally {
+      setSwitching(null);
+    }
+  };
+
+  const Option = ({ value, icon: Icon, label }: { value: 'direct' | 'browser'; icon: typeof Database; label: string }) => {
+    const active = transport === value;
+    return (
+      <button
+        type="button"
+        onClick={() => pick(value)}
+        disabled={busy || switching !== null}
+        aria-pressed={active}
+        className={cn(
+          'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors disabled:opacity-60',
+          active ? 'bg-navy-800 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        {switching === value ? <Loader2 className="size-3 animate-spin" /> : <Icon className="size-3" />}
+        {label}
+      </button>
+    );
+  };
+
+  return (
+    <div
+      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 p-0.5"
+      title="Direct: fast, login simulated. Browser: a real Chromium signs in and types into both systems."
+    >
+      <Option value="direct" icon={Database} label="Direct" />
+      <Option value="browser" icon={Chrome} label="Browser — watch it sign in" />
+    </div>
   );
 }
 

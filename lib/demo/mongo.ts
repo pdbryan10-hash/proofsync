@@ -106,6 +106,23 @@ export interface DemoControlDoc {
    * and can't race or time out. Old orgs are simply abandoned.
    */
   orgEpoch?: number;
+  /** Presenter's runtime transport choice — overrides the DEMO_TRANSPORT env. */
+  transportOverride?: 'direct' | 'browser' | null;
+}
+
+/**
+ * Load the presenter's stored transport choice into the process so connector
+ * selection (sync) and the state read reflect it. Called at the start of each
+ * beat and each state read.
+ */
+export async function applyStoredTransport(): Promise<void> {
+  const { setTransportOverride } = await import('./config');
+  try {
+    const doc = await (await demoControl()).findOne({ _id: 'demo-control' });
+    setTransportOverride(doc?.transportOverride ?? null);
+  } catch {
+    setTransportOverride(null);
+  }
 }
 
 /** Indexes the demo systems would plausibly have. Safe to call repeatedly. */

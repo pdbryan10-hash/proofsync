@@ -1,4 +1,4 @@
-import { demoControl } from './mongo';
+import { demoControl, applyStoredTransport } from './mongo';
 import { getTickSeconds } from './config';
 import { ingestAndSync, type IngestResult } from './ingest';
 
@@ -169,6 +169,10 @@ async function runTickInner(
     { $set: { lastTickAt: now }, $inc: { tickCount: 1 } },
     { returnDocument: 'after' },
   );
+
+  // Reflect the presenter's transport choice (direct vs real browser) so the
+  // connectors this beat creates use it.
+  await applyStoredTransport();
 
   // Run-once model: the batch is fixed and seeded whole. A beat simply advances
   // whatever is still pending through the real engine (paced, up to the per-beat

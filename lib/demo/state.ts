@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { getEstimatedManualMinutesPerJob } from '@/lib/config';
-import { sourceJobs, targetWorkOrders } from './mongo';
+import { sourceJobs, targetWorkOrders, applyStoredTransport } from './mongo';
 import { peekSession } from './session';
 import { timeToNextTick } from './tick';
 import {
@@ -8,6 +8,7 @@ import {
   getSourceDbName,
   getTargetDbName,
   getDemoTransport,
+  isRemoteBrowser,
   DEMO_SOURCE_LOGIN,
   DEMO_TARGET_LOGIN,
   type DemoTransport,
@@ -109,6 +110,8 @@ export interface ExceptionItem {
 
 export interface DemoState {
   transport: DemoTransport;
+  /** True when a hosted browser (Browserbase) is configured — enables the toggle. */
+  remoteBrowserAvailable: boolean;
   databases: { source: string; target: string; ledger: string };
   /** Where the stand-in systems' own UIs live, so the console can link to them. */
   systemUrls: { source: string; target: string };
@@ -193,6 +196,9 @@ function buildSpotlight(d: SourceJobDoc): SpotlightData {
 }
 
 export async function getDemoState(): Promise<DemoState> {
+  // Reflect the presenter's runtime transport choice (see the toggle) in the
+  // reported transport and badge.
+  await applyStoredTransport();
   // Resolve the org READ-ONLY — never create it here. getDemoState runs on every
   // 1s poll from every open tab; if it created the org, concurrent readers (plus
   // the cron) would each race to create a fresh one, producing DUPLICATE orgs with
@@ -368,6 +374,7 @@ export async function getDemoState(): Promise<DemoState> {
 
   return {
     transport: getDemoTransport(),
+    remoteBrowserAvailable: isRemoteBrowser(),
     databases: {
       source: getSourceDbName(),
       target: getTargetDbName(),

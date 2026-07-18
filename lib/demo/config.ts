@@ -44,7 +44,20 @@ export function getDripPerTick(): number {
  */
 export type DemoTransport = 'direct' | 'browser';
 
+/**
+ * Runtime transport override (set from the control doc at the start of each beat
+ * and each state read, see applyStoredTransport). Lets a presenter flip between
+ * the fast direct trickle and the real-browser proof from the UI, no env change.
+ * Null = fall back to the DEMO_TRANSPORT env default.
+ */
+let transportOverride: DemoTransport | null = null;
+
+export function setTransportOverride(t: DemoTransport | null): void {
+  transportOverride = t;
+}
+
 export function getDemoTransport(): DemoTransport {
+  if (transportOverride) return transportOverride;
   return process.env.DEMO_TRANSPORT === 'browser' ? 'browser' : 'direct';
 }
 

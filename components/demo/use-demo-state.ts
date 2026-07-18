@@ -155,6 +155,25 @@ export function useDemoState() {
     }
   }, [refresh]);
 
+  const setTransport = useCallback(
+    async (transport: 'direct' | 'browser'): Promise<{ ok: boolean; error?: string }> => {
+      try {
+        const res = await fetch('/api/demo/transport', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({ transport }),
+        });
+        const body = await res.json();
+        await refresh();
+        return body?.ok ? { ok: true } : { ok: false, error: body?.error ?? 'Could not switch mode.' };
+      } catch {
+        return { ok: false, error: 'Lost contact with the server.' };
+      }
+    },
+    [refresh],
+  );
+
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
@@ -185,7 +204,7 @@ export function useDemoState() {
     };
   }, [refresh, tick]);
 
-  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay };
+  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport };
 }
 
 /**
