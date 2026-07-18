@@ -174,6 +174,16 @@ export function useDemoState() {
     [refresh],
   );
 
+  /**
+   * Fire the on-demand "watch a real browser sign in" proof. Deliberately not
+   * awaited: the request runs ~60s while the browser signs into both systems, but
+   * the live-view link appears within a few seconds via the state poll
+   * (state.browserProof), so the UI shouldn't block on the whole run.
+   */
+  const startBrowserProof = useCallback(() => {
+    void fetch('/api/demo/browser-proof', { method: 'POST', cache: 'no-store' }).catch(() => {});
+  }, []);
+
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
@@ -204,7 +214,7 @@ export function useDemoState() {
     };
   }, [refresh, tick]);
 
-  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport };
+  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport, startBrowserProof };
 }
 
 /**

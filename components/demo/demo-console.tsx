@@ -44,7 +44,7 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick, resolve, replay, setTransport } = useDemoState();
+  const { state, error, busy, activity, reset, forceTick, resolve, replay, startBrowserProof } = useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
   const [activeRefs, setActiveRefs] = useState<Set<string>>(new Set());
@@ -150,7 +150,7 @@ export function DemoConsole() {
         busy={busy}
         onReset={reset}
         onForce={forceTick}
-        onSetTransport={setTransport}
+        onBrowserProof={startBrowserProof}
         act={act}
       />
 
@@ -1465,14 +1465,14 @@ function ConsoleHeader({
   busy,
   onReset,
   onForce,
-  onSetTransport,
+  onBrowserProof,
   act,
 }: {
   state: DemoState;
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
-  onSetTransport: (t: 'direct' | 'browser') => Promise<{ ok: boolean; error?: string }>;
+  onBrowserProof: () => void;
   act: 'human' | 'machine';
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
@@ -1502,10 +1502,8 @@ function ConsoleHeader({
           </p>
         </div>
 
-        {state.remoteBrowserAvailable ? (
-          <TransportToggle transport={state.transport} busy={busy} onSetTransport={onSetTransport} />
-        ) : (
-          state.transport === 'browser' && <TransportBadge transport={state.transport} />
+        {state.remoteBrowserAvailable && (
+          <BrowserProofButton proof={state.browserProof} onStart={onBrowserProof} />
         )}
 
         <div className="flex items-center gap-2 text-sm">
@@ -1543,87 +1541,66 @@ function ConsoleHeader({
 }
 
 /**
- * States the access method in the header, permanently.
+ * On-demand "watch a real browser sign in" proof.
  *
- * The two transports prove very different things, and the difference is
- * invisible from the panels alone — the records move identically either way.
- * Anyone reading this screen is entitled to know which one they are watching
- * without having to ask.
+ * Only rendered when a hosted browser (Browserbase) is configured. The main demo
+ * stays on the fast Direct transport — this is a separate, read-only artifact for
+ * a buyer who wants the literal proof that a real browser signs into both systems
+ * (no API, no shortcut). Clicking it opens a real cloud browser; within a few
+ * seconds a PUBLIC live-view link appears that anyone can open to watch the
+ * sign-in happen, no Browserbase login required.
  */
-function TransportBadge({ transport }: { transport: DemoState['transport'] }) {
-  if (transport === 'browser') {
+function BrowserProofButton({
+  proof,
+  onStart,
+}: {
+  proof: DemoState['browserProof'];
+  onStart: () => void;
+}) {
+  const [launching, setLaunching] = useState(false);
+
+  // The live link arriving is the signal the browser is up — stop the spinner.
+  useEffect(() => {
+    if (proof?.liveUrl) setLaunching(false);
+  }, [proof?.liveUrl]);
+
+  const start = () => {
+    setLaunching(true);
+    onStart();
+    // Safety: never spin forever if the session never publishes a link.
+    setTimeout(() => setLaunching(false), 90_000);
+  };
+
+  if (proof?.liveUrl) {
     return (
-      <Badge tone="success" className="gap-1.5">
-        <Chrome className="size-3" />
-        Browser — signing in and typing into both systems
-      </Badge>
+      <a
+        href={proof.liveUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex h-8 items-center gap-2 rounded-md border border-success-soft bg-success-soft px-3 text-sm font-semibold text-success-text transition-colors hover:brightness-95"
+        title="Opens the live Browserbase session — watch the real browser sign in to Joblogic and Concerto"
+      >
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60" />
+          <span className="relative inline-flex size-2 rounded-full bg-current" />
+        </span>
+        Live browser — watch it sign in
+        <ArrowRight className="size-3.5" />
+      </a>
     );
   }
-  return (
-    <Badge tone="neutral" className="gap-1.5">
-      <Database className="size-3" />
-      Direct — database transport, login simulated
-    </Badge>
-  );
-}
-
-/**
- * Runtime flip between the two transports — no env change, no redeploy.
- *
- * Only rendered when a hosted browser is actually wired up (state.remoteBrowser-
- * Available), so a presenter can't pick a mode that would fail on serverless.
- * Lets you sit in front of a buyer on the fast DIRECT trickle, then flip to
- * BROWSER — "watch it sign in" — and show the same records crossing while a real
- * Chromium types into both systems.
- */
-function TransportToggle({
-  transport,
-  busy,
-  onSetTransport,
-}: {
-  transport: DemoState['transport'];
-  busy: boolean;
-  onSetTransport: (t: 'direct' | 'browser') => Promise<{ ok: boolean; error?: string }>;
-}) {
-  const [switching, setSwitching] = useState<'direct' | 'browser' | null>(null);
-
-  const pick = async (t: 'direct' | 'browser') => {
-    if (t === transport || switching) return;
-    setSwitching(t);
-    try {
-      await onSetTransport(t);
-    } finally {
-      setSwitching(null);
-    }
-  };
-
-  const Option = ({ value, icon: Icon, label }: { value: 'direct' | 'browser'; icon: typeof Database; label: string }) => {
-    const active = transport === value;
-    return (
-      <button
-        type="button"
-        onClick={() => pick(value)}
-        disabled={busy || switching !== null}
-        aria-pressed={active}
-        className={cn(
-          'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors disabled:opacity-60',
-          active ? 'bg-navy-800 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
-        )}
-      >
-        {switching === value ? <Loader2 className="size-3 animate-spin" /> : <Icon className="size-3" />}
-        {label}
-      </button>
-    );
-  };
 
   return (
-    <div
-      className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 p-0.5"
-      title="Direct: fast, login simulated. Browser: a real Chromium signs in and types into both systems."
+    <button
+      type="button"
+      onClick={start}
+      disabled={launching}
+      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-70"
+      title="Opens a real cloud browser (Browserbase) that signs into both systems like a person — proof it isn't a database shortcut"
     >
-      <Option value="direct" icon={Database} label="Direct" />
-      <Option value="browser" icon={Chrome} label="Browser — watch it sign in" />
-    </div>
+      {launching ? <Loader2 className="size-4 animate-spin" /> : <Chrome className="size-4" />}
+      {launching ? 'Starting a real browser…' : 'Watch a real browser sign in'}
+    </button>
   );
 }
 

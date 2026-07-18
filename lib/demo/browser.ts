@@ -1,6 +1,7 @@
 import type { Browser, BrowserContext, Page } from 'playwright-core';
 import { getBrowserbaseConfig, getDemoBaseUrl, isHeadedBrowser } from './config';
 import { saveShot, type ShotStage } from './screenshots';
+import { recordBrowserProof } from './mongo';
 import { IntegrationUnavailableError } from '@/lib/errors/integration-errors';
 
 /**
@@ -64,6 +65,25 @@ async function resolveProjectId(apiKey: string, explicit: string | null): Promis
   return id;
 }
 
+/**
+ * Fetch a Browserbase session's public live-view URL and store it for the demo's
+ * on-demand proof. The debug endpoint returns `debuggerFullscreenUrl` — a page
+ * anyone can open (no Browserbase login) to watch the session live while it runs.
+ */
+async function publishLiveView(apiKey: string, sessionId: string): Promise<void> {
+  try {
+    const res = await fetch(`https://api.browserbase.com/v1/sessions/${sessionId}/debug`, {
+      headers: { 'X-BB-API-Key': apiKey },
+    });
+    if (!res.ok) return;
+    const debug = (await res.json()) as { debuggerFullscreenUrl?: string; debuggerUrl?: string };
+    const liveUrl = debug.debuggerFullscreenUrl ?? debug.debuggerUrl;
+    if (liveUrl) await recordBrowserProof(sessionId, liveUrl);
+  } catch {
+    // Non-fatal — the sync proceeds whether or not the proof link is published.
+  }
+}
+
 async function launch(): Promise<Browser> {
   const bb = getBrowserbaseConfig();
 
@@ -82,6 +102,13 @@ async function launch(): Promise<Browser> {
         throw new Error(`Browserbase session request failed (${res.status}): ${await res.text()}`);
       }
       const session = (await res.json()) as { id: string; connectUrl?: string };
+
+      // Publish the session's public live-view URL for the on-demand proof, so a
+      // buyer can watch this exact browser sign in without a Browserbase login.
+      // Best-effort and non-blocking — a proof-link write must never delay or
+      // fail the sync itself.
+      void publishLiveView(bb.apiKey, session.id);
+
       const connectUrl =
         session.connectUrl ??
         `wss://connect.browserbase.com?apiKey=${bb.apiKey}&sessionId=${session.id}`;

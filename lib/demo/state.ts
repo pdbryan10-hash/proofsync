@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { getEstimatedManualMinutesPerJob } from '@/lib/config';
-import { sourceJobs, targetWorkOrders, applyStoredTransport } from './mongo';
+import { sourceJobs, targetWorkOrders, applyStoredTransport, demoControl } from './mongo';
 import { peekSession } from './session';
 import { timeToNextTick } from './tick';
 import {
@@ -112,6 +112,12 @@ export interface DemoState {
   transport: DemoTransport;
   /** True when a hosted browser (Browserbase) is configured — enables the toggle. */
   remoteBrowserAvailable: boolean;
+  /**
+   * A live "watch a real browser sign in" session, if one is running right now.
+   * `liveUrl` is a public Browserbase live-view page (no login needed). Present
+   * only while fresh — it goes away once the session has ended.
+   */
+  browserProof: { liveUrl: string; sessionId: string; at: string } | null;
   databases: { source: string; target: string; ledger: string };
   /** Where the stand-in systems' own UIs live, so the console can link to them. */
   systemUrls: { source: string; target: string };
@@ -222,6 +228,7 @@ export async function getDemoState(): Promise<DemoState> {
     openExceptions,
     awaitingSync,
     tick,
+    controlDoc,
   ] = await Promise.all([
     jobsCol.find({}).sort({ updatedAt: -1 }).limit(PANEL_LIMIT).toArray(),
     jobsCol.countDocuments({}),
@@ -256,7 +263,22 @@ export async function getDemoState(): Promise<DemoState> {
     prisma.exception.count({ where: { job: { organisationId }, status: { in: ['OPEN', 'IN_REVIEW'] } } }),
     prisma.job.count({ where: { organisationId, syncStatus: { in: ['PENDING', 'READY', 'SYNCING'] } } }),
     timeToNextTick(),
+    (async () => (await demoControl()).findOne({ _id: 'demo-control' }))(),
   ]);
+
+  // Surface a "watch it sign in" live-view link only while it is genuinely live.
+  // A Browserbase session runs a couple of minutes at most, so anything older is
+  // stale — the session has ended and the URL would 404.
+  const PROOF_FRESH_MS = 3 * 60_000;
+  const proofAt = controlDoc?.browserProofAt ? new Date(controlDoc.browserProofAt) : null;
+  const browserProof =
+    controlDoc?.browserProofLiveUrl && proofAt && Date.now() - proofAt.getTime() < PROOF_FRESH_MS
+      ? {
+          liveUrl: controlDoc.browserProofLiveUrl,
+          sessionId: controlDoc.browserProofSessionId ?? '',
+          at: proofAt.toISOString(),
+        }
+      : null;
 
   const targetPopulated = await wosCol.countDocuments({
     // A work order counts as populated once the sync has written anything into it.
@@ -375,6 +397,7 @@ export async function getDemoState(): Promise<DemoState> {
   return {
     transport: getDemoTransport(),
     remoteBrowserAvailable: isRemoteBrowser(),
+    browserProof,
     databases: {
       source: getSourceDbName(),
       target: getTargetDbName(),

@@ -108,6 +108,39 @@ export interface DemoControlDoc {
   orgEpoch?: number;
   /** Presenter's runtime transport choice — overrides the DEMO_TRANSPORT env. */
   transportOverride?: 'direct' | 'browser' | null;
+  /**
+   * The most recent on-demand "watch a real browser sign in" proof. The browser
+   * connector writes the live session's PUBLIC Browserbase live-view URL here the
+   * moment it opens, so the demo can hand a buyer a link to watch it — the only
+   * view of the session that needs no Browserbase login. Stale after a few
+   * minutes (the session ends), which the state read enforces.
+   */
+  browserProofSessionId?: string | null;
+  browserProofLiveUrl?: string | null;
+  browserProofAt?: Date | null;
+}
+
+/**
+ * Record the live-view URL of a just-opened browser session, so the demo can
+ * offer "watch it sign in" as a link a buyer can actually open. Best-effort:
+ * never let a bookkeeping write break the sync it is describing.
+ */
+export async function recordBrowserProof(sessionId: string, liveUrl: string): Promise<void> {
+  try {
+    await (await demoControl()).updateOne(
+      { _id: 'demo-control' },
+      {
+        $set: {
+          browserProofSessionId: sessionId,
+          browserProofLiveUrl: liveUrl,
+          browserProofAt: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+  } catch {
+    // Non-fatal: the proof link is a nicety, the sync is the point.
+  }
 }
 
 /**
