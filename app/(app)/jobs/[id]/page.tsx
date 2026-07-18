@@ -58,6 +58,27 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             {job.assetReference && <span className="inline-flex items-center gap-1.5"><Wrench className="size-3.5" />{job.assetReference}</span>}
             <span className="inline-flex items-center gap-1.5"><Calendar className="size-3.5" />Completed {formatDateTime(job.completedAt)}</span>
           </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs">
+            <span className="text-muted-foreground">Open this job in</span>
+            <a
+              href={`/systems/joblogic/enter?next=/systems/joblogic/jobs/${job.joblogicJobId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 font-medium text-navy-800 transition-colors hover:bg-muted"
+            >
+              Joblogic <span aria-hidden>↗</span>
+            </a>
+            {job.concertoJobReference && (
+              <a
+                href={`/systems/concerto/enter?next=/systems/concerto/work-orders/${job.concertoJobReference}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 font-medium text-emerald-700 transition-colors hover:bg-muted"
+              >
+                Concerto <span aria-hidden>↗</span>
+              </a>
+            )}
+          </div>
         </CardContent>
       </Card>
 

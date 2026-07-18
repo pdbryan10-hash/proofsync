@@ -205,7 +205,18 @@ export function DemoConsole() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} act={act} />
+      <ConsoleHeader
+        state={state}
+        busy={busy}
+        onReset={reset}
+        onForce={forceTick}
+        act={act}
+        onSelectAct={(target) => {
+          if (target === act) return;
+          if (target === 'machine') void enterMachine();
+          else setAct('human');
+        }}
+      />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <CrossSystemSearch />
@@ -1576,12 +1587,14 @@ function ConsoleHeader({
   onReset,
   onForce,
   act,
+  onSelectAct,
 }: {
   state: DemoState;
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
   act: 'human' | 'machine';
+  onSelectAct: (act: 'human' | 'machine') => void;
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
   const seconds = Math.ceil(countdown / 1000);
@@ -1596,18 +1609,29 @@ function ConsoleHeader({
             <span className="font-normal text-muted-foreground">Joblogic</span>
             <ArrowRight className="size-3.5 text-muted-foreground" />
             <span className="font-normal text-muted-foreground">Concerto</span>
-            <span
+          </h1>
+          <div className="mt-1.5 inline-flex items-center gap-0.5 rounded-full border border-border bg-muted/60 p-0.5">
+            <button
+              type="button"
+              onClick={() => onSelectAct('human')}
               className={cn(
-                'ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                act === 'human' ? 'bg-info-soft text-info-text' : 'bg-navy-900 text-white',
+                'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                act === 'human' ? 'bg-info-soft text-info-text shadow-sm' : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              {act === 'human' ? 'Act 1 · one job' : 'Act 2 · full floor'}
-            </span>
-          </h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Two separate systems, checked and kept in step every {state.tick.tickSeconds} seconds.
-          </p>
+              One job
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectAct('machine')}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                act === 'machine' ? 'bg-navy-900 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              Machine speed
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 text-sm">
