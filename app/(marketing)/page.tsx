@@ -13,7 +13,7 @@ import {
   MonitorSmartphone,
   Plug,
 } from 'lucide-react';
-import { ProcessMap } from '@/components/marketing/process-map';
+import { FanOutHub } from '@/components/marketing/fan-out-hub';
 import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
 
@@ -86,26 +86,10 @@ export default function SalesPage() {
           </div>
           <p className="mt-3 font-mono text-xs text-[#8a8578]">No sign-up · runs on real data · no slides</p>
 
-          {/* THE MOMENT — one engine, a whole wall of client systems. */}
-          <div className="mt-14 rounded-2xl border border-[#e6e1d6] bg-white p-5 shadow-sm sm:p-7">
-            <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0e6b3f]">
-                <span className="relative flex size-1.5">
-                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#0e6b3f] opacity-70" />
-                  <span className="relative inline-flex size-1.5 rounded-full bg-[#0e6b3f]" />
-                </span>
-                One engine · any pairing
-              </span>
-              <span className="text-sm text-[#5f6068]">
-                Your system on the left. The client&apos;s — whichever of these they run — on the right.
-              </span>
-            </div>
-            <ProcessMap />
+          {/* THE CENTREPIECE — the closed-loop hub + calculator, in their numbers. */}
+          <div className="mt-12">
+            <FanOutHub />
           </div>
-          <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
-            The landscape ProofSync is built for. Connector availability varies by platform and by your
-            client&apos;s authorisation. Ask us about yours.
-          </p>
         </div>
       </section>
 
