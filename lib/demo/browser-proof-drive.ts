@@ -48,7 +48,14 @@ async function keyInto(locator: Locator, text: string): Promise<void> {
  */
 async function signedIn(
   page: Page,
-  params: { target: string; loginPath: string; userLabel: string; username: string; password: string },
+  params: {
+    target: string;
+    loginPath: string;
+    userLabel: string;
+    submitLabel: RegExp;
+    username: string;
+    password: string;
+  },
 ): Promise<void> {
   await page.goto(params.target, { waitUntil: 'domcontentloaded' });
   await wait(1_600);
@@ -58,7 +65,9 @@ async function signedIn(
   await wait(500);
   await keyInto(page.getByLabel('Password', { exact: true }), params.password);
   await wait(700);
-  await page.getByRole('button', { name: /log in/i }).click();
+  // Each vendor names its submit button differently — Joblogic "Sign in",
+  // Concerto "Log in" — so the caller supplies the label to match.
+  await page.getByRole('button', { name: params.submitLabel }).click();
   await page.waitForLoadState('domcontentloaded');
   await wait(2_400);
 }
@@ -95,6 +104,7 @@ export async function runBrowserProofDrive(): Promise<string[]> {
       target: `${base}/systems/joblogic/jobs?status=Complete`,
       loginPath: '/systems/joblogic/login',
       userLabel: 'Username',
+      submitLabel: /sign in/i,
       username: DEMO_SOURCE_LOGIN.username,
       password: DEMO_SOURCE_LOGIN.password,
     });
@@ -110,6 +120,7 @@ export async function runBrowserProofDrive(): Promise<string[]> {
       target: `${base}/systems/concerto/work-orders`,
       loginPath: '/systems/concerto/login',
       userLabel: 'User ID',
+      submitLabel: /log in/i,
       username: DEMO_TARGET_LOGIN.username,
       password: DEMO_TARGET_LOGIN.password,
     });
