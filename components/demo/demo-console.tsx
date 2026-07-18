@@ -162,19 +162,33 @@ export function DemoConsole() {
   // Enter Act 2 INSTANTLY and rewind in the background. A "rewinding" cover sits
   // over the floor until the batch is cleared, so there's no wait on the click and
   // no flash of the fully-synced state that quietly finished behind Act 1.
+  const [syncing, setSyncing] = useState(false);
+
   const enterMachine = async () => {
-    // Act 2 opens with one real sign-in (embedded), then the machine-speed batch.
+    // Act 2 opens with one real sign-in (embedded), then sits EMPTY and READY:
+    // the batch is re-queued PENDING and Concerto is empty, waiting for the
+    // presenter to press "Run the sync" — so the (very fast) run fires on cue,
+    // not the instant the act opens.
     await runActLogin('machine');
     finaleFired.current = false;
     machineSawPending.current = false;
     setPreparing(true);
     setAct('machine');
-    // Re-queue the whole batch PENDING, then drive it to completion at a watchable
-    // pace. This is why the floor doesn't open already-finished: the run starts
-    // here, on cue, not from a background cadence.
     await replay();
     setPreparing(false);
-    await runMachineBatch();
+  };
+
+  // Fire the batch on demand — the "Run the sync" button. Re-arms the finale and
+  // drives the re-queued batch to completion (a couple of seconds on M10).
+  const runBatch = async () => {
+    setSyncing(true);
+    finaleFired.current = false;
+    machineSawPending.current = false;
+    try {
+      await runMachineBatch();
+    } finally {
+      setSyncing(false);
+    }
   };
 
   // The applause screen states the batch result — all real, straight from state.
@@ -210,6 +224,8 @@ export function DemoConsole() {
             onActive={setActiveRefs}
             busy={busy}
             preparing={preparing}
+            syncing={syncing}
+            onRun={runBatch}
             onReplay={replay}
             onBack={() => setAct('human')}
             onFreeze={freeze}
@@ -758,6 +774,8 @@ function MachineFloor({
   onActive,
   busy,
   preparing,
+  syncing,
+  onRun,
   onReplay,
   onBack,
   onFreeze,
@@ -769,11 +787,15 @@ function MachineFloor({
   onActive: (refs: Set<string>) => void;
   busy: boolean;
   preparing: boolean;
+  syncing: boolean;
+  onRun: () => void;
   onReplay: () => void;
   onBack: () => void;
   onFreeze: () => void;
   onFix: (item: ExceptionItem) => void;
 }) {
+  const awaiting = state.stats.awaitingSync;
+  const landed = state.stats.synced + state.stats.partial;
   return (
     <div className="relative">
       {preparing && (
@@ -785,7 +807,16 @@ function MachineFloor({
           <p className="text-xs text-muted-foreground">A moment, then watch it run</p>
         </div>
       )}
-      <MachineHeader busy={busy} onReplay={onReplay} onBack={onBack} onFreeze={onFreeze} />
+      <MachineHeader
+        busy={busy}
+        syncing={syncing}
+        landed={landed}
+        awaiting={awaiting}
+        onRun={onRun}
+        onReplay={onReplay}
+        onBack={onBack}
+        onFreeze={onFreeze}
+      />
       <KpiBar stats={state.stats} exceptionCount={state.exceptions.length} />
       <ExceptionsQueue exceptions={state.exceptions} onFix={onFix} />
       <ActivityFeed activity={activity} />
@@ -813,15 +844,27 @@ function MachineFloor({
 
 function MachineHeader({
   busy,
+  syncing,
+  landed,
+  awaiting,
+  onRun,
   onReplay,
   onBack,
   onFreeze,
 }: {
   busy: boolean;
+  syncing: boolean;
+  landed: number;
+  awaiting: number;
+  onRun: () => void;
   onReplay: () => void;
   onBack: () => void;
   onFreeze: () => void;
 }) {
+  // Empty and ready: nothing synced yet, waiting for the presenter to fire it.
+  const ready = landed === 0 && !syncing;
+  const done = landed > 0 && awaiting === 0 && !syncing;
+
   return (
     <section className="relative my-4 overflow-hidden rounded-2xl border border-navy-900/60 bg-[radial-gradient(130%_130%_at_20%_-20%,#1e2a6e_0%,#141a44_50%,#0c0f26_100%)] px-5 py-5 shadow-xl sm:px-8">
       <div className="pointer-events-none absolute inset-x-0 -top-10 left-1/3 h-56 w-1/2 rounded-full bg-info/10 blur-3xl" />
@@ -833,24 +876,44 @@ function MachineHeader({
           <h2 className="mt-1.5 text-lg font-semibold text-white sm:text-xl">
             The same thing — every job, all at once
           </h2>
-          <div className="mt-2 flex items-center gap-2 text-xs text-white/50">
-            <span className="flex items-center gap-1">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span
-                  key={i}
-                  className="size-2 rounded-full bg-emerald-400 animate-pulse-soft"
-                  style={{ animationDelay: `${i * 0.18}s` }}
-                />
-              ))}
-            </span>
-            5 browser workers running in parallel
-          </div>
+          <p className="mt-2 text-xs text-white/50">
+            {syncing
+              ? 'Syncing every job into Concerto…'
+              : ready
+                ? 'Signed in and ready — press Run to sync the whole batch at once.'
+                : done
+                  ? 'Done. Press Freeze for the result, or Reset to run it again.'
+                  : 'Batch loaded.'}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={onReplay} disabled={busy}>
+          {ready ? (
+            <button
+              type="button"
+              onClick={onRun}
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40"
+            >
+              <Zap className="size-4" />
+              Run the sync
+            </button>
+          ) : syncing ? (
+            <span className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/80 px-5 py-2.5 text-sm font-bold text-white">
+              <Loader2 className="size-4 animate-spin" />
+              Syncing…
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={onFreeze}
+              className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-navy-900 shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
+            >
+              Freeze — the result
+            </button>
+          )}
+          <Button size="sm" variant="outline" onClick={onReplay} disabled={busy || syncing}>
             {busy ? <Loader2 className="animate-spin" /> : <RotateCcw />}
-            Run the batch again
+            Reset
           </Button>
           <a
             href="/dashboard"
@@ -859,13 +922,6 @@ function MachineHeader({
             <Table2 className="size-4" />
             Explore the data
           </a>
-          <button
-            type="button"
-            onClick={onFreeze}
-            className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-navy-900 shadow-lg transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30"
-          >
-            Freeze — the result
-          </button>
           <button
             type="button"
             onClick={onBack}
