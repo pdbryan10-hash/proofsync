@@ -578,8 +578,7 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
 
   if (stop === 1) {
     return (
-      <FocusCard chip="ProofSync" chipTone="indigo" title="Signs into Joblogic — and finds the match">
-        <MiniSignIn system="Joblogic" url="joblogic.contractor-fm.co.uk" username={spot.sourceLogin} />
+      <FocusCard chip="ProofSync" chipTone="indigo" title="Reads Joblogic — and finds the match">
         <ul className="mt-3 space-y-2 text-sm">
           <Step done>Read the completed job</Step>
           <Step done>
@@ -602,10 +601,9 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
       <FocusCard
         chip="Concerto"
         chipTone="teal"
-        title={`Signs into Concerto — fills ${spot.reference}`}
+        title={`Fills ${spot.reference} in Concerto`}
         badge={<Badge tone="info" dot>typing it in</Badge>}
       >
-        <MiniSignIn system="Concerto" url="concerto.client-fm.co.uk" username={spot.targetLogin} />
         <dl className="mt-3 space-y-1.5">
           {spot.fields.map((f, i) => (
             <div
@@ -1948,7 +1946,7 @@ function LedgerPanel({
             <div className="mt-2 flex items-center gap-1.5 text-[11px]">
               <span className="text-muted-foreground">Open this job in</span>
               <a
-                href={`/systems/joblogic/jobs/${row.jobNumber}`}
+                href={`/systems/joblogic/enter?next=/systems/joblogic/jobs/${row.jobNumber}`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-navy-800 transition-colors hover:bg-muted"
@@ -1957,7 +1955,7 @@ function LedgerPanel({
               </a>
               {row.reference && (
                 <a
-                  href={`/systems/concerto/work-orders/${row.reference}`}
+                  href={`/systems/concerto/enter?next=/systems/concerto/work-orders/${row.reference}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-emerald-700 transition-colors hover:bg-muted"

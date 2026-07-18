@@ -34,9 +34,9 @@ async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
     await locator.fill('');
-    // Letters appear one by one, but at machine speed — a fast, deliberate type,
-    // not a person's pace and not an instant paste.
-    await locator.pressSequentially(text, { delay: 14 });
+    // Letters appear one by one, but blisteringly fast — machine keying, not a
+    // person's pace.
+    await locator.pressSequentially(text, { delay: 5 });
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
