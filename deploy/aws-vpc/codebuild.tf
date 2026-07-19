@@ -108,4 +108,7 @@ resource "aws_codebuild_project" "build" {
     location  = "${aws_s3_bucket.source.bucket}/source.zip"
     buildspec = file("${path.module}/buildspec.yml")
   }
+
+  # So targeting just the project also creates the role's policy (logs/ECR/S3).
+  depends_on = [aws_iam_role_policy.codebuild]
 }
