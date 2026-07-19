@@ -176,6 +176,20 @@ const KNOWN_TARGET_FIELDS = Object.keys(TARGET_FIELD_LABELS);
 function previewValue(value: unknown): string {
   if (value === null || value === undefined || value === '') return '—';
   const s = String(value);
+  // Machine timestamps (arrival/departure/completion) read as a readable time,
+  // not a raw ISO string.
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s)) {
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+  }
   return s.length > 90 ? `${s.slice(0, 89)}…` : s;
 }
 

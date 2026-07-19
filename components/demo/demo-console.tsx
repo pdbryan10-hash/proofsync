@@ -941,10 +941,10 @@ function MachineHeader({
           </Button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20"
+            className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-5 py-2.5 text-base font-bold text-white ring-1 ring-white/25 transition-colors hover:bg-white/20"
           >
-            <Table2 className="size-4" />
-            Explore the data
+            <Table2 className="size-5" />
+            See the results
           </a>
           <button
             type="button"
@@ -2113,10 +2113,10 @@ function ConsoleHeader({
         <div className="flex items-center gap-2">
           <a
             href="/dashboard"
-            className="inline-flex h-8 items-center gap-1.5 rounded-md bg-navy-800 px-3 text-sm font-semibold text-white transition-colors hover:bg-navy-900"
+            className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#0e6b3f] px-5 text-base font-bold text-white shadow-md transition-all hover:scale-[1.02] hover:bg-[#0b5531]"
           >
-            <Table2 className="size-4" />
-            Explore the data
+            <Table2 className="size-5" />
+            See the results
           </a>
           <Button size="sm" variant="outline" onClick={onForce} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" /> : <Zap />}
