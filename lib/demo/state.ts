@@ -244,8 +244,14 @@ export async function getDemoState(): Promise<DemoState> {
     jobsCol.countDocuments({ status: { $in: ['Allocated', 'Travelling', 'On Site'] } }),
     // Foreground work orders ProofSync has actually filled — the proof it crossed —
     // rather than the flood of freshly-raised empty ones, which otherwise dominate
-    // by recency and make the client's system look untouched.
-    wosCol.find({ lastUpdatedBy: { $ne: null } }).sort({ updatedAt: -1 }).limit(PANEL_LIMIT).toArray(),
+    // by recency and make the client's system look untouched. Inbound (closed-loop)
+    // work orders are always included, even before they're filled, so the loop can
+    // show the client-raised jobs waiting to be picked up.
+    wosCol
+      .find({ $or: [{ lastUpdatedBy: { $ne: null } }, { inbound: true }] })
+      .sort({ updatedAt: -1 })
+      .limit(PANEL_LIMIT)
+      .toArray(),
     wosCol.countDocuments({}),
     prisma.syncRun.findMany({
       where: { job: { organisationId } },

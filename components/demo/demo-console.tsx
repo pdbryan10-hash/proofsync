@@ -1717,9 +1717,37 @@ function ClosedLoopStage({
           your engineer did them once, and both systems agree — nobody re-keyed a thing.
         </p>
       )}
+
+      {/* The real records — the same panels as Machine speed, scoped to the loop's
+          jobs, so you watch them cross: Concerto raises → Joblogic dispatches →
+          Concerto gets them back, verified. */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <SourcePanel
+          rows={state.source.filter((j) => String(j.jobNumber).startsWith('JL-97'))}
+          session={state.sessions.joblogic}
+          db={state.databases.source}
+          systemUrl={state.systemUrls.source}
+          transport={state.transport}
+        />
+        <LedgerPanel
+          rows={state.ledger.filter((r) => String(r.reference ?? '').startsWith('CON-7'))}
+          db={state.databases.ledger}
+        />
+        <TargetPanel
+          rows={state.target.filter((w) => String(w.reference).startsWith('CON-7'))}
+          session={state.sessions.concerto}
+          db={state.databases.target}
+          systemUrl={state.systemUrls.target}
+          transport={state.transport}
+          activeRefs={EMPTY_REFS}
+        />
+      </div>
     </div>
   );
 }
+
+/** Stable empty set so the closed-loop TargetPanel doesn't re-render on identity. */
+const EMPTY_REFS: Set<string> = new Set();
 
 function ConsoleHeader({
   state,
