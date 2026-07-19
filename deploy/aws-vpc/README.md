@@ -32,7 +32,41 @@ in-VPC Mongo.
 - Terraform ≥ 1.5, Docker, and the AWS CLI.
 - Region default is `eu-west-2` (London).
 
-## Deploy
+## Deploy — cloud build (recommended, no local Docker)
+
+Local tools needed: **Terraform + AWS CLI only** (no Docker, no admin). The two
+images are built in AWS CodeBuild from a source zip you upload to S3.
+
+```powershell
+cd deploy\aws-vpc
+cp terraform.tfvars.example terraform.tfvars     # keep tags at "v1"
+terraform init
+
+# 1) create the ECR repos + S3 bucket + CodeBuild project (deps pulled in)
+terraform apply -target=aws_codebuild_project.build
+
+# 2) package the repo (clean — no node_modules) and upload it
+cd ..\..
+git archive --format=zip -o source.zip HEAD
+$BUCKET = terraform -chdir=deploy\aws-vpc output -raw source_bucket
+aws s3 cp source.zip "s3://$BUCKET/source.zip"
+
+# 3) build + push BOTH images in the cloud (~5-10 min)
+$PROJECT = terraform -chdir=deploy\aws-vpc output -raw codebuild_project
+$BUILD = aws codebuild start-build --project-name $PROJECT --query build.id --output text
+# poll until it says SUCCEEDED (or watch in the CodeBuild console):
+aws codebuild batch-get-builds --ids $BUILD --query "builds[0].buildStatus" --output text
+
+# 4) bring everything up
+cd deploy\aws-vpc
+terraform apply
+terraform output alb_url
+```
+
+Then seed the databases (see "Mirror the databases" below). Re-running a build:
+re-upload `source.zip` and `aws codebuild start-build` again.
+
+## Deploy — local Docker (alternative)
 
 Because the ECS services can't start until images exist, create the **ECR repos
 first**, push images, then apply the rest.

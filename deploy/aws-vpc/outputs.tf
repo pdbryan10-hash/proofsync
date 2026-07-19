@@ -17,6 +17,16 @@ output "cluster_name" {
   value = aws_ecs_cluster.main.name
 }
 
+output "codebuild_project" {
+  description = "CodeBuild project that builds both images (cloud build path)."
+  value       = aws_codebuild_project.build.name
+}
+
+output "source_bucket" {
+  description = "S3 bucket to upload the source zip to before starting the build."
+  value       = aws_s3_bucket.source.bucket
+}
+
 output "region" {
   value = var.region
 }

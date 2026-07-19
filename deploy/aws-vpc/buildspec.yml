@@ -1,0 +1,23 @@
+version: 0.2
+
+# Builds both images in AWS CodeBuild and pushes them to ECR — so no local Docker
+# is needed. Env vars (ACCOUNT, APP_REPO, MONGO_REPO, APP_TAG, MONGO_TAG) are set
+# on the CodeBuild project by Terraform; AWS_DEFAULT_REGION is provided by CodeBuild.
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands:
+      - echo Building the app image...
+      - docker build -t $APP_REPO:$APP_TAG -f Dockerfile .
+      - echo Building the mongo image...
+      - docker build -t $MONGO_REPO:$MONGO_TAG deploy/aws-vpc/mongo
+  post_build:
+    commands:
+      - echo Pushing images...
+      - docker push $APP_REPO:$APP_TAG
+      - docker push $MONGO_REPO:$MONGO_TAG
+      - echo Build complete.
