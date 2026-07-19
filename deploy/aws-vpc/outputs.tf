@@ -27,6 +27,12 @@ output "source_bucket" {
   value       = aws_s3_bucket.source.bucket
 }
 
+output "cron_secret" {
+  description = "Bearer token for the demo reset/seed endpoint. `terraform output -raw cron_secret`."
+  value       = random_password.cron.result
+  sensitive   = true
+}
+
 output "region" {
   value = var.region
 }

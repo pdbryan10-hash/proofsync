@@ -8,6 +8,17 @@ resource "aws_s3_bucket" "source" {
   force_destroy = true
 }
 
+# Terraform uploads the source zip itself, so no `aws s3 cp` (no AWS CLI) is
+# needed. Count-gated on the file existing so `terraform validate` works before
+# you've run `git archive`.
+resource "aws_s3_object" "source" {
+  count  = fileexists("${path.module}/${var.source_zip}") ? 1 : 0
+  bucket = aws_s3_bucket.source.id
+  key    = "source.zip"
+  source = "${path.module}/${var.source_zip}"
+  etag   = filemd5("${path.module}/${var.source_zip}")
+}
+
 data "aws_iam_policy_document" "codebuild_assume" {
   statement {
     actions = ["sts:AssumeRole"]

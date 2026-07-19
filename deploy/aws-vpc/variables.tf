@@ -58,6 +58,12 @@ variable "app_desired_count" {
   default     = 1
 }
 
+variable "source_zip" {
+  description = "Path (relative to this module) to the source zip Terraform uploads for CodeBuild. Create it with `git archive` at the repo root."
+  type        = string
+  default     = "../../source.zip"
+}
+
 variable "enable_tick_scheduler" {
   description = "Run the once-a-minute backstop tick (EventBridge → ECS RunTask). The open console self-ticks; this keeps the beat when nobody's watching."
   type        = bool
