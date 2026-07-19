@@ -354,8 +354,11 @@ export async function getDemoState(): Promise<DemoState> {
 
   let targetDocs = targetDocsRaw;
   if (targetDocs.length < PANEL_LIMIT) {
+    // Exclude references already shown — inbound raised work orders are now in
+    // targetDocsRaw, and without this the empty-backfill would list them twice.
+    const have = Array.from(new Set(targetDocs.map((w) => w.reference)));
     const empties = await wosCol
-      .find({ lastUpdatedBy: null })
+      .find({ lastUpdatedBy: null, reference: { $nin: have } })
       .sort({ updatedAt: -1 })
       .limit(PANEL_LIMIT - targetDocs.length)
       .toArray();
