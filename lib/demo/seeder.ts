@@ -352,7 +352,7 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
       attributes: {},
       documents: [],
       lastUpdatedBy: null,
-      demoBlock: null,
+      demoBlock: INBOUND_BLOCKS[i] ?? null,
       inbound: true,
       joblogicJobNumber: null,
       createdAt: raisedAt,

@@ -199,8 +199,13 @@ export function useDemoState() {
    */
   const runClosedLoop = useCallback(
     async (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => {
-      const allBack = (st: DemoState | null) =>
-        !!st && st.inbound.dispatched > 0 && st.inbound.returned >= st.inbound.dispatched;
+      const allBack = (st: DemoState | null) => {
+        if (!st || st.inbound.dispatched === 0) return false;
+        // Done when every dispatched job is terminal: returned OR held as an
+        // exception (a garbled/missing-field one that can't be written back).
+        const held = st.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7')).length;
+        return st.inbound.returned + held >= st.inbound.dispatched;
+      };
       try {
         onStage('intake');
         const ir = await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
