@@ -173,8 +173,10 @@ const ENGINEERS = [
 
 const CONTROL_ID = 'demo-control';
 
-/** The fixed batch. Size and the exact jobs that need a person are constant. */
-const BATCH_SIZE = 20;
+/** The old machine-speed batch (JL-1xx). The demo is closed-loop only now, so it's
+ *  never shown — and seeding it "completed" made the background tick sync it,
+ *  polluting the dashboard with 20 jobs nobody ran. Zero it out. */
+const BATCH_SIZE = 0;
 /** Jobs the client has raised in Concerto for Work Intake to pull into Joblogic. */
 const INBOUND_BATCH_SIZE = 20;
 /** Concerto attribute the cost-centre exceptions write to. */
@@ -358,8 +360,10 @@ export async function seedDemoSystems(): Promise<{ jobs: number; workOrders: num
     });
   }
 
-  await jobs.insertMany(jobDocs);
-  await wos.insertMany(woDocs);
+  // jobDocs is empty now the machine batch is zeroed (inbound source jobs are
+  // created later by Work Intake); insertMany([]) would throw.
+  if (jobDocs.length > 0) await jobs.insertMany(jobDocs);
+  if (woDocs.length > 0) await wos.insertMany(woDocs);
 
   return { jobs: jobDocs.length, workOrders: woDocs.length };
 }
