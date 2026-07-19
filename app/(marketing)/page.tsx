@@ -14,6 +14,7 @@ import {
   Plug,
 } from 'lucide-react';
 import { FanOutHub } from '@/components/marketing/fan-out-hub';
+import { LoopFlow } from '@/components/marketing/loop-flow';
 import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
 
@@ -93,6 +94,21 @@ export default function SalesPage() {
           {/* THE CENTREPIECE — the closed-loop hub + calculator, in their numbers. */}
           <div className="mt-12">
             <FanOutHub />
+          </div>
+        </div>
+      </section>
+
+      {/* ── THE CLOSED LOOP — four tiles ─────────────────────────────────── */}
+      <section className="border-y border-[#e6e1d6] bg-white">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
+          <p className={EYEBROW}>Both directions</p>
+          <h2 className={`mt-5 max-w-3xl ${H2}`}>The whole job, round the loop — in, and back out.</h2>
+          <p className="mt-5 max-w-2xl text-lg text-[#5f6068]">
+            It starts and ends in your client&apos;s system. ProofSync moves it both ways, across every
+            client you serve — and your team only handles the exceptions.
+          </p>
+          <div className="mt-8">
+            <LoopFlow />
           </div>
         </div>
       </section>
