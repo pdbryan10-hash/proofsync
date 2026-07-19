@@ -1644,6 +1644,7 @@ function ClosedLoopStage({
 }) {
   const [stage, setStage] = useState<LoopStage>('idle');
   const [finale, setFinale] = useState<{ returned: number; exceptions: number } | null>(null);
+  const [followOnOnly, setFollowOnOnly] = useState(false);
   const prevStage = useRef<LoopStage>('idle');
   const running = stage !== 'idle' && stage !== 'done';
   const { raised, dispatched, returned } = state.inbound;
@@ -1827,6 +1828,8 @@ function ClosedLoopStage({
                 sub="in the client's system"
                 tone="client"
                 foot={followOnCount > 0 ? `${followOnCount} of these flagged for client follow-on` : undefined}
+                onFootClick={followOnCount > 0 ? () => setFollowOnOnly((v) => !v) : undefined}
+                footActive={followOnOnly}
               />
             </div>
             <div className="mt-3 grid items-start gap-4 xl:grid-cols-4">
@@ -1851,8 +1854,8 @@ function ClosedLoopStage({
               <LedgerPanel rows={ledgerRows} db={state.databases.ledger} />
               <TargetPanel
                 title="Concerto"
-                subtitle="④ back, verified"
-                rows={back}
+                subtitle={followOnOnly ? '④ follow-on flagged' : '④ back, verified'}
+                rows={followOnOnly ? back.filter((w) => w.followOnDetail) : back}
                 session={state.sessions.concerto}
                 db={state.databases.target}
                 systemUrl={state.systemUrls.target}
@@ -1877,12 +1880,16 @@ function LoopCount({
   sub,
   tone,
   foot,
+  onFootClick,
+  footActive,
 }: {
   n: number;
   label: string;
   sub: string;
   tone: 'client' | 'field' | 'engine';
   foot?: string;
+  onFootClick?: () => void;
+  footActive?: boolean;
 }) {
   const v = useCountUp(n);
   const toneClass =
@@ -1891,6 +1898,11 @@ function LoopCount({
       : tone === 'engine'
         ? 'border-indigo-500/40 bg-indigo-50 text-indigo-900'
         : 'border-slate-400/40 bg-slate-100 text-slate-800';
+  const footClass = cn(
+    'mt-2 flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium',
+    footActive ? 'border-amber-500 bg-amber-100 text-amber-950' : 'border-amber-300 bg-amber-50 text-amber-900',
+    onFootClick && 'w-full cursor-pointer text-left transition-colors hover:bg-amber-100',
+  );
   return (
     <div className={cn('flex flex-col justify-between rounded-xl border px-4 py-2.5 shadow-sm', toneClass)}>
       <div className="flex items-center justify-between">
@@ -1900,12 +1912,19 @@ function LoopCount({
         </div>
         <span className="font-display text-3xl font-black tabular-nums">{v}</span>
       </div>
-      {foot && (
-        <p className="mt-2 flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900">
-          <ArrowUpRight className="size-3 shrink-0" />
-          {foot}
-        </p>
-      )}
+      {foot &&
+        (onFootClick ? (
+          <button type="button" onClick={onFootClick} className={footClass} aria-pressed={footActive}>
+            <ArrowUpRight className="size-3 shrink-0" />
+            <span className="flex-1">{foot}</span>
+            <span className="font-semibold underline underline-offset-2">{footActive ? 'show all' : 'view'}</span>
+          </button>
+        ) : (
+          <p className={footClass}>
+            <ArrowUpRight className="size-3 shrink-0" />
+            {foot}
+          </p>
+        ))}
     </div>
   );
 }
