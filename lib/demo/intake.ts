@@ -1,6 +1,7 @@
 import { DemoConcertoConnector } from '@/lib/integrations/concerto/demo';
 import { DemoJoblogicConnector } from '@/lib/integrations/joblogic/demo';
 import { sourceJobs } from './mongo';
+import type { SourceAttachmentDoc } from './schema';
 
 /**
  * WORK INTAKE — the engine's inbound direction.
@@ -112,10 +113,38 @@ export async function completeIntakeJobs(): Promise<{ completed: number }> {
             followOnDetail: null,
           },
           charges: { labourCharge: 150, materialsCharge: 40, totalCharge: 190 },
+          // Every completed job leaves paperwork: a job sheet always, plus a
+          // certificate where the work is a service, measurement or test — so the
+          // closed loop shows real documents transferring back, not just fields.
+          attachments: buildIntakeAttachments(j.jobNumber, j.description ?? ''),
           updatedAt: now,
         },
       },
     );
   }
   return { completed: allocated.length };
+}
+
+/** Paperwork a completed intake job carries: a job sheet, and a certificate for
+ *  servicing / measurement / testing work. */
+function buildIntakeAttachments(jobNumber: string, description: string): SourceAttachmentDoc[] {
+  const docs: SourceAttachmentDoc[] = [
+    {
+      attachmentId: `JL-ATT-${jobNumber}-1`,
+      fileName: `job-sheet-${jobNumber}.pdf`,
+      contentType: 'application/pdf',
+      category: 'Service Sheet',
+      bytes: 128_000,
+    },
+  ];
+  if (/servic|measure|test|certif|inspect|monitor|compliance|hygiene|safety|calibrat/i.test(description)) {
+    docs.push({
+      attachmentId: `JL-ATT-${jobNumber}-2`,
+      fileName: `certificate-${jobNumber}.pdf`,
+      contentType: 'application/pdf',
+      category: 'Test Certificate',
+      bytes: 164_000,
+    });
+  }
+  return docs;
 }
