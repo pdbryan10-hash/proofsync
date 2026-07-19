@@ -6,6 +6,7 @@
 FROM mongo:7
 
 COPY entrypoint.sh /usr/local/bin/rs-entrypoint.sh
-RUN chmod +x /usr/local/bin/rs-entrypoint.sh
+# Strip any CR (Windows line endings) so the shebang resolves, and make executable.
+RUN sed -i 's/\r$//' /usr/local/bin/rs-entrypoint.sh && chmod +x /usr/local/bin/rs-entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/rs-entrypoint.sh"]
