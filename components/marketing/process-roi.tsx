@@ -33,7 +33,13 @@ export function ProcessRoi() {
     const build = POC + FIRST_CONNECTOR + Math.max(0, connectors - 1) * NEXT_CONNECTOR;
     const year1 = build + subYr;
     const netYr1 = removedYr - year1;
-    const paybackMonths = removedYr > 0 ? year1 / (removedYr / 12) : 0;
+    // Payback = the one-off BUILD ÷ the NET monthly benefit (gross monthly saving
+    // minus the monthly run fee). The run fee is ongoing, not a payback hurdle —
+    // dividing the whole year-1 outlay by the gross saving double-counts it.
+    const netMonthly = (removedYr - subYr) / 12;
+    const paybackMonths = netMonthly > 0 ? build / netMonthly : Infinity;
+    // Benefit retained in a STEADY-STATE year (removed − run), once the build is
+    // behind you. Labelled as ongoing so it isn't read as the year-1 figure.
     const retained = removedYr > 0 ? (removedYr - subYr) / removedYr : 0;
     // Cumulative net after fees: year 1 carries the one-off build, years 2–5 are
     // run only, so the curve steepens.
@@ -114,7 +120,8 @@ export function ProcessRoi() {
           <p className="font-display text-5xl font-black leading-none text-[#0e6b3f]">{gbp(m.removedYr)}</p>
           <p className="mt-1 text-sm text-[#5f6068]">
             of hand re-keying taken off the payroll — you keep{' '}
-            <strong className="text-[#0b5531]">{Math.round(m.retained * 100)}%</strong> of it.
+            <strong className="text-[#0b5531]">{Math.round(m.retained * 100)}%</strong> of it every year the engine
+            runs.
           </p>
 
           {/* THE ANSWER — net saving and payback, made dominant */}
@@ -128,8 +135,8 @@ export function ProcessRoi() {
             <div className="rounded-xl border border-[#0e6b3f]/30 bg-white p-3.5 shadow-sm">
               <dt className="font-mono text-[10px] uppercase tracking-widest text-[#0e6b3f]">Pays for itself in</dt>
               <dd className="font-display text-3xl font-black leading-none tabular-nums text-[#0e6b3f] sm:text-4xl">
-                {m.paybackMonths < 1 ? '<1' : m.paybackMonths.toFixed(1)}
-                <span className="text-lg font-bold"> mo</span>
+                {!Number.isFinite(m.paybackMonths) ? '—' : m.paybackMonths < 1 ? '<1' : m.paybackMonths.toFixed(1)}
+                {Number.isFinite(m.paybackMonths) && <span className="text-lg font-bold"> mo</span>}
               </dd>
             </div>
           </div>
