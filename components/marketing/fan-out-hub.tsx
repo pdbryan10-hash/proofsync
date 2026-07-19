@@ -206,7 +206,7 @@ export function FanOutHub() {
               {(fixed ? KEPT : TASKS).map((t, i) => (
                 <span
                   key={t}
-                  className={`ps-chip rounded border px-1.5 py-0.5 font-mono text-[10px] ${
+                  className={`ps-chip rounded border px-2 py-1 font-mono text-[11px] ${
                     fixed
                       ? 'border-[#0e6b3f]/30 bg-[#e7f0ea] font-semibold text-[#0b5531]'
                       : 'border-[#9f1239]/20 bg-white/80 text-[#9f1239]'
@@ -217,7 +217,7 @@ export function FanOutHub() {
                 </span>
               ))}
             </div>
-            <p className={`mt-2 text-[11px] font-medium ${fixed ? 'text-[#0b5531]' : 'text-[#9f1239]'}`}>
+            <p className={`mt-2.5 text-[13px] font-semibold leading-snug sm:text-sm ${fixed ? 'text-[#0b5531]' : 'text-[#9f1239]'}`}>
               {fixed
                 ? `${PERSON} stays — on the couple of jobs a batch that genuinely need a decision (a missing cost centre, a judgement call). ProofSync flags those and refuses to guess; everything else flows.`
                 : `${PERSON} isn’t the problem. Her job is — she was hired to support your contracts, not to be the bridge between your software and your clients’.`}

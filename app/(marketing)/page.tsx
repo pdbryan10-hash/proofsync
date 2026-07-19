@@ -114,7 +114,7 @@ export default function SalesPage() {
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_1.25fr] lg:items-center lg:gap-14">
             <div>
               <h2 className={H2}>Somewhere in your office, someone is a human bridge.</h2>
-              <p className={`mt-5 ${BODY}`}>For every completed job, one person does this — by hand, on two screens:</p>
+              <p className={`mt-5 ${BODY}`}>For every job — coming in <em className="not-italic font-semibold text-[#1a1b1f]">and</em> going back out — one person does this by hand, on two screens:</p>
               <p className="mt-5 text-lg font-semibold leading-relaxed text-[#1a1b1f]">
                 That isn&apos;t admin. That&apos;s a job a machine should do — and it&apos;s costing you a salary
                 to do it slowly and inconsistently.
