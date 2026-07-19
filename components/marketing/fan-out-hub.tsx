@@ -58,7 +58,7 @@ export function FanOutHub() {
             </span>
             One engine · both directions
           </span>
-          <span className="text-sm text-[#5f6068]">Every client system you feed, one hub — in and out.</span>
+          <span className="text-sm text-[#5f6068]">Every client system that issues you work — one hub, both ways.</span>
         </div>
         <div className="inline-flex items-center gap-0.5 rounded-full border border-[#e0dbcd] bg-[#f7f5ef] p-0.5">
           <button
@@ -80,19 +80,48 @@ export function FanOutHub() {
         </div>
       </div>
 
-      {/* THE HUB */}
-      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,0.85fr)_auto_minmax(0,1.5fr)] lg:gap-3">
-        {/* LEFT — your field system */}
-        <div className="flex flex-col justify-center rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your field system</p>
-          <p className="mt-1 text-lg font-bold text-[#1a1b1f]">Whatever you run</p>
-          <p className="mt-2 text-xs leading-relaxed text-[#5f6068]">
-            Joblogic, Simpro, BigChange, Commusoft — where your engineers complete the work, once.
-          </p>
-          <div className="mt-4 flex items-center gap-2 text-[11px] font-medium text-[#0e6b3f]">
-            <ArrowLeft className="size-3.5" /> jobs in
+      {/* THE HUB — starts with the client's CAFM (that ISSUES the work) on the
+          left, ProofSync in the middle, your field system on the right. */}
+      <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.5fr)_auto_minmax(0,0.85fr)] lg:gap-3">
+        {/* LEFT — the fan of client systems that issue the work (selectable) */}
+        <div className="relative overflow-hidden rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
+          <div className="pointer-events-none absolute -left-10 -top-10 size-40 rounded-full bg-[#0e6b3f]/[0.06] blur-3xl" />
+          <div className="relative flex items-baseline justify-between gap-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your clients&apos; systems</p>
+              <p className="mt-1 text-sm font-semibold text-[#1a1b1f]">Where the work is issued — tap the ones that send you jobs</p>
+            </div>
+            <p className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-[#0e6b3f]">
+              {n} selected
+            </p>
+          </div>
+          <div className="relative mt-4 flex flex-wrap gap-1.5">
+            {CAFMS.map((c) => {
+              const on = selected.includes(c);
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => toggle(c)}
+                  aria-pressed={on}
+                  className={`rounded-md border px-2.5 py-1.5 font-mono text-[11px] transition-all ${
+                    on
+                      ? 'border-[#0e6b3f] bg-[#e7f0ea] font-semibold text-[#0e6b3f] shadow-sm'
+                      : 'border-[#e0dbcd] bg-white text-[#8a8578] hover:border-[#0e6b3f]/40 hover:text-[#0e6b3f]'
+                  }`}
+                >
+                  {c}
+                </button>
+              );
+            })}
+            <span className="inline-flex items-center rounded-md border border-dashed border-[#0e6b3f]/40 px-2.5 py-1.5 font-mono text-[11px] text-[#0e6b3f]">
+              + the next one you win
+            </span>
+          </div>
+          <div className="relative mt-4 flex items-center gap-2 text-[11px] font-medium text-[#0e6b3f]">
+            issues the job <ArrowRight className="size-3.5" />
             <span className="mx-1 text-[#cfc9ba]">·</span>
-            completions out <ArrowRight className="size-3.5" />
+            <ArrowLeft className="size-3.5" /> back, verified
           </div>
         </div>
 
@@ -124,40 +153,15 @@ export function FanOutHub() {
           )}
         </div>
 
-        {/* RIGHT — the fan of client systems (selectable) */}
-        <div className="relative overflow-hidden rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
-          <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-[#0e6b3f]/[0.06] blur-3xl" />
-          <div className="relative flex items-baseline justify-between gap-3">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your clients&apos; systems</p>
-              <p className="mt-1 text-sm font-semibold text-[#1a1b1f]">Tap the ones you feed</p>
-            </div>
-            <p className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-[#0e6b3f]">
-              {n} selected
-            </p>
-          </div>
-          <div className="relative mt-4 flex flex-wrap gap-1.5">
-            {CAFMS.map((c) => {
-              const on = selected.includes(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => toggle(c)}
-                  aria-pressed={on}
-                  className={`rounded-md border px-2.5 py-1.5 font-mono text-[11px] transition-all ${
-                    on
-                      ? 'border-[#0e6b3f] bg-[#e7f0ea] font-semibold text-[#0e6b3f] shadow-sm'
-                      : 'border-[#e0dbcd] bg-white text-[#8a8578] hover:border-[#0e6b3f]/40 hover:text-[#0e6b3f]'
-                  }`}
-                >
-                  {c}
-                </button>
-              );
-            })}
-            <span className="inline-flex items-center rounded-md border border-dashed border-[#0e6b3f]/40 px-2.5 py-1.5 font-mono text-[11px] text-[#0e6b3f]">
-              + the next one you win
-            </span>
+        {/* RIGHT — your field system, where the job is completed once */}
+        <div className="flex flex-col justify-center rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your field system</p>
+          <p className="mt-1 text-lg font-bold text-[#1a1b1f]">Whatever you run</p>
+          <p className="mt-2 text-xs leading-relaxed text-[#5f6068]">
+            Joblogic, Simpro, BigChange, Commusoft — where your engineers complete the work, once.
+          </p>
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-medium text-[#0e6b3f]">
+            <ArrowLeft className="size-3.5" /> job in · done once
           </div>
         </div>
       </div>

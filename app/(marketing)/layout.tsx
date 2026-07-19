@@ -3,6 +3,7 @@ import { Bricolage_Grotesque } from 'next/font/google';
 import { Play } from 'lucide-react';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { ProofWorksEndorsement } from '@/components/brand/proofworks-badge';
+import { CyberEssentialsBadge } from '@/components/brand/cyber-essentials-badge';
 import { GATED_PREVIEW, WATCH_HREF } from '@/lib/site-mode';
 
 const display = Bricolage_Grotesque({
@@ -64,8 +65,9 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                 The completed job, moved into your client&apos;s system — verified, audited, and only the
                 exceptions reach a human.
               </p>
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 <ProofWorksEndorsement />
+                <CyberEssentialsBadge />
               </div>
             </div>
             <nav className="grid grid-cols-2 gap-x-12 gap-y-2.5 text-sm">
