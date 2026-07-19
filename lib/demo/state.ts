@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { getEstimatedManualMinutesPerJob } from '@/lib/config';
+import { getManualMinutesPerDirection } from '@/lib/config';
 import { sourceJobs, targetWorkOrders, applyStoredTransport, demoControl } from './mongo';
 import { peekSession } from './session';
 import { timeToNextTick } from './tick';
@@ -548,7 +548,7 @@ export async function getDemoState(): Promise<DemoState> {
       awaitingSync,
       targetPopulated,
       targetTotal,
-      adminMinutesSaved: (synced + partial) * getEstimatedManualMinutesPerJob(),
+      adminMinutesSaved: (synced + partial) * getManualMinutesPerDirection(),
       fieldsWritten,
       certificatesUploaded,
       totalSyncMs,

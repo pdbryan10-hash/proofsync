@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { getEstimatedManualMinutesPerJob } from '@/lib/config';
+import { getManualMinutesPerDirection } from '@/lib/config';
 import { getDemoOrgId } from '@/lib/demo/org';
 
 export interface DashboardMetrics {
@@ -29,7 +29,7 @@ function startOfMonth(): Date {
  * the UI (§16).
  */
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
-  const minutes = getEstimatedManualMinutesPerJob();
+  const minutes = getManualMinutesPerDirection();
   const today = startOfToday();
   const month = startOfMonth();
   const orgId = await getDemoOrgId();

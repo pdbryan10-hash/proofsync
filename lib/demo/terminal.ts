@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db/prisma';
 import { sourceJobs, targetWorkOrders } from './mongo';
 import { getDemoOrgId } from './org';
-import { getEstimatedManualMinutesPerJob } from '@/lib/config';
+import { getManualMinutesPerDirection } from '@/lib/config';
 
 /**
  * Read model for the user terminal — the real operational view a signed-in user
@@ -91,7 +91,7 @@ export async function getTerminalData(): Promise<TerminalData> {
   const partial = rows.filter((r) => r.syncStatus === 'PARTIAL').length;
   const exceptions = rows.filter((r) => r.exception).length;
   const awaiting = rows.filter((r) => ['PENDING', 'READY', 'SYNCING'].includes(r.syncStatus)).length;
-  const minutes = (synced + partial) * getEstimatedManualMinutesPerJob();
+  const minutes = (synced + partial) * getManualMinutesPerDirection();
 
   return {
     rows,

@@ -51,11 +51,22 @@ export function usesSimulatedTransport(): boolean {
   return true;
 }
 
-/** Estimated minutes of duplicated admin removed per successfully synced job. */
-export function getEstimatedManualMinutesPerJob(): number {
-  const raw = Number(process.env.ESTIMATED_MANUAL_MINUTES_PER_JOB);
-  // 20 min of human handling per job across the loop: ~10 to bring it in, ~10 to
-  // push the completion back. One basis, every surface.
+/**
+ * Minutes of duplicated admin removed per job, for ONE direction — e.g. keying a
+ * completion back into the client's system. Machine speed only closes the loop's
+ * outbound half, so it saves one direction (~10 min), NOT the full round trip.
+ */
+export function getManualMinutesPerDirection(): number {
+  const raw = Number(process.env.MANUAL_MINUTES_PER_DIRECTION);
+  return Number.isFinite(raw) && raw > 0 ? raw : 10;
+}
+
+/**
+ * Minutes removed across the WHOLE round trip — the job keyed in AND the
+ * completion keyed back out (~10 + ~10). Only the closed loop removes both ends.
+ */
+export function getManualMinutesRoundTrip(): number {
+  const raw = Number(process.env.MANUAL_MINUTES_ROUND_TRIP);
   return Number.isFinite(raw) && raw > 0 ? raw : 20;
 }
 

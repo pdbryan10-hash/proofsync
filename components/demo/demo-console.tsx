@@ -1248,7 +1248,8 @@ function FinaleCard({
             At 500 completed jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
           </p>
           <p className="mt-1.5 text-[11px] text-white/40">
-            Basis: {Math.round(perJobMin)} min of human handling per job — ~10 in, ~10 out; the same figure across the site.
+            Basis: {Math.round(perJobMin)} min per job to key each completion back by hand — the outbound half.
+            The full round trip (in and out) is ~20; you&apos;ll see that on the closed loop.
           </p>
         </div>
 
@@ -1602,6 +1603,13 @@ function ActivityFeed({ activity }: { activity: ActivityLine[] }) {
 type LoopStage = 'idle' | 'intake' | 'complete' | 'sync' | 'done';
 const LOOP_ORDER: LoopStage[] = ['idle', 'intake', 'complete', 'sync', 'done'];
 
+// The closed loop removes BOTH ends of the re-keying: ~10 min to bring the job in
+// and ~10 min to push the completion back — the 20-min round-trip basis used
+// everywhere on the site. (Machine speed removes only the outbound ~10.)
+const LOOP_MIN_IN = 10;
+const LOOP_MIN_OUT = 10;
+const ROUND_TRIP_MIN = LOOP_MIN_IN + LOOP_MIN_OUT;
+
 /**
  * Act 3 — the whole work-order lifecycle, both directions. The client raises a
  * job in their CAFM; ProofSync pulls it into Joblogic (Work Intake); the engineer
@@ -1726,10 +1734,23 @@ function ClosedLoopStage({
       </ol>
 
       {stage === 'done' && (
-        <p className="mt-4 rounded-xl border border-[#0e6b3f]/25 bg-[#e7f0ea] px-4 py-3 text-center text-sm font-semibold text-[#0b4f30]">
-          {returned} job{returned === 1 ? '' : 's'} went the full round trip. The client raised them,
-          your engineer did them once, and both systems agree — nobody re-keyed a thing.
-        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-[1.4fr_1fr]">
+          <p className="flex items-center rounded-xl border border-[#0e6b3f]/25 bg-[#e7f0ea] px-4 py-3 text-sm font-semibold text-[#0b4f30]">
+            {returned} job{returned === 1 ? '' : 's'} went the full round trip. The client raised them,
+            your engineer did them once, and both systems agree — nobody re-keyed a thing.
+          </p>
+          {/* While you watched — the WHOLE round trip: ~10 in + ~10 out per job. */}
+          <div className="rounded-xl border border-emerald-400/30 bg-[radial-gradient(130%_130%_at_20%_-20%,#0e6b3f_0%,#0b4f30_60%,#082419_100%)] px-4 py-3 text-center text-white">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-200/80">While you watched</p>
+            <p className="mt-0.5 font-display text-3xl font-black tabular-nums text-emerald-300">
+              {Math.round((returned * ROUND_TRIP_MIN) / 60)}<span className="text-lg"> hrs</span>
+            </p>
+            <p className="text-[11px] text-white/70">of re-keying gone, both ends</p>
+            <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] text-white/55">
+              {returned} × ~{LOOP_MIN_IN} min in + ~{LOOP_MIN_OUT} min out = {returned * ROUND_TRIP_MIN} min
+            </p>
+          </div>
+        </div>
       )}
 
       <div className="mt-4">
