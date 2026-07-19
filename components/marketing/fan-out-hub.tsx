@@ -311,9 +311,10 @@ export function FanOutHub() {
           <span>5,000</span>
         </div>
         <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
-          Basis: ~{MIN_PER_JOB_EACH_END} min in + ~{MIN_PER_JOB_EACH_END} min out per job, at ~£{LOADED_HOURLY}/hr
-          fully loaded (a ~£28k admin, on-cost included) — your rate, your call. Connector availability and direction
-          vary by platform and by your client’s authorisation.
+          Basis: ~{MIN_PER_JOB_EACH_END} min in + ~{MIN_PER_JOB_EACH_END} min out per job. Rate ~£{LOADED_HOURLY}/hr,
+          derived: a £28k admin + £3,450 employer NI + £653 auto-enrolment pension = £32,100 direct, ×1.25–1.4 fully
+          loaded (kit, software, space, cover) ≈ £35–39k ÷ 1,950 hrs. Your rate, your call — every figure is yours to
+          change. Connector availability and direction vary by platform and by your client’s authorisation.
         </p>
       </div>
     </div>
