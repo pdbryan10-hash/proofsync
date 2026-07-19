@@ -13,6 +13,7 @@ import {
   Loader2,
   Lock,
   Paperclip,
+  Play,
   Rocket,
   RotateCcw,
   Search,
@@ -44,7 +45,7 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * take the ends on trust.
  */
 export function DemoConsole() {
-  const { state, error, busy, activity, reset, forceTick, resolve, replay, runLogin, runMachineBatch } =
+  const { state, error, busy, activity, reset, forceTick, resolve, replay, runLogin, runMachineBatch, runClosedLoop } =
     useDemoState();
   // Work orders a worker is filling right now (from the theatre), so the Concerto
   // panel can highlight the SAME job the card is processing.
@@ -55,7 +56,7 @@ export function DemoConsole() {
   // Two acts. Act 1 follows ONE real job end to end at human speed, so a viewer
   // understands exactly what happens. Act 2 reveals the same thing running flat
   // out across the whole floor — the "oh, it's doing that to all of them" moment.
-  const [act, setAct] = useState<'human' | 'machine'>('human');
+  const [act, setAct] = useState<'human' | 'machine' | 'loop'>('human');
   const [finale, setFinale] = useState<{
     jobs: number;
     fields: number;
@@ -214,7 +215,7 @@ export function DemoConsole() {
         onSelectAct={(target) => {
           if (target === act) return;
           if (target === 'machine') void enterMachine();
-          else setAct('human');
+          else setAct(target);
         }}
       />
 
@@ -227,7 +228,7 @@ export function DemoConsole() {
             onScaleUp={enterMachine}
             onStart={() => runActLogin('human')}
           />
-        ) : (
+        ) : act === 'machine' ? (
           <MachineFloor
             state={state}
             activity={activity}
@@ -242,6 +243,8 @@ export function DemoConsole() {
             onFreeze={freeze}
             onFix={setResolving}
           />
+        ) : (
+          <ClosedLoopStage state={state} onRun={runClosedLoop} onReset={reset} busy={busy} />
         )}
 
         {/* The "what this does / doesn't prove" note is only shown in the local
@@ -1584,6 +1587,140 @@ function ActivityFeed({ activity }: { activity: ActivityLine[] }) {
 
 // --- Header ------------------------------------------------------------------
 
+// --- Act 3: the closed loop --------------------------------------------------
+
+type LoopStage = 'idle' | 'intake' | 'complete' | 'sync' | 'done';
+const LOOP_ORDER: LoopStage[] = ['idle', 'intake', 'complete', 'sync', 'done'];
+
+/**
+ * Act 3 — the whole work-order lifecycle, both directions. The client raises a
+ * job in their CAFM; ProofSync pulls it into Joblogic (Work Intake); the engineer
+ * completes it once; ProofSync returns it to the client and verifies. Nobody
+ * re-keys anything, at either end.
+ */
+function ClosedLoopStage({
+  state,
+  onRun,
+  onReset,
+  busy,
+}: {
+  state: DemoState;
+  onRun: (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => Promise<void>;
+  onReset: () => void;
+  busy: boolean;
+}) {
+  const [stage, setStage] = useState<LoopStage>('idle');
+  const running = stage !== 'idle' && stage !== 'done';
+  const { raised, dispatched, returned } = state.inbound;
+  const total = raised + dispatched; // total the client raised (before/after pickup)
+
+  const reached = (s: LoopStage) => LOOP_ORDER.indexOf(stage) >= LOOP_ORDER.indexOf(s);
+
+  const run = async () => {
+    setStage('intake');
+    await onRun((s) => setStage(s));
+  };
+
+  const steps: { key: LoopStage; system: 'concerto' | 'engine' | 'joblogic'; title: string; sub: string; count?: number }[] = [
+    { key: 'intake', system: 'concerto', title: 'Client raises the job', sub: 'in Concerto', count: total },
+    { key: 'intake', system: 'engine', title: 'Work Intake pulls it', sub: 'reference kept' },
+    { key: 'complete', system: 'joblogic', title: 'Dispatched to the engineer', sub: 'in Joblogic', count: dispatched },
+    { key: 'sync', system: 'engine', title: 'Completed → returned & verified', sub: 'the outbound sync' },
+    { key: 'done', system: 'concerto', title: 'Back in Concerto, verified', sub: 'both sides agree', count: returned },
+  ];
+
+  const sysColor: Record<string, string> = {
+    concerto: 'border-emerald-500/40 bg-emerald-50 text-emerald-800',
+    engine: 'border-indigo-500/40 bg-indigo-50 text-indigo-800',
+    joblogic: 'border-navy-900/30 bg-slate-100 text-navy-900',
+  };
+
+  return (
+    <div className="relative my-4">
+      <section className="overflow-hidden rounded-2xl border border-[#0e6b3f]/30 bg-[radial-gradient(130%_130%_at_20%_-20%,#0e6b3f_0%,#0b4f30_55%,#082419_100%)] px-5 py-5 text-white shadow-xl sm:px-8">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="mr-auto">
+            <span className="rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-100">
+              Act 3 · Closed loop
+            </span>
+            <h2 className="mt-1.5 text-lg font-semibold sm:text-xl">The whole job, both directions — nobody re-keys</h2>
+            <p className="mt-1 text-xs text-white/60">
+              Raised in the client&rsquo;s system → into Joblogic → completed once → back to the client, verified.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {stage === 'done' ? (
+              <button
+                type="button"
+                onClick={() => { setStage('idle'); onReset(); }}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 disabled:opacity-60"
+              >
+                <RotateCcw className="size-4" /> Run it again
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={run}
+                disabled={running || busy}
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-bold text-[#0b4f30] shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-70"
+              >
+                {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4 fill-current" />}
+                {running ? 'Running the loop…' : 'Run the closed loop'}
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* The lifecycle, lighting up as it runs */}
+      <ol className="mt-4 grid gap-3 lg:grid-cols-5">
+        {steps.map((s, i) => {
+          const done = reached(s.key) && (s.key !== 'done' || stage === 'done');
+          const active =
+            (stage === 'intake' && i <= 1) ||
+            (stage === 'complete' && i === 2) ||
+            (stage === 'sync' && i === 3) ||
+            (stage === 'done' && i === 4);
+          return (
+            <li
+              key={i}
+              className={cn(
+                'relative rounded-xl border bg-card p-4 shadow-sm transition-all',
+                done ? sysColor[s.system] : 'border-border opacity-70',
+                active && 'ring-2 ring-[#0e6b3f]/50',
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-70">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                {done ? (
+                  <CheckCircle2 className="size-4 text-[#0e6b3f]" />
+                ) : active ? (
+                  <Loader2 className="size-4 animate-spin text-[#0e6b3f]" />
+                ) : null}
+              </div>
+              <p className="mt-2 text-sm font-semibold leading-snug">{s.title}</p>
+              <p className="text-xs opacity-70">{s.sub}</p>
+              {s.count !== undefined && (
+                <p className="mt-2 font-display text-2xl font-black tabular-nums">{s.count}</p>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+
+      {stage === 'done' && (
+        <p className="mt-4 rounded-xl border border-[#0e6b3f]/25 bg-[#e7f0ea] px-4 py-3 text-center text-sm font-semibold text-[#0b4f30]">
+          {returned} job{returned === 1 ? '' : 's'} went the full round trip. The client raised them,
+          your engineer did them once, and both systems agree — nobody re-keyed a thing.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ConsoleHeader({
   state,
   busy,
@@ -1596,8 +1733,8 @@ function ConsoleHeader({
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
-  act: 'human' | 'machine';
-  onSelectAct: (act: 'human' | 'machine') => void;
+  act: 'human' | 'machine' | 'loop';
+  onSelectAct: (act: 'human' | 'machine' | 'loop') => void;
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
   const seconds = Math.ceil(countdown / 1000);
@@ -1633,6 +1770,16 @@ function ConsoleHeader({
               )}
             >
               Machine speed
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectAct('loop')}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                act === 'loop' ? 'bg-[#0e6b3f] text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              Closed loop
             </button>
           </div>
         </div>

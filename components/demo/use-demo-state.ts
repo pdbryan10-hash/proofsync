@@ -191,6 +191,42 @@ export function useDemoState() {
     await refresh();
   }, [refresh]);
 
+  /**
+   * Drive the whole closed loop and report each stage as it happens: the client's
+   * raised jobs are pulled into Joblogic (intake), completed by the engineer, then
+   * synced back to the client and verified (outbound). The visible Receive → Create
+   * → Complete → Return → Verify story.
+   */
+  const runClosedLoop = useCallback(
+    async (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => {
+      const countBack = (st: DemoState | null) =>
+        st ? st.target.filter((w) => String(w.reference ?? '').startsWith('CON-7')).length : 0;
+      try {
+        onStage('intake');
+        await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
+        await refresh();
+        await new Promise((r) => setTimeout(r, 1100));
+
+        onStage('complete');
+        await fetch('/api/demo/complete-intake', { method: 'POST', cache: 'no-store' });
+        await refresh();
+        await new Promise((r) => setTimeout(r, 1100));
+
+        onStage('sync');
+        for (let i = 0; i < 10; i++) {
+          await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
+          const st = await refresh();
+          if (countBack(st) >= 6) break;
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        onStage('done');
+      } catch {
+        onStage('done');
+      }
+    },
+    [refresh],
+  );
+
   const forceTick = useCallback(async () => {
     setBusy(true);
     try {
@@ -250,7 +286,7 @@ export function useDemoState() {
     };
   }, [refresh]);
 
-  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport, runLogin, runMachineBatch };
+  return { state, error, busy, activity, refresh, reset, forceTick, resolve, replay, setTransport, runLogin, runMachineBatch, runClosedLoop };
 }
 
 /**

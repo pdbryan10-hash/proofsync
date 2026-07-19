@@ -124,6 +124,8 @@ export interface DemoState {
     sessionId: string;
     at: string;
   } | null;
+  /** Closed loop (Work Intake) progress: client-raised jobs round the loop. */
+  inbound: { raised: number; dispatched: number; returned: number };
   databases: { source: string; target: string; ledger: string };
   /** Where the stand-in systems' own UIs live, so the console can link to them. */
   systemUrls: { source: string; target: string };
@@ -294,6 +296,18 @@ export async function getDemoState(): Promise<DemoState> {
     lastUpdatedBy: { $ne: null },
   });
 
+  // Closed loop (Work Intake) summary: how far the client-raised jobs have got
+  // round the loop — raised in Concerto → dispatched into Joblogic → returned and
+  // verified back in Concerto.
+  const [inboundRaised, inboundDispatched, inboundReturned] = await Promise.all([
+    wosCol.countDocuments({
+      inbound: true,
+      $or: [{ joblogicJobNumber: null }, { joblogicJobNumber: { $exists: false } }],
+    }),
+    jobsCol.countDocuments({ jobNumber: { $regex: '^JL-97' } }),
+    wosCol.countDocuments({ inbound: true, lastUpdatedBy: { $ne: null } }),
+  ]);
+
   // Real batch totals for the applause screen: how many fields ProofSync actually
   // wrote and how many documents it uploaded, across every work order it touched.
   const populatedWos = await wosCol
@@ -407,6 +421,7 @@ export async function getDemoState(): Promise<DemoState> {
     transport: getDemoTransport(),
     remoteBrowserAvailable: isRemoteBrowser(),
     browserProof,
+    inbound: { raised: inboundRaised, dispatched: inboundDispatched, returned: inboundReturned },
     databases: {
       source: getSourceDbName(),
       target: getTargetDbName(),
