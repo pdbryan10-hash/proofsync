@@ -1,5 +1,6 @@
 import { DemoConcertoConnector } from '@/lib/integrations/concerto/demo';
 import { DemoJoblogicConnector } from '@/lib/integrations/joblogic/demo';
+import { sourceJobs } from './mongo';
 
 /**
  * WORK INTAKE — the engine's inbound direction.
@@ -75,4 +76,46 @@ export async function runIntake(): Promise<IntakeResult> {
   }
 
   return { seen: raised.length, created: jobNumbers.length, jobNumbers };
+}
+
+/**
+ * SIMULATED WORLD — not the engine, not a connector.
+ *
+ * Stands in for the engineer attending and completing the jobs Work Intake
+ * dispatched into Joblogic. In production this is real people doing real work in
+ * the field system; here it fills in a plausible completion so the outbound sync
+ * can then close the loop. Kept deliberately separate from the engine.
+ */
+export async function completeIntakeJobs(): Promise<{ completed: number }> {
+  const jobs = await sourceJobs();
+  const allocated = await jobs
+    .find({ jobNumber: { $regex: '^JL-97' }, status: 'Allocated' })
+    .toArray();
+
+  const now = new Date();
+  for (const j of allocated) {
+    await jobs.updateOne(
+      { jobNumber: j.jobNumber },
+      {
+        $set: {
+          status: 'Complete',
+          completedAt: now,
+          visit: {
+            arrivedAt: new Date(now.getTime() - 85 * 60_000),
+            departedAt: now,
+            minutesOnSite: 85,
+          },
+          completionSheet: {
+            workCarriedOut: 'Attended and completed the raised works. Site left safe and operational.',
+            engineerComments: 'Job completed in full. No follow-on required.',
+            followOnRequired: false,
+            followOnDetail: null,
+          },
+          charges: { labourCharge: 150, materialsCharge: 40, totalCharge: 190 },
+          updatedAt: now,
+        },
+      },
+    );
+  }
+  return { completed: allocated.length };
 }
