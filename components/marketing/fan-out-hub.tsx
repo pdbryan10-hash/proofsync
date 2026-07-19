@@ -27,7 +27,9 @@ const CAFMS = [
 
 const MIN_PER_JOB_EACH_END = 10; // ~10 in + ~10 out — the 20-min round trip
 const FTE_HOURS_PER_MONTH = 162.5; // 37.5h × 52 ÷ 12
-const LOADED_HOURLY = 16; // £/hr, fully-loaded admin cost (≈£31k ÷ 1,950h)
+const LOADED_HOURLY = 19; // £/hr, fully-loaded admin cost — a ~£28k salary loaded
+//                          to ~£37k ÷ 1,950h. The defensible figure: an FD will
+//                          do the division, and the low number is the weak one.
 const PERSON = 'Claire';
 
 // The job nobody advertises for — both sides of the re-key.
@@ -239,11 +241,15 @@ export function FanOutHub() {
             </>
           ) : (
             <>
-              <p className="mt-2 text-lg font-semibold text-[#1a1b1f]">
-                ≈ {(Math.round(fte * 10) / 10).toFixed(1)} full-time {fte < 1.5 ? 'person' : 'people'}, just moving data.
+              <p className="mt-2 text-xl font-bold leading-snug text-[#1a1b1f]">
+                ≈ {(Math.round(fte * 10) / 10).toFixed(1)} full-time {fte < 1.5 ? 'person' : 'people'} — employed to
+                move data
               </p>
-              <p className="mt-1 text-sm text-[#5f6068]">
-                {Math.round(totalH).toLocaleString()} hours a month, retyping what two systems already know.
+              <p className="text-xl font-bold leading-snug text-[#8a3f1c]">
+                between two systems that already have the answer.
+              </p>
+              <p className="mt-2 text-sm text-[#5f6068]">
+                {Math.round(totalH).toLocaleString()} hours a month, retyping what both systems already hold.
               </p>
             </>
           )}
@@ -275,8 +281,8 @@ export function FanOutHub() {
         </div>
         <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
           Basis: ~{MIN_PER_JOB_EACH_END} min in + ~{MIN_PER_JOB_EACH_END} min out per job, at ~£{LOADED_HOURLY}/hr
-          fully loaded — your rate, your call. Connector availability and direction vary by platform and by your
-          client’s authorisation.
+          fully loaded (a ~£28k admin, on-cost included) — your rate, your call. Connector availability and direction
+          vary by platform and by your client’s authorisation.
         </p>
       </div>
     </div>
