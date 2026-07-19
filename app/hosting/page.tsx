@@ -167,6 +167,14 @@ export default function HostingPage() {
             The deployment an IT security team asks for: every component inside your own subscription, one region, your
             data never crossing the boundary. We operate it from outside — we never hold your data.
           </p>
+          <p className="mt-3 inline-flex items-start gap-2 rounded-lg border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-2 text-xs leading-relaxed text-[#0b5531]">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <strong>Reference deployment available.</strong> A reviewable Terraform + Docker stack that stands the
+              whole thing up in an AWS VPC — app, database and everything else — applyable into your own account. Azure
+              equivalent on request.
+            </span>
+          </p>
 
           {/* external systems */}
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
