@@ -14,7 +14,6 @@ import {
   Plug,
 } from 'lucide-react';
 import { FanOutHub } from '@/components/marketing/fan-out-hub';
-import { LoopFlow } from '@/components/marketing/loop-flow';
 import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
 import { GATED_PREVIEW, WATCH_HREF } from '@/lib/site-mode';
@@ -73,13 +72,14 @@ export default function SalesPage() {
             verified, audited, and only the exceptions reach a human.
           </p>
 
-          {/* THE ATTENTION-GRABBER — the closed loop, right under the headline. */}
+          {/* THE ONE ENGINE — the hub + calculator, right under the headline. The
+              closed loop (job raised → done → synced → verified) lives inside it. */}
           <div className="mt-9">
-            <LoopFlow />
+            <FanOutHub />
           </div>
 
-          {/* CTA — moved below the diagram. In the gated build the live demo is 1:1
-              only, so the one loud button books a call; otherwise it opens the demo. */}
+          {/* CTA — below the one-engine graphic. In the gated build the live demo is
+              1:1 only, so the one loud button books a call; otherwise it opens the demo. */}
           <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
               href={WATCH_HREF}
@@ -104,11 +104,6 @@ export default function SalesPage() {
           <p className="mt-3 font-mono text-xs text-[#8a8578]">
             {GATED_PREVIEW ? '30-minute call · on your real data · no slides' : 'No sign-up · runs on real data · no slides'}
           </p>
-
-          {/* THE CENTREPIECE — the closed-loop hub + calculator, in their numbers. */}
-          <div className="mt-12">
-            <FanOutHub />
-          </div>
         </div>
       </section>
 

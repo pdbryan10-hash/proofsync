@@ -162,6 +162,34 @@ export function FanOutHub() {
         </div>
       </div>
 
+      {/* THE LOOP, in one line — the job's whole journey through the one engine,
+          starting where the client raises it and ending back there, verified. */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-xl border border-[#e6e1d6] bg-white px-4 py-3">
+        <span className="mr-1 font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">The loop</span>
+        {[
+          { n: '1', text: 'Raised in their system', strong: true },
+          { n: '2', text: 'Done once in yours' },
+          { n: '3', text: 'Matched & written back' },
+          { n: '4', text: 'In step, verified', strong: true },
+        ].map((s, i) => (
+          <span key={s.n} className="flex items-center gap-2.5">
+            {i > 0 && <ArrowRight className="size-3.5 text-[#0e6b3f]/50" />}
+            <span className="flex items-center gap-1.5">
+              <span
+                className={`inline-flex size-4 items-center justify-center rounded-full font-mono text-[9px] font-bold ${
+                  s.strong ? 'bg-[#0e6b3f] text-white' : 'bg-[#e7f0ea] text-[#0b5531]'
+                }`}
+              >
+                {s.n}
+              </span>
+              <span className={`text-xs ${s.strong ? 'font-semibold text-[#1a1b1f]' : 'text-[#5f6068]'}`}>
+                {s.text}
+              </span>
+            </span>
+          </span>
+        ))}
+      </div>
+
       {/* THE CALCULATOR — their operation, in their numbers */}
       <div className="mt-5 grid gap-4 rounded-xl border border-[#e6e1d6] bg-[#faf9f5] p-5 sm:grid-cols-[1fr_auto] sm:items-center">
         <div>
