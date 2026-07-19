@@ -61,7 +61,7 @@ function useTween(target: number, ms = 1400) {
 
 export function FanOutHub() {
   const [selected, setSelected] = useState<string[]>(['Concerto', 'Elogbooks', 'MRI Evolution']);
-  const [jobs, setJobs] = useState(800);
+  const [jobs, setJobs] = useState(1200);
   // Default to TODAY (the mess). `fixed` = the visitor has pressed the button.
   const [fixed, setFixed] = useState(false);
 
@@ -85,7 +85,7 @@ export function FanOutHub() {
   return (
     <div
       className={`overflow-hidden rounded-2xl border shadow-lg transition-colors duration-700 ${
-        fixed ? 'border-[#0e6b3f]/40 bg-white' : 'border-[#b8451f]/40 bg-[#fff7f2]'
+        fixed ? 'border-[#0e6b3f]/40 bg-white' : 'border-[#dc2626]/40 bg-[#fff5f5]'
       }`}
     >
       <style>{`
@@ -97,7 +97,7 @@ export function FanOutHub() {
       {/* Header — the category line + a live "right now" tension marker */}
       <div
         className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-5 py-3.5 transition-colors duration-700 sm:px-7 ${
-          fixed ? 'border-[#0e6b3f]/15 bg-[#f4f8f5]' : 'border-[#b8451f]/15 bg-[#fdeee5]'
+          fixed ? 'border-[#0e6b3f]/15 bg-[#f4f8f5]' : 'border-[#dc2626]/15 bg-[#fee2e2]'
         }`}
       >
         <p className="max-w-xl text-sm font-semibold text-[#1a1b1f] sm:text-base">
@@ -106,10 +106,10 @@ export function FanOutHub() {
             : 'You didn’t build an integration department. You just woke up with one.'}
         </p>
         {!fixed && (
-          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#b8451f]">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#dc2626]">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#b8451f] opacity-70" />
-              <span className="relative inline-flex size-2 rounded-full bg-[#b8451f]" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#dc2626] opacity-70" />
+              <span className="relative inline-flex size-2 rounded-full bg-[#dc2626]" />
             </span>
             happening right now
           </span>
@@ -120,7 +120,7 @@ export function FanOutHub() {
         {/* THE PICTURE — a person trapped as the transport layer, or the engine */}
         <div
           className={`relative overflow-hidden rounded-xl border p-4 transition-colors duration-700 sm:p-5 ${
-            fixed ? 'border-[#0e6b3f]/30 bg-[#eef6f0]' : 'border-[#b8451f]/30 bg-[#fbe9de]'
+            fixed ? 'border-[#0e6b3f]/30 bg-[#eef6f0]' : 'border-[#dc2626]/30 bg-[#fdecec]'
           }`}
         >
           {/* the client systems, all issuing work */}
@@ -137,7 +137,7 @@ export function FanOutHub() {
                     on
                       ? fixed
                         ? 'border-[#0e6b3f] bg-[#e7f0ea] font-semibold text-[#0b5531]'
-                        : 'border-[#b8451f] bg-[#f6d9c8] font-semibold text-[#b8451f] shadow-sm'
+                        : 'border-[#dc2626] bg-[#fecaca] font-semibold text-[#dc2626] shadow-sm'
                       : 'border-black/10 bg-white/70 text-[#b0a894] hover:text-[#5f6068]'
                   }`}
                 >
@@ -169,13 +169,13 @@ export function FanOutHub() {
             >
               <div
                 className={`flex size-14 shrink-0 items-center justify-center rounded-2xl border-2 bg-white transition-all duration-700 ${
-                  fixed ? 'border-[#0e6b3f]/40' : 'border-[#b8451f]/60 shadow-[0_0_0_6px_rgba(184,69,31,0.12)]'
+                  fixed ? 'border-[#0e6b3f]/40' : 'border-[#dc2626]/60 shadow-[0_0_0_6px_rgba(220,38,38,0.14)]'
                 }`}
               >
-                <User className={`size-7 ${fixed ? 'text-[#0e6b3f]' : 'text-[#b8451f]'}`} />
+                <User className={`size-7 ${fixed ? 'text-[#0e6b3f]' : 'text-[#dc2626]'}`} />
               </div>
               <div className="max-w-[10rem] text-left">
-                <p className={`text-sm font-bold ${fixed ? 'text-[#0b5531]' : 'text-[#b8451f]'}`}>{PERSON}</p>
+                <p className={`text-sm font-bold ${fixed ? 'text-[#0b5531]' : 'text-[#dc2626]'}`}>{PERSON}</p>
                 <p className="text-[11px] leading-tight text-[#5f6068]">
                   {fixed
                     ? 'now on the jobs that need judgement'
@@ -189,11 +189,13 @@ export function FanOutHub() {
                 fixed ? 'translate-y-0 opacity-100 delay-500' : 'pointer-events-none translate-y-3 opacity-0'
               }`}
             >
-              <span className="flex size-5 items-center justify-center rounded-full bg-amber-500 font-mono text-[11px] font-bold text-white">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500 font-mono text-xs font-bold text-white">
                 2
               </span>
-              <span className="text-[11px] font-medium leading-tight text-amber-900">
-                need a person<br />everything else flows
+              <span className="text-[11px] leading-tight text-amber-900">
+                <strong>jobs need a person</strong>
+                <br />
+                the rest flow automatically
               </span>
             </div>
           </div>
@@ -207,7 +209,7 @@ export function FanOutHub() {
                   className={`ps-chip rounded border px-1.5 py-0.5 font-mono text-[10px] ${
                     fixed
                       ? 'border-[#0e6b3f]/30 bg-[#e7f0ea] font-semibold text-[#0b5531]'
-                      : 'border-[#b8451f]/20 bg-white/80 text-[#b8451f]'
+                      : 'border-[#dc2626]/20 bg-white/80 text-[#dc2626]'
                   }`}
                   style={{ animationDelay: `${i * (fixed ? 160 : 95)}ms` }}
                 >
@@ -215,7 +217,7 @@ export function FanOutHub() {
                 </span>
               ))}
             </div>
-            <p className={`mt-2 text-[11px] font-medium ${fixed ? 'text-[#0b5531]' : 'text-[#b8451f]'}`}>
+            <p className={`mt-2 text-[11px] font-medium ${fixed ? 'text-[#0b5531]' : 'text-[#dc2626]'}`}>
               {fixed
                 ? `${PERSON} stays — she just isn’t the transport layer any more.`
                 : `${PERSON} isn’t the problem. Her job is — she was hired to support your contracts, not to be the bridge between your software and your clients’.`}
@@ -227,14 +229,14 @@ export function FanOutHub() {
         <div className="text-center lg:text-left">
           <p
             className={`font-mono text-[11px] font-semibold uppercase tracking-widest ${
-              fixed ? 'text-[#0e6b3f]' : 'text-[#b8451f]'
+              fixed ? 'text-[#0e6b3f]' : 'text-[#dc2626]'
             }`}
           >
             {fixed ? 'With ProofSync' : 'Today, by hand — a year'}
           </p>
           <p
             className={`mt-1 font-display text-7xl font-black leading-[0.95] tracking-tight tabular-nums transition-colors duration-700 sm:text-8xl ${
-              fixed ? 'text-[#0e6b3f]' : 'text-[#b8451f]'
+              fixed ? 'text-[#0e6b3f]' : 'text-[#dc2626]'
             }`}
           >
             £{shownPounds.toLocaleString()}
@@ -249,7 +251,7 @@ export function FanOutHub() {
             </>
           ) : (
             <>
-              <p className="mt-2 text-xl font-bold leading-snug text-[#b8451f] sm:text-2xl">
+              <p className="mt-2 text-xl font-bold leading-snug text-[#dc2626] sm:text-2xl">
                 spent moving information that already exists.
               </p>
               <p className="mt-2 text-base text-[#1a1b1f]">
@@ -267,7 +269,7 @@ export function FanOutHub() {
           type="button"
           onClick={() => setFixed((v) => !v)}
           className={`group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl px-6 py-5 text-lg font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] sm:text-xl ${
-            fixed ? 'bg-[#b8451f] shadow-[#b8451f]/25' : 'bg-[#0e6b3f] shadow-[#0e6b3f]/30'
+            fixed ? 'bg-[#dc2626] shadow-[#dc2626]/25' : 'bg-[#0e6b3f] shadow-[#0e6b3f]/30'
           }`}
         >
           {!fixed && (
