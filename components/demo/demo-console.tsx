@@ -1763,9 +1763,9 @@ function ClosedLoopStage({
           <div className="rounded-xl border border-emerald-400/30 bg-[radial-gradient(130%_130%_at_20%_-20%,#0e6b3f_0%,#0b4f30_60%,#082419_100%)] px-4 py-3 text-center text-white">
             <p className="font-mono text-[10px] uppercase tracking-widest text-emerald-200/80">While you watched</p>
             <p className="mt-0.5 font-display text-3xl font-black tabular-nums text-emerald-300">
-              {Math.round((returned * ROUND_TRIP_MIN) / 60)}<span className="text-lg"> hrs</span>
+              {Math.round((returned * ROUND_TRIP_MIN) / 60)}<span className="text-lg"> working hours</span>
             </p>
-            <p className="text-[11px] text-white/70">of re-keying gone, both ends</p>
+            <p className="text-[11px] text-white/70">nobody had to do</p>
             <p className="mt-1.5 border-t border-white/10 pt-1.5 text-[11px] text-white/55">
               {returned} × ~{LOOP_MIN_IN} min in + ~{LOOP_MIN_OUT} min out = {returned * ROUND_TRIP_MIN} min
             </p>
@@ -1963,9 +1963,9 @@ function LoopFinaleCard({
 
         <div className="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-4">
           <div className="text-4xl font-black text-emerald-300">
-            {hrs}<span className="text-2xl"> hrs</span>
+            {hrs}<span className="text-2xl"> working hours</span>
           </div>
-          <div className="mt-0.5 text-sm text-white/75">of re-keying gone — both ends</div>
+          <div className="mt-0.5 text-sm text-white/75">nobody had to do</div>
           <p className="mt-2 border-t border-white/10 pt-2 text-xs text-white/60">
             {data.returned} × (~{LOOP_MIN_IN} min in + ~{LOOP_MIN_OUT} min out) = {totalMin.toLocaleString()} min.
             At 500 jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
