@@ -1807,12 +1807,29 @@ function ClosedLoopStage({
         const inField = state.source.filter((j) => String(j.jobNumber).startsWith('JL-97'));
         const fieldDone = inField.filter((j) => j.status === 'Complete').length;
         const ledgerRows = state.ledger.filter((r) => String(r.reference ?? '').startsWith('CON-7'));
+        // "Synced" = written back CLEAN only. The errored attempts are the held
+        // exceptions, not syncs — so they belong in the queue, never this count.
+        const syncedOk = ledgerRows.filter((r) => r.status === 'SUCCESS' || r.status === 'PARTIAL').length;
         const back = state.target.filter((w) => String(w.reference).startsWith('CON-7') && !!w.lastUpdatedBy);
         const followOnCount = back.filter((w) => w.followOnDetail).length;
         return (
-          <div className="mt-4 grid gap-4 xl:grid-cols-4">
-            <div className="flex flex-col gap-3">
+          <>
+            {/* Counters in their own aligned row, so the panels below always line
+                up — and follow-on sits INSIDE the "back" count (it's a subset of
+                it, not extra), so the totals read straight: in = back + held. */}
+            <div className="mt-4 grid items-stretch gap-4 xl:grid-cols-4">
               <LoopCount n={awaiting.length} label="Awaiting pickup" sub="in the client's system" tone="client" />
+              <LoopCount n={fieldDone} label="Completed" sub="in your system" tone="field" />
+              <LoopCount n={syncedOk} label="Synced clean" sub="written back through ProofSync" tone="engine" />
+              <LoopCount
+                n={back.length}
+                label="Back & verified"
+                sub="in the client's system"
+                tone="client"
+                foot={followOnCount > 0 ? `${followOnCount} of these flagged for client follow-on` : undefined}
+              />
+            </div>
+            <div className="mt-3 grid items-start gap-4 xl:grid-cols-4">
               <TargetPanel
                 title="Concerto"
                 subtitle="① client raises"
@@ -1823,9 +1840,6 @@ function ClosedLoopStage({
                 transport={state.transport}
                 activeRefs={EMPTY_REFS}
               />
-            </div>
-            <div className="flex flex-col gap-3">
-              <LoopCount n={fieldDone} label="Completed" sub="in your system" tone="field" />
               <SourcePanel
                 subtitle="② dispatched & done"
                 rows={inField}
@@ -1834,22 +1848,7 @@ function ClosedLoopStage({
                 systemUrl={state.systemUrls.source}
                 transport={state.transport}
               />
-            </div>
-            <div className="flex flex-col gap-3">
-              <LoopCount n={ledgerRows.length} label="Synced" sub="through ProofSync" tone="engine" />
               <LedgerPanel rows={ledgerRows} db={state.databases.ledger} />
-            </div>
-            <div className="flex flex-col gap-3">
-              <LoopCount n={back.length} label="Back & verified" sub="in the client's system" tone="client" />
-              {followOnCount > 0 && (
-                <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
-                  <div className="flex items-center gap-1.5">
-                    <ArrowUpRight className="size-3.5" />
-                    <span className="text-sm font-semibold">Follow-on flagged</span>
-                  </div>
-                  <span className="font-display text-2xl font-black tabular-nums">{followOnCount}</span>
-                </div>
-              )}
               <TargetPanel
                 title="Concerto"
                 subtitle="④ back, verified"
@@ -1861,7 +1860,7 @@ function ClosedLoopStage({
                 activeRefs={EMPTY_REFS}
               />
             </div>
-          </div>
+          </>
         );
       })()}
 
@@ -1877,11 +1876,13 @@ function LoopCount({
   label,
   sub,
   tone,
+  foot,
 }: {
   n: number;
   label: string;
   sub: string;
   tone: 'client' | 'field' | 'engine';
+  foot?: string;
 }) {
   const v = useCountUp(n);
   const toneClass =
@@ -1891,12 +1892,20 @@ function LoopCount({
         ? 'border-indigo-500/40 bg-indigo-50 text-indigo-900'
         : 'border-slate-400/40 bg-slate-100 text-slate-800';
   return (
-    <div className={cn('flex items-center justify-between rounded-xl border px-4 py-2.5 shadow-sm', toneClass)}>
-      <div>
-        <p className="text-sm font-semibold leading-tight">{label}</p>
-        <p className="text-[11px] opacity-70">{sub}</p>
+    <div className={cn('flex flex-col justify-between rounded-xl border px-4 py-2.5 shadow-sm', toneClass)}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold leading-tight">{label}</p>
+          <p className="text-[11px] opacity-70">{sub}</p>
+        </div>
+        <span className="font-display text-3xl font-black tabular-nums">{v}</span>
       </div>
-      <span className="font-display text-3xl font-black tabular-nums">{v}</span>
+      {foot && (
+        <p className="mt-2 flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900">
+          <ArrowUpRight className="size-3 shrink-0" />
+          {foot}
+        </p>
+      )}
     </div>
   );
 }
