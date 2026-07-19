@@ -199,8 +199,8 @@ export function useDemoState() {
    */
   const runClosedLoop = useCallback(
     async (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => {
-      const countBack = (st: DemoState | null) =>
-        st ? st.target.filter((w) => String(w.reference ?? '').startsWith('CON-7')).length : 0;
+      const allBack = (st: DemoState | null) =>
+        !!st && st.inbound.dispatched > 0 && st.inbound.returned >= st.inbound.dispatched;
       try {
         onStage('intake');
         await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
@@ -213,11 +213,11 @@ export function useDemoState() {
         await new Promise((r) => setTimeout(r, 1100));
 
         onStage('sync');
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 18; i++) {
           await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
           const st = await refresh();
-          if (countBack(st) >= 6) break;
-          await new Promise((r) => setTimeout(r, 500));
+          if (allBack(st)) break;
+          await new Promise((r) => setTimeout(r, 400));
         }
         onStage('done');
       } catch {

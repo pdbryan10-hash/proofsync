@@ -176,7 +176,7 @@ const CONTROL_ID = 'demo-control';
 /** The fixed batch. Size and the exact jobs that need a person are constant. */
 const BATCH_SIZE = 40;
 /** Jobs the client has raised in Concerto for Work Intake to pull into Joblogic. */
-const INBOUND_BATCH_SIZE = 6;
+const INBOUND_BATCH_SIZE = 40;
 /** Concerto attribute the cost-centre exceptions write to. */
 export const COST_CENTRE_ATTR = 'clientCostCentre';
 
