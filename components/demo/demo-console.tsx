@@ -179,6 +179,15 @@ export function DemoConsole() {
     setPreparing(false);
   };
 
+  // Open the closed loop on its clean START — only the client's system populated.
+  // A previous run leaves the board looking finished; reseed so it opens fresh.
+  const enterLoop = async () => {
+    setAct('loop');
+    if (state && (state.inbound.dispatched > 0 || state.inbound.returned > 0)) {
+      await reset();
+    }
+  };
+
   // Fire the batch on demand — the "Run the sync" button. Re-arms the finale and
   // drives the re-queued batch to completion (a couple of seconds on M10).
   const runBatch = async () => {
@@ -215,6 +224,7 @@ export function DemoConsole() {
         onSelectAct={(target) => {
           if (target === act) return;
           if (target === 'machine') void enterMachine();
+          else if (target === 'loop') void enterLoop();
           else setAct(target);
         }}
       />
@@ -1783,7 +1793,9 @@ function ClosedLoopStage({
         <TargetPanel
           title="Concerto"
           subtitle="① client raises"
-          rows={state.target.filter((w) => String(w.reference).startsWith('CON-7') && !w.lastUpdatedBy)}
+          rows={state.target.filter(
+            (w) => String(w.reference).startsWith('CON-7') && !w.joblogicJobNumber && !w.lastUpdatedBy,
+          )}
           session={state.sessions.concerto}
           db={state.databases.target}
           systemUrl={state.systemUrls.target}

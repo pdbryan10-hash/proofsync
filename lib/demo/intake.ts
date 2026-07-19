@@ -56,12 +56,20 @@ export interface IntakeResult {
   jobNumbers: string[];
 }
 
-/** Run one intake pass: pull raised jobs, route each into the field system. */
-export async function runIntake(): Promise<IntakeResult> {
+/**
+ * Run one intake pass: pull raised jobs, route each into the field system.
+ *
+ * `limit` caps how many are processed this call. The demo uses it to pull in
+ * small visible waves (call repeatedly until nothing is left), so you watch jobs
+ * move from the client's system into yours a few at a time rather than all at
+ * once. Omit it and the whole backlog is pulled in one pass.
+ */
+export async function runIntake(limit?: number): Promise<IntakeResult> {
   const client = new DemoConcertoConnector(); // client CAFM connector (inbound source)
   const field = new DemoJoblogicConnector(); // field system connector (intake target)
 
-  const raised = await client.receiveNewJobs(); // SEAM: pull raised jobs
+  const all = await client.receiveNewJobs(); // SEAM: pull raised jobs
+  const raised = limit && limit > 0 ? all.slice(0, limit) : all;
   const jobNumbers: string[] = [];
 
   for (let i = 0; i < raised.length; i++) {
@@ -87,11 +95,11 @@ export async function runIntake(): Promise<IntakeResult> {
  * the field system; here it fills in a plausible completion so the outbound sync
  * can then close the loop. Kept deliberately separate from the engine.
  */
-export async function completeIntakeJobs(): Promise<{ completed: number }> {
+export async function completeIntakeJobs(limit?: number): Promise<{ completed: number }> {
   const jobs = await sourceJobs();
-  const allocated = await jobs
-    .find({ jobNumber: { $regex: '^JL-97' }, status: 'Allocated' })
-    .toArray();
+  const cursor = jobs.find({ jobNumber: { $regex: '^JL-97' }, status: 'Allocated' });
+  if (limit && limit > 0) cursor.limit(limit);
+  const allocated = await cursor.toArray();
 
   const now = new Date();
   for (const j of allocated) {

@@ -78,6 +78,9 @@ export interface TargetRow {
   emptyFieldCount: number;
   documentCount: number;
   lastUpdatedBy: string | null;
+  /** Set once Work Intake has pulled the raised job into the field system. Lets
+   *  the closed loop drain the "raised, awaiting pickup" panel as jobs move on. */
+  joblogicJobNumber: string | null;
   updatedAt: string;
 }
 
@@ -535,6 +538,7 @@ export async function getDemoState(): Promise<DemoState> {
         emptyFieldCount: Math.max(0, KNOWN_TARGET_FIELDS.length - populatedFields.length),
         documentCount: w.documents?.length ?? 0,
         lastUpdatedBy: w.lastUpdatedBy,
+        joblogicJobNumber: w.joblogicJobNumber ?? null,
         updatedAt: iso(w.updatedAt) ?? new Date().toISOString(),
       };
     }),

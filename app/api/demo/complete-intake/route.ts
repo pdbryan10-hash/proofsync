@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
   const blocked = demoGuard(req);
   if (blocked) return blocked;
   try {
-    const result = await completeIntakeJobs();
+    const limit = Number(new URL(req.url).searchParams.get('limit')) || undefined;
+    const result = await completeIntakeJobs(limit);
     return ok(result);
   } catch (error) {
     return handleRouteError(error);

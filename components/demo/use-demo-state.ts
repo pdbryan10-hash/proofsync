@@ -201,26 +201,31 @@ export function useDemoState() {
     async (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => {
       const heldCon7 = (st: DemoState | null) =>
         st ? st.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7')).length : 0;
+      // Small waves so a viewer SEES jobs move a few at a time — client's system
+      // → yours → ProofSync → back — rather than every count jumping at once.
+      const WAVE = 5;
+      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
       try {
         onStage('intake');
-        const ir = await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
-        const created = (await ir.json().catch(() => null))?.data?.created ?? 0;
-        if (created > 0) {
+        // Pull the raised jobs in waves: each pass takes WAVE off the client's
+        // system and creates them in yours, and we refresh between passes so the
+        // first panel drains into the second in front of you.
+        let totalCreated = 0;
+        for (let pass = 0; pass < 40; pass++) {
+          const ir = await fetch(`/api/demo/intake?limit=${WAVE}`, { method: 'POST', cache: 'no-store' });
+          const created = (await ir.json().catch(() => null))?.data?.created ?? 0;
+          totalCreated += created;
+          await refresh();
+          if (created === 0) break;
+          await wait(320);
+        }
+        if (totalCreated > 0) {
           pushActivity({
-            text: `Polled your clients' systems — ${created} new job${created === 1 ? '' : 's'} received and created in your system, client reference kept.`,
+            text: `Polled your clients' systems — ${totalCreated} new job${totalCreated === 1 ? '' : 's'} received and created in your system, client reference kept.`,
             tone: 'ok',
           });
         }
-        // Confirm the created jobs actually landed as DISPATCHED before we start
-        // the sync. Without this, a slow reseed/refresh can leave dispatched at 0,
-        // and the loop would either spin fruitlessly or declare "done" over an
-        // empty board (the stuck-run bug). We wait for the count, then anchor the
-        // finish line to it — not to a live-changing field.
         let st = await refresh();
-        for (let i = 0; i < 10 && (!st || st.inbound.dispatched === 0); i++) {
-          await new Promise((r) => setTimeout(r, 300));
-          st = await refresh();
-        }
         const target = st?.inbound.dispatched ?? 0;
         if (target === 0) {
           pushActivity({
@@ -230,22 +235,28 @@ export function useDemoState() {
           onStage('done');
           return;
         }
-        await new Promise((r) => setTimeout(r, 900));
+        await wait(500);
 
         onStage('complete');
-        await fetch('/api/demo/complete-intake', { method: 'POST', cache: 'no-store' });
+        // Complete in waves too, so Joblogic flips Allocated → Complete visibly.
+        for (let pass = 0; pass < 40; pass++) {
+          const cr = await fetch(`/api/demo/complete-intake?limit=${WAVE}`, { method: 'POST', cache: 'no-store' });
+          const done = (await cr.json().catch(() => null))?.data?.completed ?? 0;
+          await refresh();
+          if (done === 0) break;
+          await wait(300);
+        }
         pushActivity({ text: `Engineers completed the raised jobs on site.`, tone: 'ok' });
-        await refresh();
-        await new Promise((r) => setTimeout(r, 900));
+        await wait(500);
 
         onStage('sync');
-        for (let i = 0; i < 22; i++) {
+        for (let i = 0; i < 30; i++) {
           await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
           st = await refresh();
           // Done when every dispatched job is terminal: written back, or held as
           // an exception (garbled/missing-field) that a person must clear.
           if (st && st.inbound.returned + heldCon7(st) >= target) break;
-          await new Promise((r) => setTimeout(r, 400));
+          await wait(360);
         }
         onStage('done');
       } catch {

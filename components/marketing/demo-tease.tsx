@@ -35,10 +35,11 @@ function Bar({ w, tone = 'bg-black/10' }: { w: string; tone?: string }) {
 export function DemoTease() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden select-none">
-      {/* The demo, full-bleed — lightly blurred so it's clearly visible and
-          obviously the product, just soft enough that you can't read the detail. */}
-      <div className="absolute inset-x-0 top-0 origin-top scale-[1.12] opacity-[0.97] blur-[2px] saturate-[1.05]">
-        <div className="mx-auto max-w-[1600px] px-6 pt-6">
+      {/* The demo, anchored to the LEFT so it sits in the open column beside the
+          booking card, not hidden behind it. Barely blurred — clearly the product,
+          just soft enough you can't read the detail. */}
+      <div className="absolute left-0 top-0 w-[1400px] max-w-[135%] origin-top-left scale-[1.06] opacity-100 blur-[1px] saturate-[1.06]">
+        <div className="px-6 pt-6">
           {/* Console header mock */}
           <div className="flex items-center justify-between rounded-t-xl border border-black/10 bg-white/90 px-5 py-3">
             <div className="flex items-center gap-3">
@@ -110,10 +111,11 @@ export function DemoTease() {
         </div>
       </div>
 
-      {/* Melt only the very top and bottom edges into the header/footer; leave the
-          middle fully visible. No heavy tint — the point is to SEE the product. */}
-      <div className="absolute inset-0 bg-[#f7f5ef]/8" />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#f7f5ef] via-transparent via-45% to-[#f7f5ef]" />
+      {/* Melt only the very top/bottom edges into the header/footer, and fade the
+          right so it slips cleanly under the booking card. Middle-left stays fully
+          visible — the point is to SEE the product. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#f7f5ef] via-transparent via-40% to-[#f7f5ef]/85" />
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#f7f5ef]/50" />
     </div>
   );
 }
