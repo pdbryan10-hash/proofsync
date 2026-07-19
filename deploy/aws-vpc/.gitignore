@@ -1,0 +1,13 @@
+# Terraform working files — never commit these
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+override.tf
+override.tf.json
+
+# Build artefact uploaded to S3
+source.zip
+
+# Keep .terraform.lock.hcl committed (it pins provider versions).
