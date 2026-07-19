@@ -1932,7 +1932,10 @@ function LoopFinaleCard({
 }) {
   const totalMin = data.returned * ROUND_TRIP_MIN;
   const hrs = Math.round(totalMin / 60);
-  const annualHours = Math.round((500 * 52 * ROUND_TRIP_MIN) / 60).toLocaleString();
+  // Extrapolate to PEOPLE, not hours — a five-figure hours number reads as
+  // marketing; "≈ 4.4 full-time admins" is something an FD can picture and cost.
+  // 1,950 = annual hours per full-timer (37.5h × 52).
+  const annualFte = ((500 * 52 * ROUND_TRIP_MIN) / 60 / 1950).toFixed(1);
   return (
     <div
       role="dialog"
@@ -1968,7 +1971,7 @@ function LoopFinaleCard({
           <div className="mt-0.5 text-sm text-white/75">nobody had to do</div>
           <p className="mt-2 border-t border-white/10 pt-2 text-xs text-white/60">
             {data.returned} × (~{LOOP_MIN_IN} min in + ~{LOOP_MIN_OUT} min out) = {totalMin.toLocaleString()} min.
-            At 500 jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
+            At 500 jobs a week, that&apos;s <strong className="text-emerald-300">around {annualFte} full-time admins</strong>.
           </p>
         </div>
 
@@ -1978,7 +1981,7 @@ function LoopFinaleCard({
             keystrokes on the {data.returned} that went round clean
           </div>
           {data.exceptions > 0 && (
-            <p className="mt-1 text-xs text-white/55">
+            <p className="mt-2 text-[13px] leading-snug text-white/80">
               {data.exceptions} held for a person — the only one{data.exceptions === 1 ? '' : 's'} that
               needed you. That&apos;s the point, not a caveat.
             </p>
