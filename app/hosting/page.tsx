@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Bricolage_Grotesque } from 'next/font/google';
 import {
   Lock, Cloud, Server, Building2, Globe, Database, Cog, Chrome, KeyRound, Network, ArrowLeftRight, ShieldCheck,
+  Check, Minus,
 } from 'lucide-react';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { ProofWorksEndorsement } from '@/components/brand/proofworks-badge';
@@ -24,17 +25,51 @@ const MODELS = [
   {
     icon: Cloud,
     title: 'Managed by us',
-    body: 'We run it; you authorise the connectors. Fastest to live — UK-hosted under the DPA, with the full audit trail. How the POC and most early clients run.',
+    body: 'We run it; you authorise the connectors.',
+    pros: [
+      'Live in weeks — nothing for your team to build or run',
+      'No infrastructure, patching or on-call on your side',
+      'We monitor and keep connectors alive — issues are ours to fix',
+      'UK-hosted, DPA and full audit trail included',
+    ],
+    cons: [
+      'Your data sits in our environment (under DPA), not in-house',
+      'You depend on our platform and availability',
+      'Least direct control over the environment',
+    ],
   },
   {
     icon: Building2,
     title: 'Single-tenant, your cloud',
-    body: 'Deployed into your own Azure or AWS subscription — app, database and browser pool inside your network. Your data never leaves your tenancy; we still operate it.',
+    body: 'Deployed into your own Azure or AWS subscription — operated by us.',
+    pros: [
+      'Your data never leaves your tenancy — easiest security sign-off',
+      'Your network, logging and controls apply throughout',
+      'Still fully operated by us — you don’t run it day-to-day',
+      'Data residency and compliance simple to evidence',
+    ],
+    cons: [
+      'Slower to stand up — provisioning, access and networking in your subscription',
+      'Your cloud costs (compute, database, egress) sit on your bill',
+      'You grant us scoped access to operate it',
+      'Provisioned per engagement — not an off-the-shelf switch',
+    ],
   },
   {
     icon: Server,
     title: 'You self-host',
-    body: 'Take the container images and run them yourself. Supported, best kept for later — the ongoing value is us keeping connectors alive as your clients change systems.',
+    body: 'Take the container images and run them yourself.',
+    pros: [
+      'Total control — your images, your pipeline, your environment',
+      'No third-party operational dependency',
+      'Fits an organisation with a strong internal platform team',
+    ],
+    cons: [
+      'You own uptime, upgrades, monitoring and incident response',
+      'You lose the biggest ongoing value — us keeping connectors alive as clients change systems',
+      'Browser pool, scheduler, secrets and networking are all yours to run',
+      'Slowest to value, highest internal cost',
+    ],
   },
 ];
 
@@ -85,17 +120,41 @@ export default function HostingPage() {
           <strong className="text-[#1a1b1f]">It runs equally in Azure or AWS.</strong>
         </p>
 
-        {/* Three models */}
+        {/* Three models — with pros and cons spelled out */}
         <section className="mt-10">
-          <h2 className="font-display text-2xl font-bold">Three ways to host it</h2>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <h2 className="font-display text-2xl font-bold">Three ways to host it — pros &amp; cons</h2>
+          <div className="mt-5 space-y-4">
             {MODELS.map((m) => (
-              <div key={m.title} className="rounded-2xl border border-[#e6e1d6] bg-white p-5 shadow-sm">
-                <div className="flex items-center gap-2.5">
+              <div key={m.title} className="rounded-2xl border border-[#e6e1d6] bg-white p-5 shadow-sm sm:p-6">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <m.icon className="size-5 text-[#0e6b3f]" />
-                  <h3 className="font-semibold">{m.title}</h3>
+                  <h3 className="text-lg font-bold">{m.title}</h3>
+                  <span className="text-sm text-[#5f6068]">— {m.body}</span>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-[#5f6068]">{m.body}</p>
+                <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                  <div>
+                    <p className="mb-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#0e6b3f]">Pros</p>
+                    <ul className="space-y-1.5">
+                      {m.pros.map((p) => (
+                        <li key={p} className="flex items-start gap-2 text-sm text-[#33343a]">
+                          <Check className="mt-0.5 size-4 shrink-0 text-[#0e6b3f]" />
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="mb-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#9f1239]">Cons</p>
+                    <ul className="space-y-1.5">
+                      {m.cons.map((c) => (
+                        <li key={c} className="flex items-start gap-2 text-sm text-[#5f6068]">
+                          <Minus className="mt-0.5 size-4 shrink-0 text-[#9f1239]" />
+                          <span>{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
