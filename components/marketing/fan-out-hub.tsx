@@ -85,7 +85,7 @@ export function FanOutHub() {
   return (
     <div
       className={`overflow-hidden rounded-2xl border shadow-lg transition-colors duration-700 ${
-        fixed ? 'border-[#0e6b3f]/40 bg-white' : 'border-[#dc2626]/40 bg-[#fff5f5]'
+        fixed ? 'border-[#0e6b3f]/40 bg-white' : 'border-[#9f1239]/40 bg-white'
       }`}
     >
       <style>{`
@@ -97,7 +97,7 @@ export function FanOutHub() {
       {/* Header — the category line + a live "right now" tension marker */}
       <div
         className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-5 py-3.5 transition-colors duration-700 sm:px-7 ${
-          fixed ? 'border-[#0e6b3f]/15 bg-[#f4f8f5]' : 'border-[#dc2626]/15 bg-[#fee2e2]'
+          fixed ? 'border-[#0e6b3f]/15 bg-[#f4f8f5]' : 'border-[#9f1239]/15 bg-[#faf7f6]'
         }`}
       >
         <p className="max-w-xl text-sm font-semibold text-[#1a1b1f] sm:text-base">
@@ -106,10 +106,10 @@ export function FanOutHub() {
             : 'You didn’t build an integration department. You just woke up with one.'}
         </p>
         {!fixed && (
-          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#dc2626]">
+          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#9f1239]">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#dc2626] opacity-70" />
-              <span className="relative inline-flex size-2 rounded-full bg-[#dc2626]" />
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#9f1239] opacity-70" />
+              <span className="relative inline-flex size-2 rounded-full bg-[#9f1239]" />
             </span>
             happening right now
           </span>
@@ -120,7 +120,7 @@ export function FanOutHub() {
         {/* THE PICTURE — a person trapped as the transport layer, or the engine */}
         <div
           className={`relative overflow-hidden rounded-xl border p-4 transition-colors duration-700 sm:p-5 ${
-            fixed ? 'border-[#0e6b3f]/30 bg-[#eef6f0]' : 'border-[#dc2626]/30 bg-[#fdecec]'
+            fixed ? 'border-[#0e6b3f]/30 bg-[#eef6f0]' : 'border-[#9f1239]/30 bg-[#faf7f6]'
           }`}
         >
           {/* the client systems, all issuing work */}
@@ -137,7 +137,7 @@ export function FanOutHub() {
                     on
                       ? fixed
                         ? 'border-[#0e6b3f] bg-[#e7f0ea] font-semibold text-[#0b5531]'
-                        : 'border-[#dc2626] bg-[#fecaca] font-semibold text-[#dc2626] shadow-sm'
+                        : 'border-[#9f1239] bg-[#f4e6ea] font-semibold text-[#9f1239] shadow-sm'
                       : 'border-black/10 bg-white/70 text-[#b0a894] hover:text-[#5f6068]'
                   }`}
                 >
@@ -169,13 +169,13 @@ export function FanOutHub() {
             >
               <div
                 className={`flex size-14 shrink-0 items-center justify-center rounded-2xl border-2 bg-white transition-all duration-700 ${
-                  fixed ? 'border-[#0e6b3f]/40' : 'border-[#dc2626]/60 shadow-[0_0_0_6px_rgba(220,38,38,0.14)]'
+                  fixed ? 'border-[#0e6b3f]/40' : 'border-[#9f1239]/60 shadow-[0_0_0_6px_rgba(159,18,57,0.12)]'
                 }`}
               >
-                <User className={`size-7 ${fixed ? 'text-[#0e6b3f]' : 'text-[#dc2626]'}`} />
+                <User className={`size-7 ${fixed ? 'text-[#0e6b3f]' : 'text-[#9f1239]'}`} />
               </div>
               <div className="max-w-[10rem] text-left">
-                <p className={`text-sm font-bold ${fixed ? 'text-[#0b5531]' : 'text-[#dc2626]'}`}>{PERSON}</p>
+                <p className={`text-sm font-bold ${fixed ? 'text-[#0b5531]' : 'text-[#9f1239]'}`}>{PERSON}</p>
                 <p className="text-[11px] leading-tight text-[#5f6068]">
                   {fixed
                     ? 'now on the jobs that need judgement'
@@ -209,7 +209,7 @@ export function FanOutHub() {
                   className={`ps-chip rounded border px-1.5 py-0.5 font-mono text-[10px] ${
                     fixed
                       ? 'border-[#0e6b3f]/30 bg-[#e7f0ea] font-semibold text-[#0b5531]'
-                      : 'border-[#dc2626]/20 bg-white/80 text-[#dc2626]'
+                      : 'border-[#9f1239]/20 bg-white/80 text-[#9f1239]'
                   }`}
                   style={{ animationDelay: `${i * (fixed ? 160 : 95)}ms` }}
                 >
@@ -217,7 +217,7 @@ export function FanOutHub() {
                 </span>
               ))}
             </div>
-            <p className={`mt-2 text-[11px] font-medium ${fixed ? 'text-[#0b5531]' : 'text-[#dc2626]'}`}>
+            <p className={`mt-2 text-[11px] font-medium ${fixed ? 'text-[#0b5531]' : 'text-[#9f1239]'}`}>
               {fixed
                 ? `${PERSON} stays — she just isn’t the transport layer any more.`
                 : `${PERSON} isn’t the problem. Her job is — she was hired to support your contracts, not to be the bridge between your software and your clients’.`}
@@ -229,14 +229,14 @@ export function FanOutHub() {
         <div className="text-center lg:text-left">
           <p
             className={`font-mono text-[11px] font-semibold uppercase tracking-widest ${
-              fixed ? 'text-[#0e6b3f]' : 'text-[#dc2626]'
+              fixed ? 'text-[#0e6b3f]' : 'text-[#9f1239]'
             }`}
           >
             {fixed ? 'With ProofSync' : 'Today, by hand — a year'}
           </p>
           <p
             className={`mt-1 font-display text-7xl font-black leading-[0.95] tracking-tight tabular-nums transition-colors duration-700 sm:text-8xl ${
-              fixed ? 'text-[#0e6b3f]' : 'text-[#dc2626]'
+              fixed ? 'text-[#0e6b3f]' : 'text-[#9f1239]'
             }`}
           >
             £{shownPounds.toLocaleString()}
@@ -251,7 +251,7 @@ export function FanOutHub() {
             </>
           ) : (
             <>
-              <p className="mt-2 text-xl font-bold leading-snug text-[#dc2626] sm:text-2xl">
+              <p className="mt-2 text-xl font-bold leading-snug text-[#9f1239] sm:text-2xl">
                 spent moving information that already exists.
               </p>
               <p className="mt-2 text-base text-[#1a1b1f]">
@@ -269,11 +269,11 @@ export function FanOutHub() {
           type="button"
           onClick={() => setFixed((v) => !v)}
           className={`group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl px-6 py-5 text-lg font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.01] sm:text-xl ${
-            fixed ? 'bg-[#dc2626] shadow-[#dc2626]/25' : 'bg-[#0e6b3f] shadow-[#0e6b3f]/30'
+            fixed ? 'bg-[#9f1239] shadow-[#9f1239]/25' : 'bg-[#0e6b3f] shadow-[#0e6b3f]/30'
           }`}
         >
           {!fixed && (
-            <span className="pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-2 ring-white/40" />
+            <span className="pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-1 ring-white/25" />
           )}
           {fixed ? (
             <>
