@@ -1788,45 +1788,95 @@ function ClosedLoopStage({
       {/* The real records, as a round trip — FOUR columns, because the loop starts
           and ends at the client: Concerto raises it → Joblogic dispatches &
           completes → ProofSync syncs → Concerto gets it back, verified. Jobs move
-          left-to-right, out of the first Concerto and into the last. */}
-      <div className="mt-4 grid gap-4 xl:grid-cols-4">
-        <TargetPanel
-          title="Concerto"
-          subtitle="① client raises"
-          rows={state.target.filter(
-            (w) => String(w.reference).startsWith('CON-7') && !w.joblogicJobNumber && !w.lastUpdatedBy,
-          )}
-          session={state.sessions.concerto}
-          db={state.databases.target}
-          systemUrl={state.systemUrls.target}
-          transport={state.transport}
-          activeRefs={EMPTY_REFS}
-        />
-        <SourcePanel
-          subtitle="② dispatched & done"
-          rows={state.source.filter((j) => String(j.jobNumber).startsWith('JL-97'))}
-          session={state.sessions.joblogic}
-          db={state.databases.source}
-          systemUrl={state.systemUrls.source}
-          transport={state.transport}
-        />
-        <LedgerPanel
-          rows={state.ledger.filter((r) => String(r.reference ?? '').startsWith('CON-7'))}
-          db={state.databases.ledger}
-        />
-        <TargetPanel
-          title="Concerto"
-          subtitle="④ back, verified"
-          rows={state.target.filter((w) => String(w.reference).startsWith('CON-7') && !!w.lastUpdatedBy)}
-          session={state.sessions.concerto}
-          db={state.databases.target}
-          systemUrl={state.systemUrls.target}
-          transport={state.transport}
-          activeRefs={EMPTY_REFS}
-        />
-      </div>
+          left-to-right, out of the first Concerto and into the last. A live
+          counter sits above each card and climbs/drains as jobs move through. */}
+      {(() => {
+        const awaiting = state.target.filter(
+          (w) => String(w.reference).startsWith('CON-7') && !w.joblogicJobNumber && !w.lastUpdatedBy,
+        );
+        const inField = state.source.filter((j) => String(j.jobNumber).startsWith('JL-97'));
+        const fieldDone = inField.filter((j) => j.status === 'Complete').length;
+        const ledgerRows = state.ledger.filter((r) => String(r.reference ?? '').startsWith('CON-7'));
+        const back = state.target.filter((w) => String(w.reference).startsWith('CON-7') && !!w.lastUpdatedBy);
+        return (
+          <div className="mt-4 grid gap-4 xl:grid-cols-4">
+            <div className="flex flex-col gap-3">
+              <LoopCount n={awaiting.length} label="Awaiting pickup" sub="in the client's system" tone="client" />
+              <TargetPanel
+                title="Concerto"
+                subtitle="① client raises"
+                rows={awaiting}
+                session={state.sessions.concerto}
+                db={state.databases.target}
+                systemUrl={state.systemUrls.target}
+                transport={state.transport}
+                activeRefs={EMPTY_REFS}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <LoopCount n={fieldDone} label="Completed" sub="in your system" tone="field" />
+              <SourcePanel
+                subtitle="② dispatched & done"
+                rows={inField}
+                session={state.sessions.joblogic}
+                db={state.databases.source}
+                systemUrl={state.systemUrls.source}
+                transport={state.transport}
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <LoopCount n={ledgerRows.length} label="Synced" sub="through ProofSync" tone="engine" />
+              <LedgerPanel rows={ledgerRows} db={state.databases.ledger} />
+            </div>
+            <div className="flex flex-col gap-3">
+              <LoopCount n={back.length} label="Back & verified" sub="in the client's system" tone="client" />
+              <TargetPanel
+                title="Concerto"
+                subtitle="④ back, verified"
+                rows={back}
+                session={state.sessions.concerto}
+                db={state.databases.target}
+                systemUrl={state.systemUrls.target}
+                transport={state.transport}
+                activeRefs={EMPTY_REFS}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {finale && <LoopFinaleCard data={finale} onClose={() => setFinale(null)} />}
+    </div>
+  );
+}
+
+/** A live counter above a closed-loop card — climbs or drains as jobs move
+ *  through that stage, so the movement is legible at a glance. */
+function LoopCount({
+  n,
+  label,
+  sub,
+  tone,
+}: {
+  n: number;
+  label: string;
+  sub: string;
+  tone: 'client' | 'field' | 'engine';
+}) {
+  const v = useCountUp(n);
+  const toneClass =
+    tone === 'client'
+      ? 'border-emerald-500/40 bg-emerald-50 text-emerald-900'
+      : tone === 'engine'
+        ? 'border-indigo-500/40 bg-indigo-50 text-indigo-900'
+        : 'border-slate-400/40 bg-slate-100 text-slate-800';
+  return (
+    <div className={cn('flex items-center justify-between rounded-xl border px-4 py-2.5 shadow-sm', toneClass)}>
+      <div>
+        <p className="text-sm font-semibold leading-tight">{label}</p>
+        <p className="text-[11px] opacity-70">{sub}</p>
+      </div>
+      <span className="font-display text-3xl font-black tabular-nums">{v}</span>
     </div>
   );
 }

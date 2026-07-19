@@ -62,9 +62,12 @@ export default function SalesPage() {
         <div className="relative mx-auto w-full max-w-6xl px-5 py-14 lg:py-20">
           <p className={EYEBROW}>For FM contractors</p>
           <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-[#1a1b1f] sm:text-6xl lg:text-[4.2rem]">
-            Your clients&apos; systems and yours, permanently in step.
+            You employ someone to copy your own data into someone else&apos;s software.
           </h1>
-          <p className="mt-6 max-w-2xl text-xl leading-relaxed text-[#3a3b42]">
+          <p className="mt-6 max-w-3xl font-display text-2xl font-semibold leading-snug text-[#3a3b42] sm:text-3xl">
+            Your clients&apos; systems and yours, permanently in step.
+          </p>
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[#5f6068]">
             Jobs land in your system the moment they&apos;re raised. Completions go back the moment
             they&apos;re done. <span className="text-[#1a1b1f]">Across every client system you serve</span> —
             verified, audited, and only the exceptions reach a human.

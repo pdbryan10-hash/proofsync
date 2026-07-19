@@ -201,33 +201,39 @@ export function useDemoState() {
     async (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => {
       const heldCon7 = (st: DemoState | null) =>
         st ? st.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7')).length : 0;
-      // Small waves so a viewer SEES jobs move a few at a time — client's system
-      // → yours → ProofSync → back — rather than every count jumping at once.
-      const WAVE = 5;
       const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
       try {
         onStage('intake');
-        // Pull the raised jobs in waves: each pass takes WAVE off the client's
-        // system and creates them in yours, and we refresh between passes so the
-        // first panel drains into the second in front of you.
+        // ONE JOB AT A TIME, all the way round. Each job is pulled into your system,
+        // completed, and synced straight back before the next — so every counter
+        // ticks up a single step and you watch one job travel: client's system →
+        // yours → ProofSync → back, verified. The ledger fires per job, not at the
+        // end.
         let totalCreated = 0;
-        for (let pass = 0; pass < 40; pass++) {
-          const ir = await fetch(`/api/demo/intake?limit=${WAVE}`, { method: 'POST', cache: 'no-store' });
+        for (let job = 0; job < 45; job++) {
+          // 1. Pull ONE raised job into your system (dispatched in Joblogic).
+          const ir = await fetch('/api/demo/intake?limit=1', { method: 'POST', cache: 'no-store' });
           const created = (await ir.json().catch(() => null))?.data?.created ?? 0;
+          if (created === 0) break;
           totalCreated += created;
           await refresh();
-          if (created === 0) break;
-          await wait(320);
+          await wait(180);
+
+          // 2. Complete that one on site.
+          await fetch('/api/demo/complete-intake?limit=1', { method: 'POST', cache: 'no-store' });
+          if (job === 0) onStage('complete');
+          await refresh();
+          await wait(180);
+
+          // 3. Sync it back immediately — ProofSync ledger + the client's system
+          //    update now, not once the whole batch is done.
+          await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
+          if (job === 0) onStage('sync');
+          await refresh();
+          await wait(200);
         }
-        if (totalCreated > 0) {
-          pushActivity({
-            text: `Polled your clients' systems — ${totalCreated} new job${totalCreated === 1 ? '' : 's'} received and created in your system, client reference kept.`,
-            tone: 'ok',
-          });
-        }
-        let st = await refresh();
-        const target = st?.inbound.dispatched ?? 0;
-        if (target === 0) {
+
+        if (totalCreated === 0) {
           pushActivity({
             text: 'No new client jobs came through this run — press “Run the closed loop” to pull a fresh batch.',
             tone: 'flag',
@@ -235,28 +241,17 @@ export function useDemoState() {
           onStage('done');
           return;
         }
-        await wait(500);
+        pushActivity({
+          text: `Polled your clients' systems — ${totalCreated} job${totalCreated === 1 ? '' : 's'} pulled in, completed and synced back one at a time, client reference kept.`,
+          tone: 'ok',
+        });
 
-        onStage('complete');
-        // Complete in waves too, so Joblogic flips Allocated → Complete visibly.
-        for (let pass = 0; pass < 40; pass++) {
-          const cr = await fetch(`/api/demo/complete-intake?limit=${WAVE}`, { method: 'POST', cache: 'no-store' });
-          const done = (await cr.json().catch(() => null))?.data?.completed ?? 0;
-          await refresh();
-          if (done === 0) break;
-          await wait(300);
-        }
-        pushActivity({ text: `Engineers completed the raised jobs on site.`, tone: 'ok' });
-        await wait(500);
-
-        onStage('sync');
-        for (let i = 0; i < 30; i++) {
+        // Final sweep: a couple of ticks to settle anything that needed a retry.
+        for (let i = 0; i < 5; i++) {
+          const st = await refresh();
+          if (st && st.inbound.returned + heldCon7(st) >= totalCreated) break;
           await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
-          st = await refresh();
-          // Done when every dispatched job is terminal: written back, or held as
-          // an exception (garbled/missing-field) that a person must clear.
-          if (st && st.inbound.returned + heldCon7(st) >= target) break;
-          await wait(360);
+          await wait(320);
         }
         onStage('done');
       } catch {
