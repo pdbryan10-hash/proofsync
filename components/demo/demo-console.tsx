@@ -57,7 +57,8 @@ export function DemoConsole() {
   // Two acts. Act 1 follows ONE real job end to end at human speed, so a viewer
   // understands exactly what happens. Act 2 reveals the same thing running flat
   // out across the whole floor — the "oh, it's doing that to all of them" moment.
-  const [act, setAct] = useState<'human' | 'machine' | 'loop'>('human');
+  // The demo is the closed loop only — that's all we present.
+  const [act, setAct] = useState<'human' | 'machine' | 'loop'>('loop');
   const [finale, setFinale] = useState<{
     jobs: number;
     fields: number;
@@ -71,6 +72,15 @@ export function DemoConsole() {
   // Guards the Act 2 finale: true only once the re-queued batch has been seen in
   // flight, so the finale can't fire on the previous run's leftover "done" state.
   const machineSawPending = useRef(false);
+  // The demo IS the closed loop, so open it on a clean START — only the client's
+  // system populated. A previous run leaves the board looking finished; reseed
+  // once on load so it always opens fresh.
+  const didInit = useRef(false);
+  useEffect(() => {
+    if (didInit.current || !state) return;
+    didInit.current = true;
+    if (state.inbound.dispatched > 0 || state.inbound.returned > 0) void reset();
+  }, [state, reset]);
   const [preparing, setPreparing] = useState(false);
   // True while the on-demand Act 2 batch run is in flight (the "Run the sync" button).
   const [syncing, setSyncing] = useState(false);
@@ -180,15 +190,6 @@ export function DemoConsole() {
     setPreparing(false);
   };
 
-  // Open the closed loop on its clean START — only the client's system populated.
-  // A previous run leaves the board looking finished; reseed so it opens fresh.
-  const enterLoop = async () => {
-    setAct('loop');
-    if (state && (state.inbound.dispatched > 0 || state.inbound.returned > 0)) {
-      await reset();
-    }
-  };
-
   // Fire the batch on demand — the "Run the sync" button. Re-arms the finale and
   // drives the re-queued batch to completion (a couple of seconds on M10).
   const runBatch = async () => {
@@ -216,19 +217,7 @@ export function DemoConsole() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <ConsoleHeader
-        state={state}
-        busy={busy}
-        onReset={reset}
-        onForce={forceTick}
-        act={act}
-        onSelectAct={(target) => {
-          if (target === act) return;
-          if (target === 'machine') void enterMachine();
-          else if (target === 'loop') void enterLoop();
-          else setAct(target);
-        }}
-      />
+      <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
         <CrossSystemSearch />
@@ -2028,15 +2017,11 @@ function ConsoleHeader({
   busy,
   onReset,
   onForce,
-  act,
-  onSelectAct,
 }: {
   state: DemoState;
   busy: boolean;
   onReset: () => void;
   onForce: () => void;
-  act: 'human' | 'machine' | 'loop';
-  onSelectAct: (act: 'human' | 'machine' | 'loop') => void;
 }) {
   const countdown = useCountdown(state.tick.nextTickInMs, state.tick.lastTickAt);
   const seconds = Math.ceil(countdown / 1000);
@@ -2052,37 +2037,12 @@ function ConsoleHeader({
             <ArrowRight className="size-3.5 text-muted-foreground" />
             <span className="font-normal text-muted-foreground">Concerto</span>
           </h1>
-          <div className="mt-1.5 inline-flex items-center gap-0.5 rounded-full border border-border bg-muted/60 p-0.5">
-            <button
-              type="button"
-              onClick={() => onSelectAct('human')}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-                act === 'human' ? 'bg-info-soft text-info-text shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              One job
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectAct('machine')}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-                act === 'machine' ? 'bg-navy-900 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              Machine speed
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectAct('loop')}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-                act === 'loop' ? 'bg-[#0e6b3f] text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              Closed loop
-            </button>
+          <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0b5531]">
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#0e6b3f] opacity-70" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-[#0e6b3f]" />
+            </span>
+            Closed loop · both directions
           </div>
         </div>
 
