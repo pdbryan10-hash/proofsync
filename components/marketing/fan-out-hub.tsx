@@ -85,9 +85,9 @@ export function FanOutHub() {
         {/* LEFT — your field system */}
         <div className="flex flex-col justify-center rounded-xl border border-[#e6e1d6] bg-[#f7f5ef] p-5">
           <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Your field system</p>
-          <p className="mt-1 text-lg font-bold text-[#1a1b1f]">Joblogic</p>
+          <p className="mt-1 text-lg font-bold text-[#1a1b1f]">Whatever you run</p>
           <p className="mt-2 text-xs leading-relaxed text-[#5f6068]">
-            Where your engineers actually complete the work — once.
+            Joblogic, Simpro, BigChange, Commusoft — where your engineers complete the work, once.
           </p>
           <div className="mt-4 flex items-center gap-2 text-[11px] font-medium text-[#0e6b3f]">
             <ArrowLeft className="size-3.5" /> jobs in

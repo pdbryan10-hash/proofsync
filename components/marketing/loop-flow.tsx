@@ -16,9 +16,9 @@ const TILES = [
   },
   {
     n: '02',
-    system: 'Joblogic',
+    system: 'Your system',
     title: 'Brought in, done once',
-    body: 'Created in your system with the client’s reference kept, dispatched, and completed on site — once.',
+    body: 'Created in whatever your engineers use — the client’s reference kept — dispatched, and completed on site once.',
     tone: 'field' as const,
   },
   {
