@@ -1,0 +1,17 @@
+# Rebuilt inside the image
+node_modules
+.next
+
+# Not needed in the image / must never ship
+.git
+.github
+.vercel
+deploy
+.env
+.env.*
+*.local
+coverage
+playwright-report
+test-results
+npm-debug.log*
+.DS_Store

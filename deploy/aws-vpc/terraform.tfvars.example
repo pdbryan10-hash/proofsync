@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and adjust. Image tags must match what you push.
+region          = "eu-west-2"
+name_prefix     = "proofsync-demo"
+vpc_cidr        = "10.20.0.0/16"
+
+app_image_tag   = "v1"
+mongo_image_tag = "v1"
+
+# app_desired_count     = 1
+# enable_tick_scheduler = true
