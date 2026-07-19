@@ -1632,6 +1632,8 @@ function ClosedLoopStage({
   busy: boolean;
 }) {
   const [stage, setStage] = useState<LoopStage>('idle');
+  const [finale, setFinale] = useState<{ returned: number; exceptions: number } | null>(null);
+  const prevStage = useRef<LoopStage>('idle');
   const running = stage !== 'idle' && stage !== 'done';
   const { raised, dispatched, returned } = state.inbound;
   const total = raised + dispatched; // total the client raised (before/after pickup)
@@ -1639,17 +1641,25 @@ function ClosedLoopStage({
   // written back (missing field, garbled text). Its own queue, not machine speed's.
   const loopExceptions = state.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7'));
 
+  // Freeze the result the moment the run finishes, so a modal HOLDS what happened
+  // — the board underneath reseeds on the next run, but the tally doesn't vanish.
+  useEffect(() => {
+    if (stage === 'done' && prevStage.current !== 'done' && returned > 0) {
+      setFinale({ returned, exceptions: loopExceptions.length });
+    }
+    prevStage.current = stage;
+  }, [stage, returned, loopExceptions.length]);
+
   const reached = (s: LoopStage) => LOOP_ORDER.indexOf(stage) >= LOOP_ORDER.indexOf(s);
 
   const run = async () => {
-    // If the loop has already run, start fresh (reseed) before running again —
-    // otherwise there are no raised jobs left to pull and it looks like nothing
-    // happens.
-    if (stage === 'done' || dispatched > 0 || returned > 0) {
-      setStage('idle');
-      onReset();
-      await new Promise((r) => setTimeout(r, 2200));
-    }
+    // Always start from a known-clean batch. onReset() reseeds SYNCHRONOUSLY (the
+    // route holds the beat lock and returns only once both stand-in systems are
+    // freshly seeded), so awaiting it guarantees 40 raised / 0 dispatched before
+    // intake pulls — no fixed-timeout guess, no half-reseed race, no stuck run.
+    setStage('idle');
+    await onReset();
+    await new Promise((r) => setTimeout(r, 300));
     setStage('intake');
     await onRun((s) => setStage(s));
   };
@@ -1802,6 +1812,99 @@ function ClosedLoopStage({
           transport={state.transport}
           activeRefs={EMPTY_REFS}
         />
+      </div>
+
+      {finale && <LoopFinaleCard data={finale} onClose={() => setFinale(null)} />}
+    </div>
+  );
+}
+
+/**
+ * The closed loop's "While you watched" — held on screen when the round trip
+ * finishes, so the result doesn't vanish when the board reseeds for the next run.
+ * Counts the WHOLE round trip: ~10 min in + ~10 min out per job (the 20-min basis).
+ */
+function LoopFinaleCard({
+  data,
+  onClose,
+}: {
+  data: { returned: number; exceptions: number };
+  onClose: () => void;
+}) {
+  const totalMin = data.returned * ROUND_TRIP_MIN;
+  const hrs = Math.round(totalMin / 60);
+  const annualHours = Math.round((500 * 52 * ROUND_TRIP_MIN) / 60).toLocaleString();
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#082419]/85 p-5 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-emerald-400/20 bg-[radial-gradient(130%_130%_at_50%_-10%,#0e6b3f_0%,#0b4f30_55%,#082419_100%)] p-8 text-center text-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-full p-1.5 text-white/50 hover:bg-white/10 hover:text-white"
+          aria-label="Close"
+        >
+          <X className="size-4" />
+        </button>
+
+        <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-200/80">
+          While you watched · closed loop
+        </p>
+        <p className="mt-4 font-display text-5xl font-black tabular-nums">{data.returned}</p>
+        <p className="mt-1 text-sm text-white/70">
+          job{data.returned === 1 ? '' : 's'} went the full round trip — client → your system → back, verified
+        </p>
+
+        <div className="mt-6 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-4">
+          <div className="text-4xl font-black text-emerald-300">
+            {hrs}<span className="text-2xl"> hrs</span>
+          </div>
+          <div className="mt-0.5 text-sm text-white/75">of re-keying gone — both ends</div>
+          <p className="mt-2 border-t border-white/10 pt-2 text-xs text-white/60">
+            {data.returned} × (~{LOOP_MIN_IN} min in + ~{LOOP_MIN_OUT} min out) = {totalMin.toLocaleString()} min.
+            At 500 jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
+          </p>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <div className="text-2xl font-black">0</div>
+          <div className="text-sm text-white/70">
+            keystrokes on the {data.returned} that went round clean
+          </div>
+          {data.exceptions > 0 && (
+            <p className="mt-1 text-xs text-white/55">
+              {data.exceptions} held for a person — the only one{data.exceptions === 1 ? '' : 's'} that
+              needed you. That&apos;s the point, not a caveat.
+            </p>
+          )}
+        </div>
+
+        <p className="mt-5 text-2xl">👏</p>
+        <p className="mt-1 text-sm font-semibold text-white/85">Both systems agree — and nobody re-keyed a thing.</p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#0b4f30] transition-transform hover:scale-[1.03]"
+          >
+            <Table2 className="size-4" />
+            Show me the proof
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm font-medium text-white/70 underline-offset-2 hover:text-white hover:underline"
+          >
+            Keep watching
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -199,13 +199,8 @@ export function useDemoState() {
    */
   const runClosedLoop = useCallback(
     async (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => {
-      const allBack = (st: DemoState | null) => {
-        if (!st || st.inbound.dispatched === 0) return false;
-        // Done when every dispatched job is terminal: returned OR held as an
-        // exception (a garbled/missing-field one that can't be written back).
-        const held = st.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7')).length;
-        return st.inbound.returned + held >= st.inbound.dispatched;
-      };
+      const heldCon7 = (st: DemoState | null) =>
+        st ? st.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7')).length : 0;
       try {
         onStage('intake');
         const ir = await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
@@ -216,20 +211,40 @@ export function useDemoState() {
             tone: 'ok',
           });
         }
-        await refresh();
-        await new Promise((r) => setTimeout(r, 1100));
+        // Confirm the created jobs actually landed as DISPATCHED before we start
+        // the sync. Without this, a slow reseed/refresh can leave dispatched at 0,
+        // and the loop would either spin fruitlessly or declare "done" over an
+        // empty board (the stuck-run bug). We wait for the count, then anchor the
+        // finish line to it — not to a live-changing field.
+        let st = await refresh();
+        for (let i = 0; i < 10 && (!st || st.inbound.dispatched === 0); i++) {
+          await new Promise((r) => setTimeout(r, 300));
+          st = await refresh();
+        }
+        const target = st?.inbound.dispatched ?? 0;
+        if (target === 0) {
+          pushActivity({
+            text: 'No new client jobs came through this run — press “Run the closed loop” to pull a fresh batch.',
+            tone: 'flag',
+          });
+          onStage('done');
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 900));
 
         onStage('complete');
         await fetch('/api/demo/complete-intake', { method: 'POST', cache: 'no-store' });
         pushActivity({ text: `Engineers completed the raised jobs on site.`, tone: 'ok' });
         await refresh();
-        await new Promise((r) => setTimeout(r, 1100));
+        await new Promise((r) => setTimeout(r, 900));
 
         onStage('sync');
-        for (let i = 0; i < 18; i++) {
+        for (let i = 0; i < 22; i++) {
           await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
-          const st = await refresh();
-          if (allBack(st)) break;
+          st = await refresh();
+          // Done when every dispatched job is terminal: written back, or held as
+          // an exception (garbled/missing-field) that a person must clear.
+          if (st && st.inbound.returned + heldCon7(st) >= target) break;
           await new Promise((r) => setTimeout(r, 400));
         }
         onStage('done');
