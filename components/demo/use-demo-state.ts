@@ -267,7 +267,9 @@ export function useDemoState() {
       } catch {
         // transient — keep going
       }
-      await new Promise((r) => setTimeout(r, 600));
+      // A visible pause between waves, so a batch of jobs lands, you see it, then
+      // the next wave comes — rather than everything flashing done at once.
+      await new Promise((r) => setTimeout(r, 900));
       const st = await refresh();
       if (st && st.stats.awaitingSync === 0) break;
     }

@@ -22,7 +22,7 @@ async function keyInto(locator: Locator, text: string): Promise<void> {
   try {
     await locator.click({ timeout: 8_000 });
     await locator.fill('');
-    await locator.pressSequentially(text, { delay: 1 });
+    await locator.pressSequentially(text, { delay: 30 });
   } catch {
     // Best-effort: a missing field must not abort the whole proof.
   }
@@ -34,11 +34,12 @@ async function loginTab(
   p: { userLabel: string; submitLabel: RegExp; username: string; password: string },
 ): Promise<void> {
   await keyInto(page.getByLabel(p.userLabel, { exact: true }), p.username);
-  await wait(20);
+  await wait(350);
   await keyInto(page.getByLabel('Password', { exact: true }), p.password);
-  await wait(25);
+  await wait(450);
   await page.getByRole('button', { name: p.submitLabel }).click();
   await page.waitForLoadState('domcontentloaded').catch(() => {});
+  await wait(900); // linger on the signed-in screen so it's visibly seen
 }
 
 export async function runBrowserProofDrive(): Promise<string[]> {
@@ -81,7 +82,10 @@ export async function runBrowserProofDrive(): Promise<string[]> {
   // Publish a live-view URL per tab so the curtain can embed both, then hold just
   // long enough for both embedded views to connect before the keying starts.
   await recordDualLiveViews();
-  await wait(700);
+  // Give the two embedded live views time to actually connect and paint the login
+  // page BEFORE any typing — otherwise the sign-in is over before you can see it
+  // and the panes read as a black screen that flicks to "signed in".
+  await wait(4000);
 
   // Sign into BOTH systems at once.
   const [jl, co] = await Promise.allSettled([

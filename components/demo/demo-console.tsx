@@ -836,15 +836,19 @@ function MachineFloor({
       <ActivityFeed activity={activity} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SourcePanel
-          rows={state.source}
+          rows={state.source.filter((j) => !String(j.jobNumber).startsWith('JL-97'))}
           session={state.sessions.joblogic}
           db={state.databases.source}
           systemUrl={state.systemUrls.source}
           transport={state.transport}
         />
-        <LedgerPanel rows={state.ledger} db={state.databases.ledger} activeRefs={activeRefs} />
+        <LedgerPanel
+          rows={state.ledger.filter((r) => !String(r.reference ?? '').startsWith('CON-7'))}
+          db={state.databases.ledger}
+          activeRefs={activeRefs}
+        />
         <TargetPanel
-          rows={state.target}
+          rows={state.target.filter((w) => !String(w.reference).startsWith('CON-7'))}
           session={state.sessions.concerto}
           db={state.databases.target}
           systemUrl={state.systemUrls.target}
@@ -888,16 +892,19 @@ function MachineHeader({
             Act 2 · Machine speed
           </span>
           <h2 className="mt-1.5 text-lg font-semibold text-white sm:text-xl">
-            The same thing — every job, all at once
+            The same thing — every job
           </h2>
           <p className="mt-2 text-xs text-white/50">
             {syncing
-              ? 'Syncing every job into Concerto…'
+              ? 'Syncing into Concerto — watch them cross, a few at a time…'
               : ready
-                ? 'Signed in and ready — press Run to sync the whole batch at once.'
+                ? 'Signed in and ready — press Run to watch the whole batch sync.'
                 : done
                   ? 'Done. Press Freeze for the result, or Reset to run it again.'
                   : 'Batch loaded.'}
+          </p>
+          <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-white/70">
+            <Zap className="size-3" /> Slowed for viewing — in production it runs flat out, and in a client&rsquo;s system deliberately holds back
           </p>
         </div>
 
@@ -1238,7 +1245,7 @@ function FinaleCard({
             At 500 completed jobs a week, that&apos;s <strong className="text-emerald-300">~{annualHours} hours a year</strong>.
           </p>
           <p className="mt-1.5 text-[11px] text-white/40">
-            Basis: {Math.round(perJobMin)} min of duplicated admin per job — the same figure across the site.
+            Basis: {Math.round(perJobMin)} min of human handling per job — ~10 in, ~10 out; the same figure across the site.
           </p>
         </div>
 

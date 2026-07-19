@@ -240,7 +240,9 @@ export async function getDemoState(): Promise<DemoState> {
   ] = await Promise.all([
     jobsCol.find({}).sort({ updatedAt: -1 }).limit(PANEL_LIMIT).toArray(),
     jobsCol.countDocuments({}),
-    jobsCol.countDocuments({ status: 'Complete' }),
+    // Machine-speed KPIs count the OUTBOUND batch only — inbound (closed-loop, JL-97)
+    // jobs have their own board, so they mustn't double up the headline figures.
+    jobsCol.countDocuments({ status: 'Complete', jobNumber: { $not: /^JL-97/ } }),
     jobsCol.countDocuments({ status: { $in: ['Allocated', 'Travelling', 'On Site'] } }),
     // Foreground work orders ProofSync has actually filled — the proof it crossed —
     // rather than the flood of freshly-raised empty ones, which otherwise dominate
@@ -272,10 +274,25 @@ export async function getDemoState(): Promise<DemoState> {
         },
       },
     }),
-    prisma.job.count({ where: { organisationId, syncStatus: 'SYNCED' } }),
-    prisma.job.count({ where: { organisationId, syncStatus: 'PARTIAL' } }),
-    prisma.exception.count({ where: { job: { organisationId }, status: { in: ['OPEN', 'IN_REVIEW'] } } }),
-    prisma.job.count({ where: { organisationId, syncStatus: { in: ['PENDING', 'READY', 'SYNCING'] } } }),
+    prisma.job.count({
+      where: { organisationId, syncStatus: 'SYNCED', NOT: { joblogicJobId: { startsWith: 'JL-97' } } },
+    }),
+    prisma.job.count({
+      where: { organisationId, syncStatus: 'PARTIAL', NOT: { joblogicJobId: { startsWith: 'JL-97' } } },
+    }),
+    prisma.exception.count({
+      where: {
+        job: { organisationId, NOT: { joblogicJobId: { startsWith: 'JL-97' } } },
+        status: { in: ['OPEN', 'IN_REVIEW'] },
+      },
+    }),
+    prisma.job.count({
+      where: {
+        organisationId,
+        syncStatus: { in: ['PENDING', 'READY', 'SYNCING'] },
+        NOT: { joblogicJobId: { startsWith: 'JL-97' } },
+      },
+    }),
     timeToNextTick(),
     (async () => (await demoControl()).findOne({ _id: 'demo-control' }))(),
   ]);
@@ -299,7 +316,9 @@ export async function getDemoState(): Promise<DemoState> {
 
   const targetPopulated = await wosCol.countDocuments({
     // A work order counts as populated once the sync has written anything into it.
+    // Batch only — inbound (CON-7) has its own board.
     lastUpdatedBy: { $ne: null },
+    reference: { $not: /^CON-7/ },
   });
 
   // Closed loop (Work Intake) summary: how far the client-raised jobs have got
@@ -317,7 +336,10 @@ export async function getDemoState(): Promise<DemoState> {
   // Real batch totals for the applause screen: how many fields ProofSync actually
   // wrote and how many documents it uploaded, across every work order it touched.
   const populatedWos = await wosCol
-    .find({ lastUpdatedBy: { $ne: null } }, { projection: { attributes: 1, documents: 1 } })
+    .find(
+      { lastUpdatedBy: { $ne: null }, reference: { $not: /^CON-7/ } },
+      { projection: { attributes: 1, documents: 1 } },
+    )
     .toArray();
   const fieldsWritten = populatedWos.reduce(
     (n, w) =>
@@ -326,10 +348,10 @@ export async function getDemoState(): Promise<DemoState> {
   );
   const certificatesUploaded = populatedWos.reduce((n, w) => n + (w.documents?.length ?? 0), 0);
 
-  // ProofSync's own machine time across every completed sync.
+  // ProofSync's own machine time across every completed sync (batch only).
   const syncAgg = await prisma.syncRun.aggregate({
     where: {
-      job: { organisationId },
+      job: { organisationId, NOT: { joblogicJobId: { startsWith: 'JL-97' } } },
       status: { in: ['SUCCESS', 'PARTIAL'] },
       durationMs: { not: null },
     },

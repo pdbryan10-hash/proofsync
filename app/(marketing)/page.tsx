@@ -18,13 +18,17 @@ import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
 
 export const metadata = {
-  title: 'ProofSync — stop typing every completed job twice',
+  title: "ProofSync — your clients' systems and yours, permanently in step",
   description:
-    "Your engineer completes the job once. ProofSync puts it into your client's system for you — verified, audited, and only the exceptions reach a human.",
+    "Jobs land in your system the moment they're raised; completions go back the moment they're done — across every client system you serve, verified, audited, and only the exceptions reach a human.",
 };
 
-/** Working assumption for all value figures on this page. Shown inline, always. */
-const MINUTES_PER_JOB = 10;
+/**
+ * Working assumption for all value figures on this page. Shown inline, always.
+ * Both ends of the loop: ~10 min to bring a job in from the client's system,
+ * ~10 min to push the completion back — 20 min of human handling per job removed.
+ */
+const MINUTES_PER_JOB = 20;
 const FTE_HOURS_PER_MONTH = 162.5; // 37.5h week × 52 ÷ 12
 
 const ROI_ROWS = [500, 1000, 2000].map((jobs) => {
@@ -56,11 +60,11 @@ export default function SalesPage() {
         <div className="relative mx-auto w-full max-w-6xl px-5 py-14 lg:py-20">
           <p className={EYEBROW}>For FM contractors</p>
           <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-[#1a1b1f] sm:text-6xl lg:text-[4.2rem]">
-            Stop typing every completed job twice.
+            Your clients&apos; systems and yours, permanently in step.
           </h1>
-          <p className="mt-6 max-w-xl text-xl leading-relaxed text-[#3a3b42]">
-            Your engineer completes the job once. Today your admin types it into the client&apos;s system
-            all over again. <span className="text-[#1a1b1f]">ProofSync does that part for you</span> —
+          <p className="mt-6 max-w-2xl text-xl leading-relaxed text-[#3a3b42]">
+            Jobs land in your system the moment they&apos;re raised. Completions go back the moment
+            they&apos;re done. <span className="text-[#1a1b1f]">Across every client system you serve</span> —
             verified, audited, and only the exceptions reach a human.
           </p>
 
@@ -243,9 +247,10 @@ export default function SalesPage() {
 
           <p className="mt-4 text-sm leading-relaxed text-[#5f6068]">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#6f6f78]">Show your working — </span>
-            Basis: <span className="font-mono text-[#33343a]">{MINUTES_PER_JOB} min</span> of duplicated admin
-            per completed job; <span className="font-mono text-[#33343a]">{FTE_HOURS_PER_MONTH} hrs</span> per
-            full-time month. This is an <strong className="text-[#33343a]">estimate, not an audited saving</strong>{' '}
+            Basis: <span className="font-mono text-[#33343a]">{MINUTES_PER_JOB} min</span> of human handling per
+            job — ~10 to bring it in from the client&apos;s system, ~10 to push the completion back; both ends
+            removed. <span className="font-mono text-[#33343a]">{FTE_HOURS_PER_MONTH} hrs</span> per full-time
+            month. This is an <strong className="text-[#33343a]">estimate, not an audited saving</strong>{' '}
             — challenge it with your own numbers and we&apos;ll recalculate in front of you. We&apos;d rather be
             defensible than flattering.
           </p>

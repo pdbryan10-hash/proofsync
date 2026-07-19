@@ -54,7 +54,9 @@ export function usesSimulatedTransport(): boolean {
 /** Estimated minutes of duplicated admin removed per successfully synced job. */
 export function getEstimatedManualMinutesPerJob(): number {
   const raw = Number(process.env.ESTIMATED_MANUAL_MINUTES_PER_JOB);
-  return Number.isFinite(raw) && raw > 0 ? raw : 10;
+  // 20 min of human handling per job across the loop: ~10 to bring it in, ~10 to
+  // push the completion back. One basis, every surface.
+  return Number.isFinite(raw) && raw > 0 ? raw : 20;
 }
 
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'ProofSync';
