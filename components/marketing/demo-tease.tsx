@@ -1,10 +1,10 @@
 /**
- * A static, deliberately-unreadable recreation of the live-sync demo, used as a
- * teasing background behind the booking CTA. It is the product, blurred: enough
- * to recognise the closed-loop console, not enough to read. No data, no API, no
- * interactivity — it always renders, and it gives nothing away.
+ * A vivid but deliberately-unreadable recreation of the live-sync demo, used as a
+ * full-bleed teasing background behind the booking form. It is the product, seen
+ * through frosted glass: colourful and clearly the closed-loop console, blurred
+ * just past the point of reading. No data, no API, no interactivity.
  *
- * Everything is aria-hidden and pointer-events-none; it is pure decoration.
+ * Everything is aria-hidden and pointer-events-none; it is pure atmosphere.
  */
 
 const STEPS: { n: string; title: string; sub: string; count?: string; tone: string }[] = [
@@ -16,35 +16,48 @@ const STEPS: { n: string; title: string; sub: string; count?: string; tone: stri
 ];
 
 const TONE: Record<string, string> = {
-  client: 'border-emerald-500/40 bg-emerald-50 text-emerald-900',
-  engine: 'border-indigo-500/40 bg-indigo-50 text-indigo-900',
-  field: 'border-slate-400/40 bg-slate-100 text-slate-800',
+  client: 'border-emerald-500/50 bg-emerald-50 text-emerald-900',
+  engine: 'border-indigo-500/50 bg-indigo-50 text-indigo-900',
+  field: 'border-slate-400/50 bg-slate-100 text-slate-800',
 };
 
 const PANELS = [
   { name: 'Concerto', tag: 'client raises', head: 'bg-emerald-700' },
-  { name: 'Joblogic', tag: 'dispatched & done', head: 'bg-navy-900' },
+  { name: 'Joblogic', tag: 'dispatched & done', head: 'bg-[#161c4a]' },
   { name: 'ProofSync', tag: 'the sync ledger', head: 'bg-indigo-600' },
   { name: 'Concerto', tag: 'back, verified', head: 'bg-emerald-700' },
-] as const;
+];
 
-function Bar({ w }: { w: string }) {
-  return <div className="h-2 rounded-full bg-black/10" style={{ width: w }} />;
+function Bar({ w, tone = 'bg-black/10' }: { w: string; tone?: string }) {
+  return <div className={`h-2 rounded-full ${tone}`} style={{ width: w }} />;
 }
 
 export function DemoTease() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden select-none">
-      {/* The demo, blurred past reading and washed toward the paper background. */}
-      <div className="absolute inset-0 origin-top scale-[1.04] opacity-[0.5] blur-[7px]">
-        <div className="mx-auto max-w-[1500px] px-6 pt-8">
+      {/* The demo, full-bleed, blurred past reading but bright enough to recognise. */}
+      <div className="absolute inset-x-0 top-0 origin-top scale-[1.12] opacity-[0.9] blur-[5px] saturate-[1.05]">
+        <div className="mx-auto max-w-[1600px] px-6 pt-6">
+          {/* Console header mock */}
+          <div className="flex items-center justify-between rounded-t-xl border border-black/10 bg-white/90 px-5 py-3">
+            <div className="flex items-center gap-3">
+              <div className="h-3 w-24 rounded bg-[#1a1b1f]/70" />
+              <div className="flex gap-1 rounded-full bg-black/5 p-0.5">
+                <span className="h-5 w-16 rounded-full bg-transparent" />
+                <span className="h-5 w-24 rounded-full bg-transparent" />
+                <span className="h-5 w-20 rounded-full bg-[#0e6b3f]" />
+              </div>
+            </div>
+            <div className="h-6 w-28 rounded-md bg-[#161c4a]" />
+          </div>
+
           {/* Act 3 banner */}
           <div className="rounded-2xl bg-[radial-gradient(130%_130%_at_20%_-20%,#0e6b3f_0%,#0b4f30_55%,#082419_100%)] px-8 py-6 text-white shadow-xl">
-            <div className="inline-block rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest">
+            <div className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest">
               Act 3 · Closed loop
             </div>
-            <div className="mt-2 h-6 w-[46%] rounded bg-white/25" />
-            <div className="mt-2 h-3 w-[62%] rounded bg-white/15" />
+            <div className="mt-2 h-6 w-[46%] rounded bg-white/30" />
+            <div className="mt-2 h-3 w-[62%] rounded bg-white/20" />
           </div>
 
           {/* Five-step board */}
@@ -53,7 +66,7 @@ export function DemoTease() {
               <div key={s.n} className={`rounded-xl border p-4 shadow-sm ${TONE[s.tone]}`}>
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] uppercase tracking-widest opacity-70">{s.n}</span>
-                  <span className="size-4 rounded-full border-2 border-current opacity-50" />
+                  <span className="size-4 rounded-full border-2 border-current opacity-60" />
                 </div>
                 <p className="mt-2 text-sm font-semibold leading-snug">{s.title}</p>
                 <p className="text-xs opacity-70">{s.sub}</p>
@@ -63,18 +76,18 @@ export function DemoTease() {
           </div>
 
           {/* Exceptions strip */}
-          <div className="mt-4 rounded-xl border border-amber-300/60 bg-amber-50/80 px-5 py-4">
-            <div className="h-3 w-40 rounded bg-amber-500/40" />
+          <div className="mt-4 rounded-xl border border-amber-300/70 bg-amber-50 px-5 py-4">
+            <div className="h-3 w-40 rounded bg-amber-500/50" />
             <div className="mt-3 space-y-2">
-              <Bar w="55%" />
-              <Bar w="48%" />
+              <Bar w="55%" tone="bg-amber-900/15" />
+              <Bar w="48%" tone="bg-amber-900/15" />
             </div>
           </div>
 
           {/* Four record panels */}
           <div className="mt-4 grid gap-4 xl:grid-cols-4">
             {PANELS.map((p, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm">
+              <div key={i} className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-md">
                 <div className={`flex items-center justify-between px-5 py-3 text-white ${p.head}`}>
                   <span className="text-sm font-semibold">{p.name}</span>
                   <span className="text-[10px] uppercase tracking-wider opacity-80">{p.tag}</span>
@@ -82,7 +95,7 @@ export function DemoTease() {
                 <div className="space-y-4 p-4">
                   {[0, 1, 2, 3].map((r) => (
                     <div key={r} className="rounded-lg border border-black/10 p-3">
-                      <Bar w="70%" />
+                      <Bar w="70%" tone="bg-emerald-700/25" />
                       <div className="mt-2 space-y-1.5">
                         <Bar w="90%" />
                         <Bar w="55%" />
@@ -96,8 +109,10 @@ export function DemoTease() {
         </div>
       </div>
 
-      {/* Wash it into the page so it reads as atmosphere, never as content. */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#f7f5ef]/70 via-[#f7f5ef]/85 to-[#f7f5ef]" />
+      {/* Melt the top and bottom edges into the header/footer, keep the middle
+          bright. A light overall tint keeps text legible without killing colour. */}
+      <div className="absolute inset-0 bg-[#f7f5ef]/25" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#f7f5ef] via-transparent to-[#f7f5ef]" />
     </div>
   );
 }

@@ -26,8 +26,9 @@ export default function BookPage() {
       {GATED_PREVIEW && <DemoTease />}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_40%_at_80%_-10%,rgba(14,107,63,0.08),transparent)]" />
       <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-5 py-12 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
-        {/* Context column */}
-        <div>
+        {/* Context column — floated on frosted glass in the gated build so it
+            stays readable over the vivid tease behind it. */}
+        <div className={GATED_PREVIEW ? 'self-start rounded-3xl bg-[#f7f5ef]/72 p-6 shadow-sm ring-1 ring-white/60 backdrop-blur-md sm:p-8' : ''}>
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-[#5f6068] transition-colors hover:text-[#1a1b1f]">
             <ArrowLeft className="size-4" />
             Back to ProofSync
