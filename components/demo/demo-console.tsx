@@ -1057,6 +1057,21 @@ function ExceptionsQueue({
 }
 
 /** The dialog a coordinator uses to supply/correct the field and resubmit. */
+/** Render a garbled value with the broken (non-ASCII / ???) runs highlighted, so
+ *  a viewer can SEE exactly what Concerto is rejecting rather than guessing. */
+function renderGarbled(s: string) {
+  const parts = s.split(/([^\x20-\x7E]+|\?{2,})/g).filter((p) => p.length > 0);
+  return parts.map((p, i) =>
+    /^([^\x20-\x7E]+|\?{2,})$/.test(p) ? (
+      <mark key={i} className="rounded bg-danger-soft px-0.5 font-semibold text-danger-text">
+        {p}
+      </mark>
+    ) : (
+      <span key={i}>{p}</span>
+    ),
+  );
+}
+
 function ResolveModal({
   item,
   onClose,
@@ -1115,12 +1130,41 @@ function ResolveModal({
           <p className="mt-1 text-sm font-medium text-foreground">{item.summary}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{item.propertyName}</p>
 
-          <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning-text">
-            {item.message}
-          </p>
+          {/* THE PROBLEM — spelled out, with the actual offending data shown */}
+          <div className="mt-3 rounded-lg border border-warning-soft bg-warning-soft/40 p-3">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-warning-text">
+              What&rsquo;s wrong
+            </p>
+            {item.kind === 'MISSING_FIELD' ? (
+              <>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-foreground">
+                  This contract makes <strong>{item.label}</strong> mandatory on every work order. Joblogic never
+                  captured one, so ProofSync has nothing to write into Concerto — and it won&rsquo;t guess.
+                </p>
+                <div className="mt-2 flex items-center gap-2 rounded border border-border bg-card px-2.5 py-1.5 text-xs">
+                  <span className="font-mono font-medium text-navy-800">{item.label}</span>
+                  <span className="text-muted-foreground">· required by Concerto</span>
+                  <span className="ml-auto rounded bg-danger-soft px-1.5 py-0.5 font-mono text-[11px] text-danger-text">
+                    empty
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-foreground">
+                  The {item.label.toLowerCase()} came across with a broken text encoding. The highlighted characters
+                  below aren&rsquo;t valid, so Concerto&rsquo;s validation refuses the save.
+                </p>
+                <div className="mt-2 rounded border border-border bg-card px-2.5 py-2 font-mono text-xs leading-relaxed text-foreground">
+                  {renderGarbled(item.badValue ?? '')}
+                </div>
+              </>
+            )}
+          </div>
 
-          <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {item.label}
+          {/* THE FIX */}
+          <label className="mt-4 block font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {item.kind === 'MISSING_FIELD' ? `Enter the ${item.label.toLowerCase()}` : `Corrected ${item.label.toLowerCase()}`}
           </label>
           {item.kind === 'INVALID_VALUE' ? (
             <textarea
@@ -1128,7 +1172,7 @@ function ResolveModal({
               onChange={(e) => setValue(e.target.value)}
               rows={3}
               className="mt-1.5 w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
-              placeholder="Re-enter clean text…"
+              placeholder="Re-type the note in clean text…"
             />
           ) : (
             <input
@@ -1136,9 +1180,14 @@ function ResolveModal({
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submit()}
               className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
-              placeholder={`Enter the ${item.label.toLowerCase()}…`}
+              placeholder="e.g. FM-4021"
             />
           )}
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {item.kind === 'MISSING_FIELD'
+              ? 'A cost-centre code your finance team recognises — then ProofSync writes it and the job syncs.'
+              : 'Remove the broken characters and re-enter the note; ProofSync resubmits it to Concerto.'}
+          </p>
 
           {error && <p className="mt-2 text-xs text-danger-text">{error}</p>}
 
