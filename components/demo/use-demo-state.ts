@@ -210,27 +210,19 @@ export function useDemoState() {
         // yours → ProofSync → back, verified. The ledger fires per job, not at the
         // end.
         let totalCreated = 0;
-        for (let job = 0; job < 45; job++) {
-          // 1. Pull ONE raised job into your system (dispatched in Joblogic).
+        for (let job = 0; job < 25; job++) {
+          // Pull ONE raised job into your system, complete it, and sync it back —
+          // then refresh once so all four counters tick together for that single
+          // job: awaiting −1, completed +1, synced +1, back +1. One job, one step.
           const ir = await fetch('/api/demo/intake?limit=1', { method: 'POST', cache: 'no-store' });
           const created = (await ir.json().catch(() => null))?.data?.created ?? 0;
           if (created === 0) break;
           totalCreated += created;
-          await refresh();
-          await wait(180);
-
-          // 2. Complete that one on site.
           await fetch('/api/demo/complete-intake?limit=1', { method: 'POST', cache: 'no-store' });
-          if (job === 0) onStage('complete');
-          await refresh();
-          await wait(180);
-
-          // 3. Sync it back immediately — ProofSync ledger + the client's system
-          //    update now, not once the whole batch is done.
           await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
           if (job === 0) onStage('sync');
           await refresh();
-          await wait(200);
+          await wait(240);
         }
 
         if (totalCreated === 0) {

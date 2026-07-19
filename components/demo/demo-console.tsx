@@ -1662,16 +1662,25 @@ function ClosedLoopStage({
 
   const reached = (s: LoopStage) => LOOP_ORDER.indexOf(stage) >= LOOP_ORDER.indexOf(s);
 
+  const runningRef = useRef(false);
   const run = async () => {
-    // Always start from a known-clean batch. onReset() reseeds SYNCHRONOUSLY (the
-    // route holds the beat lock and returns only once both stand-in systems are
-    // freshly seeded), so awaiting it guarantees 40 raised / 0 dispatched before
-    // intake pulls — no fixed-timeout guess, no half-reseed race, no stuck run.
-    setStage('idle');
-    await onReset();
-    await new Promise((r) => setTimeout(r, 300));
-    setStage('intake');
-    await onRun((s) => setStage(s));
+    // Re-entrancy guard: never let a second run start on top of a live one — a
+    // double-fire is what made the board reseed and "loop back to the start"
+    // mid-run.
+    if (runningRef.current) return;
+    runningRef.current = true;
+    try {
+      // Always start from a known-clean batch. onReset() reseeds SYNCHRONOUSLY (the
+      // route holds the beat lock and returns only once both stand-in systems are
+      // freshly seeded), so awaiting it guarantees a clean start before intake pulls.
+      setStage('idle');
+      await onReset();
+      await new Promise((r) => setTimeout(r, 300));
+      setStage('intake');
+      await onRun((s) => setStage(s));
+    } finally {
+      runningRef.current = false;
+    }
   };
 
   const steps: { key: LoopStage; system: 'concerto' | 'engine' | 'joblogic'; title: string; sub: string; count?: number }[] = [

@@ -174,9 +174,9 @@ const ENGINEERS = [
 const CONTROL_ID = 'demo-control';
 
 /** The fixed batch. Size and the exact jobs that need a person are constant. */
-const BATCH_SIZE = 40;
+const BATCH_SIZE = 20;
 /** Jobs the client has raised in Concerto for Work Intake to pull into Joblogic. */
-const INBOUND_BATCH_SIZE = 40;
+const INBOUND_BATCH_SIZE = 20;
 /** Concerto attribute the cost-centre exceptions write to. */
 export const COST_CENTRE_ATTR = 'clientCostCentre';
 
@@ -198,18 +198,16 @@ const GARBLED_BLOCK: TargetWorkOrderBlock = {
   sourceField: 'engineerComments',
   badValue: 'Job done â€” see attached ??? notes Ã¢â‚¬™ (encoding lost on the app)',
 };
-// Spread a few across the batch so, at 40 jobs flying past, the "needs a person"
-// moment is visible through the waves — a mix of a missing field and garbled text.
+// Two exceptions spread across the 20-job batch so the "needs a person" moment is
+// visible as the jobs pass — one missing field, one garbled text.
 const BLOCKS: Record<number, TargetWorkOrderBlock> = {
-  6: COST_CENTRE_BLOCK,
-  21: GARBLED_BLOCK,
-  34: COST_CENTRE_BLOCK,
-};
-/** The same, for the inbound (closed-loop) batch. */
-const INBOUND_BLOCKS: Record<number, TargetWorkOrderBlock> = {
   5: COST_CENTRE_BLOCK,
-  18: GARBLED_BLOCK,
-  31: COST_CENTRE_BLOCK,
+  14: GARBLED_BLOCK,
+};
+/** The same two, for the inbound (closed-loop) batch. */
+const INBOUND_BLOCKS: Record<number, TargetWorkOrderBlock> = {
+  4: COST_CENTRE_BLOCK,
+  13: GARBLED_BLOCK,
 };
 /** Jobs whose site photo Concerto rejects — core data syncs, document doesn't (PARTIAL). */
 const DOCUMENT_REJECTED = new Set<number>();
