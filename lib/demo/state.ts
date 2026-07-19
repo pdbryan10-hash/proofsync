@@ -81,6 +81,9 @@ export interface TargetRow {
   /** Set once Work Intake has pulled the raised job into the field system. Lets
    *  the closed loop drain the "raised, awaiting pickup" panel as jobs move on. */
   joblogicJobNumber: string | null;
+  /** The job synced clean but the engineer flagged follow-on work for the client
+   *  to action (rebook, quote, parts). NOT an exception — this is the reason. */
+  followOnDetail: string | null;
   updatedAt: string;
 }
 
@@ -521,6 +524,16 @@ export async function getDemoState(): Promise<DemoState> {
     spotlight,
     exceptions,
     target: targetDocs.map((w) => {
+      // Join follow-on off the completed field-system job (linked by job number),
+      // so a returned work order carries the engineer's follow-on flag for the
+      // client to action — surfaced, never blocking.
+      const followOnSource = w.joblogicJobNumber
+        ? sourceDocs.find((d) => d.jobNumber === w.joblogicJobNumber)
+        : undefined;
+      const followOnDetail =
+        followOnSource?.completionSheet?.followOnRequired
+          ? followOnSource.completionSheet.followOnDetail ?? null
+          : null;
       const attributes = w.attributes ?? {};
       const populatedFields = Object.entries(attributes)
         .filter(([, v]) => v !== null && v !== undefined && v !== '')
@@ -539,6 +552,7 @@ export async function getDemoState(): Promise<DemoState> {
         documentCount: w.documents?.length ?? 0,
         lastUpdatedBy: w.lastUpdatedBy,
         joblogicJobNumber: w.joblogicJobNumber ?? null,
+        followOnDetail,
         updatedAt: iso(w.updatedAt) ?? new Date().toISOString(),
       };
     }),

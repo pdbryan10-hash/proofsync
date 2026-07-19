@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
+  ArrowUpRight,
   Camera,
   CheckCircle2,
   Chrome,
@@ -1807,6 +1808,7 @@ function ClosedLoopStage({
         const fieldDone = inField.filter((j) => j.status === 'Complete').length;
         const ledgerRows = state.ledger.filter((r) => String(r.reference ?? '').startsWith('CON-7'));
         const back = state.target.filter((w) => String(w.reference).startsWith('CON-7') && !!w.lastUpdatedBy);
+        const followOnCount = back.filter((w) => w.followOnDetail).length;
         return (
           <div className="mt-4 grid gap-4 xl:grid-cols-4">
             <div className="flex flex-col gap-3">
@@ -1839,6 +1841,15 @@ function ClosedLoopStage({
             </div>
             <div className="flex flex-col gap-3">
               <LoopCount n={back.length} label="Back & verified" sub="in the client's system" tone="client" />
+              {followOnCount > 0 && (
+                <div className="flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-amber-900">
+                  <div className="flex items-center gap-1.5">
+                    <ArrowUpRight className="size-3.5" />
+                    <span className="text-sm font-semibold">Follow-on flagged</span>
+                  </div>
+                  <span className="font-display text-2xl font-black tabular-nums">{followOnCount}</span>
+                </div>
+              )}
               <TargetPanel
                 title="Concerto"
                 subtitle="④ back, verified"
@@ -2682,6 +2693,17 @@ function TargetPanel({
                 </div>
               ))}
             </dl>
+          )}
+
+          {/* Synced clean, but flagged for the client to action — not an exception. */}
+          {row.followOnDetail && (
+            <p className="mt-2 flex items-start gap-1.5 rounded border border-amber-300 bg-amber-50 px-2 py-1.5 text-[11px] leading-snug text-amber-900">
+              <ArrowUpRight className="mt-0.5 size-3 shrink-0" />
+              <span>
+                <span className="font-semibold">Follow-on for the client: </span>
+                {row.followOnDetail}
+              </span>
+            </p>
           )}
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">

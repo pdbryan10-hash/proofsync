@@ -88,6 +88,20 @@ export async function runIntake(limit?: number): Promise<IntakeResult> {
 }
 
 /**
+ * A few completed jobs carry FOLLOW-ON work — the job is done and syncs clean, but
+ * the engineer flagged something the client must now action (rebook access, raise
+ * a quote, fit parts on a return visit). This is NOT an exception: the write-back
+ * succeeds. It rides back into the client's system as a flag for THEM to pick up,
+ * and ProofSync surfaces it as its own amber category. Keyed by field-system job
+ * number; avoids the two exception jobs (JL-970005, JL-970014).
+ */
+const FOLLOW_ON: Record<string, string> = {
+  'JL-970003': 'No access — site locked, tenant absent. Rebook required.',
+  'JL-970009': 'Quote required — remedial works beyond the call scope.',
+  'JL-970017': 'Parts on order — return visit needed to complete.',
+};
+
+/**
  * SIMULATED WORLD — not the engine, not a connector.
  *
  * Stands in for the engineer attending and completing the jobs Work Intake
@@ -103,6 +117,7 @@ export async function completeIntakeJobs(limit?: number): Promise<{ completed: n
 
   const now = new Date();
   for (const j of allocated) {
+    const followOn = FOLLOW_ON[j.jobNumber] ?? null;
     await jobs.updateOne(
       { jobNumber: j.jobNumber },
       {
@@ -116,9 +131,11 @@ export async function completeIntakeJobs(limit?: number): Promise<{ completed: n
           },
           completionSheet: {
             workCarriedOut: 'Attended and completed the raised works. Site left safe and operational.',
-            engineerComments: 'Job completed in full. No follow-on required.',
-            followOnRequired: false,
-            followOnDetail: null,
+            engineerComments: followOn
+              ? `Works completed. Follow-on: ${followOn}`
+              : 'Job completed in full. No follow-on required.',
+            followOnRequired: !!followOn,
+            followOnDetail: followOn,
           },
           charges: { labourCharge: 150, materialsCharge: 40, totalCharge: 190 },
           // Every completed job leaves paperwork: a job sheet always, plus a

@@ -239,11 +239,21 @@ export function useDemoState() {
         });
 
         // Final sweep: a couple of ticks to settle anything that needed a retry.
+        let last: DemoState | null = null;
         for (let i = 0; i < 5; i++) {
-          const st = await refresh();
-          if (st && st.inbound.returned + heldCon7(st) >= totalCreated) break;
+          last = await refresh();
+          if (last && last.inbound.returned + heldCon7(last) >= totalCreated) break;
           await fetch('/api/demo/tick?force=1', { method: 'POST', cache: 'no-store' });
           await wait(320);
+        }
+        const followOn = last
+          ? last.target.filter((w) => String(w.reference).startsWith('CON-7') && w.followOnDetail).length
+          : 0;
+        if (followOn > 0) {
+          pushActivity({
+            text: `${followOn} completed job${followOn === 1 ? '' : 's'} carried follow-on work (access, quote, parts) — synced clean and flagged back to the client to action.`,
+            tone: 'ok',
+          });
         }
         onStage('done');
       } catch {
