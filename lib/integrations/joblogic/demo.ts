@@ -106,7 +106,9 @@ export class DemoJoblogicConnector implements JoblogicConnector {
       const jobs = await sourceJobs();
       const docs = await jobs
         .find({ status: 'Complete', completedAt: { $gte: since } })
-        .sort({ completedAt: 1 })
+        // Newest completions first, so a just-finished job (e.g. a closed-loop
+        // intake job) syncs ahead of an older backlog rather than behind it.
+        .sort({ completedAt: -1 })
         .toArray();
       return docs.map(toNormalisedJob);
     });

@@ -1617,6 +1617,14 @@ function ClosedLoopStage({
   const reached = (s: LoopStage) => LOOP_ORDER.indexOf(stage) >= LOOP_ORDER.indexOf(s);
 
   const run = async () => {
+    // If the loop has already run, start fresh (reseed) before running again —
+    // otherwise there are no raised jobs left to pull and it looks like nothing
+    // happens.
+    if (stage === 'done' || dispatched > 0 || returned > 0) {
+      setStage('idle');
+      onReset();
+      await new Promise((r) => setTimeout(r, 2200));
+    }
     setStage('intake');
     await onRun((s) => setStage(s));
   };
@@ -1649,26 +1657,15 @@ function ClosedLoopStage({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {stage === 'done' ? (
-              <button
-                type="button"
-                onClick={() => { setStage('idle'); onReset(); }}
-                disabled={busy}
-                className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 disabled:opacity-60"
-              >
-                <RotateCcw className="size-4" /> Run it again
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={run}
-                disabled={running || busy}
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-bold text-[#0b4f30] shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-70"
-              >
-                {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4 fill-current" />}
-                {running ? 'Running the loop…' : 'Run the closed loop'}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={run}
+              disabled={running || busy}
+              className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-bold text-[#0b4f30] shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-70"
+            >
+              {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4 fill-current" />}
+              {running ? 'Running the loop…' : stage === 'done' ? 'Run it again' : 'Run the closed loop'}
+            </button>
           </div>
         </div>
       </section>
@@ -1718,11 +1715,23 @@ function ClosedLoopStage({
         </p>
       )}
 
-      {/* The real records — the same panels as Machine speed, scoped to the loop's
-          jobs, so you watch them cross: Concerto raises → Joblogic dispatches →
-          Concerto gets them back, verified. */}
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      {/* The real records, as a round trip — FOUR columns, because the loop starts
+          and ends at the client: Concerto raises it → Joblogic dispatches &
+          completes → ProofSync syncs → Concerto gets it back, verified. Jobs move
+          left-to-right, out of the first Concerto and into the last. */}
+      <div className="mt-4 grid gap-4 xl:grid-cols-4">
+        <TargetPanel
+          title="Concerto"
+          subtitle="① client raises"
+          rows={state.target.filter((w) => String(w.reference).startsWith('CON-7') && !w.lastUpdatedBy)}
+          session={state.sessions.concerto}
+          db={state.databases.target}
+          systemUrl={state.systemUrls.target}
+          transport={state.transport}
+          activeRefs={EMPTY_REFS}
+        />
         <SourcePanel
+          subtitle="② dispatched & done"
           rows={state.source.filter((j) => String(j.jobNumber).startsWith('JL-97'))}
           session={state.sessions.joblogic}
           db={state.databases.source}
@@ -1734,7 +1743,9 @@ function ClosedLoopStage({
           db={state.databases.ledger}
         />
         <TargetPanel
-          rows={state.target.filter((w) => String(w.reference).startsWith('CON-7'))}
+          title="Concerto"
+          subtitle="④ back, verified"
+          rows={state.target.filter((w) => String(w.reference).startsWith('CON-7') && !!w.lastUpdatedBy)}
           session={state.sessions.concerto}
           db={state.databases.target}
           systemUrl={state.systemUrls.target}
@@ -2088,12 +2099,14 @@ function SourcePanel({
   db,
   systemUrl,
   transport,
+  subtitle = "contractor's system",
 }: {
   rows: SourceRow[];
   session: { username: string } | null;
   db: string;
   systemUrl: string;
   transport: DemoState['transport'];
+  subtitle?: string;
 }) {
   const versions = useMemo(
     () => Object.fromEntries(rows.map((r) => [r.jobNumber, `${r.status}:${r.revision}:${r.updatedAt}`])),
@@ -2104,7 +2117,7 @@ function SourcePanel({
   return (
     <Panel
       title="Joblogic"
-      subtitle="contractor's system"
+      subtitle={subtitle}
       db={db}
       // In browser mode the session shown in the header belongs to Chromium, not
       // to this simulated store — so don't display a session that isn't the one
@@ -2372,6 +2385,8 @@ function TargetPanel({
   systemUrl,
   transport,
   activeRefs,
+  title = 'Concerto',
+  subtitle = "client's system",
 }: {
   rows: TargetRow[];
   session: { username: string } | null;
@@ -2379,6 +2394,8 @@ function TargetPanel({
   systemUrl: string;
   transport: DemoState['transport'];
   activeRefs: Set<string>;
+  title?: string;
+  subtitle?: string;
 }) {
   const versions = useMemo(
     () =>
@@ -2391,8 +2408,8 @@ function TargetPanel({
 
   return (
     <Panel
-      title="Concerto"
-      subtitle="client's system"
+      title={title}
+      subtitle={subtitle}
       db={db}
       session={transport === 'browser' ? undefined : session}
       systemUrl={systemUrl}
