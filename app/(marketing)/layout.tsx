@@ -3,6 +3,7 @@ import { Bricolage_Grotesque } from 'next/font/google';
 import { Play } from 'lucide-react';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { ProofWorksEndorsement } from '@/components/brand/proofworks-badge';
+import { GATED_PREVIEW, WATCH_HREF } from '@/lib/site-mode';
 
 const display = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -33,18 +34,20 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             >
               How it works
             </Link>
+            {!GATED_PREVIEW && (
+              <Link
+                href="/book"
+                className="hidden text-sm font-medium text-[#5f6068] transition-colors hover:text-[#1a1b1f] sm:block"
+              >
+                Book a discovery session
+              </Link>
+            )}
             <Link
-              href="/book"
-              className="hidden text-sm font-medium text-[#5f6068] transition-colors hover:text-[#1a1b1f] sm:block"
-            >
-              Book a discovery session
-            </Link>
-            <Link
-              href="/demo"
+              href={WATCH_HREF}
               className="inline-flex items-center gap-2 rounded-full bg-[#0e6b3f] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0b5531]"
             >
               <Play className="size-3.5 fill-current" />
-              Watch it sync — live
+              {GATED_PREVIEW ? 'Book a 1:1 demo' : 'Watch it sync — live'}
             </Link>
           </nav>
         </div>
@@ -66,9 +69,13 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               </div>
             </div>
             <nav className="grid grid-cols-2 gap-x-12 gap-y-2.5 text-sm">
-              <Link href="/demo" className="text-[#33343a] hover:text-[#0e6b3f]">Watch it sync — live</Link>
+              <Link href={WATCH_HREF} className="text-[#33343a] hover:text-[#0e6b3f]">
+                {GATED_PREVIEW ? 'Book a 1:1 demo' : 'Watch it sync — live'}
+              </Link>
               <Link href="/how-it-works" className="text-[#33343a] hover:text-[#0e6b3f]">How it works</Link>
-              <Link href="/book" className="text-[#33343a] hover:text-[#0e6b3f]">Book a discovery session</Link>
+              {!GATED_PREVIEW && (
+                <Link href="/book" className="text-[#33343a] hover:text-[#0e6b3f]">Book a discovery session</Link>
+              )}
               <a href="https://proof-works.co.uk" target="_blank" rel="noreferrer" className="text-[#33343a] hover:text-[#0e6b3f]">
                 ProofWorks
               </a>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, Check, X, Minus, Play } from 'lucide-react';
+import { ArrowRight, Check, X, Minus, Play, CalendarClock } from 'lucide-react';
+import { GATED_PREVIEW, WATCH_HREF } from '@/lib/site-mode';
 
 export const metadata = {
   title: 'ProofSync — how it works',
@@ -230,11 +231,11 @@ export default function HowItWorksPage() {
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="/demo"
+            href={WATCH_HREF}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0e6b3f] px-6 py-3 font-semibold text-white shadow-lg shadow-[#0e6b3f]/20 transition-colors hover:bg-[#0b5531]"
           >
-            <Play className="size-3.5 fill-current" />
-            Watch it sync — live
+            {GATED_PREVIEW ? <CalendarClock className="size-3.5" /> : <Play className="size-3.5 fill-current" />}
+            {GATED_PREVIEW ? 'See it live — book a 1:1 demo' : 'Watch it sync — live'}
           </Link>
           <a
             href="/#prove-it"

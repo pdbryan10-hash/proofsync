@@ -2,6 +2,8 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { ArrowLeft, ArrowUpRight, CalendarClock, Check } from 'lucide-react';
 import { ProofWorksMark } from '@/components/brand/proofworks-badge';
+import { DemoTease } from '@/components/marketing/demo-tease';
+import { GATED_PREVIEW } from '@/lib/site-mode';
 
 export const metadata = {
   title: 'Book a discovery session — ProofSync',
@@ -19,6 +21,9 @@ const AGENDA = [
 export default function BookPage() {
   return (
     <section className="relative overflow-hidden">
+      {/* Gated build: the live demo is booked, not self-served — so tease the
+          product behind the form, recognisable but unreadable. */}
+      {GATED_PREVIEW && <DemoTease />}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_40%_at_80%_-10%,rgba(14,107,63,0.08),transparent)]" />
       <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-5 py-12 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
         {/* Context column */}
@@ -33,11 +38,12 @@ export default function BookPage() {
             30 minutes · your data
           </p>
           <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-[#1a1b1f] sm:text-5xl">
-            Book a discovery session
+            {GATED_PREVIEW ? 'See it live' : 'Book a discovery session'}
           </h1>
           <p className="mt-5 max-w-md text-lg leading-relaxed text-[#4b4c54]">
-            Bring one client system you&apos;re re-keying into. We&apos;ll show you exactly how ProofSync
-            would sync it — on your real data, not a slide.
+            {GATED_PREVIEW
+              ? 'We run the live sync one-to-one, on your data — the only way to see it. Bring one client system you’re re-keying into and watch the whole loop run, both directions.'
+              : 'Bring one client system you’re re-keying into. We’ll show you exactly how ProofSync would sync it — on your real data, not a slide.'}
           </p>
 
           <ul className="mt-7 space-y-3">

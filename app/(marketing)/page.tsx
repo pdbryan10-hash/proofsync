@@ -17,6 +17,7 @@ import { FanOutHub } from '@/components/marketing/fan-out-hub';
 import { LoopFlow } from '@/components/marketing/loop-flow';
 import { TediumSteps } from '@/components/marketing/tedium-steps';
 import { EnquiryForm } from '@/components/marketing/enquiry-form';
+import { GATED_PREVIEW, WATCH_HREF } from '@/lib/site-mode';
 
 export const metadata = {
   title: "ProofSync — your clients' systems and yours, permanently in step",
@@ -69,27 +70,32 @@ export default function SalesPage() {
             verified, audited, and only the exceptions reach a human.
           </p>
 
-          {/* CTA ladder — one loud primary (self-serve demo), one quiet secondary. */}
+          {/* CTA — in the gated build the live demo is 1:1 only, so the one loud
+              button books a call; otherwise it opens the self-serve demo. */}
           <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
-              href="/demo"
+              href={WATCH_HREF}
               className="group inline-flex items-center justify-center gap-2.5 rounded-full bg-[#0e6b3f] px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-[#0e6b3f]/20 transition-all hover:bg-[#0b5531] hover:shadow-xl"
             >
-              <Play className="size-4 fill-current" />
-              Watch it sync — live
+              {GATED_PREVIEW ? <CalendarClock className="size-4" /> : <Play className="size-4 fill-current" />}
+              {GATED_PREVIEW ? 'See it live — book a 1:1 demo' : 'Watch it sync — live'}
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/book"
-                className="inline-flex items-center gap-2 text-base font-medium text-[#33343a] underline decoration-[#cfc9ba] decoration-1 underline-offset-4 transition-colors hover:text-[#0e6b3f] hover:decoration-[#0e6b3f]"
-              >
-                <CalendarClock className="size-4" />
-                Book a discovery session
-              </Link>
-            </div>
+            {!GATED_PREVIEW && (
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/book"
+                  className="inline-flex items-center gap-2 text-base font-medium text-[#33343a] underline decoration-[#cfc9ba] decoration-1 underline-offset-4 transition-colors hover:text-[#0e6b3f] hover:decoration-[#0e6b3f]"
+                >
+                  <CalendarClock className="size-4" />
+                  Book a discovery session
+                </Link>
+              </div>
+            )}
           </div>
-          <p className="mt-3 font-mono text-xs text-[#8a8578]">No sign-up · runs on real data · no slides</p>
+          <p className="mt-3 font-mono text-xs text-[#8a8578]">
+            {GATED_PREVIEW ? '30-minute call · on your real data · no slides' : 'No sign-up · runs on real data · no slides'}
+          </p>
 
           {/* THE CENTREPIECE — the closed-loop hub + calculator, in their numbers. */}
           <div className="mt-12">
@@ -337,9 +343,9 @@ export default function SalesPage() {
           </div>
 
           <p className="mt-6 text-center text-sm text-[#767680]">
-            Rather just watch it run first?{' '}
-            <Link href="/demo" className="font-medium text-[#0e6b3f] underline underline-offset-4 hover:text-[#0b5531]">
-              Watch it sync — live
+            {GATED_PREVIEW ? 'Rather see it on your own data first?' : 'Rather just watch it run first?'}{' '}
+            <Link href={WATCH_HREF} className="font-medium text-[#0e6b3f] underline underline-offset-4 hover:text-[#0b5531]">
+              {GATED_PREVIEW ? 'Book a 1:1 demo' : 'Watch it sync — live'}
             </Link>
           </p>
         </div>
