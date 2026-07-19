@@ -203,12 +203,20 @@ export function useDemoState() {
         !!st && st.inbound.dispatched > 0 && st.inbound.returned >= st.inbound.dispatched;
       try {
         onStage('intake');
-        await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
+        const ir = await fetch('/api/demo/intake', { method: 'POST', cache: 'no-store' });
+        const created = (await ir.json().catch(() => null))?.data?.created ?? 0;
+        if (created > 0) {
+          pushActivity({
+            text: `Polled your clients' systems — ${created} new job${created === 1 ? '' : 's'} received and created in your system, client reference kept.`,
+            tone: 'ok',
+          });
+        }
         await refresh();
         await new Promise((r) => setTimeout(r, 1100));
 
         onStage('complete');
         await fetch('/api/demo/complete-intake', { method: 'POST', cache: 'no-store' });
+        pushActivity({ text: `Engineers completed the raised jobs on site.`, tone: 'ok' });
         await refresh();
         await new Promise((r) => setTimeout(r, 1100));
 
@@ -224,7 +232,7 @@ export function useDemoState() {
         onStage('done');
       }
     },
-    [refresh],
+    [refresh, pushActivity],
   );
 
   const forceTick = useCallback(async () => {

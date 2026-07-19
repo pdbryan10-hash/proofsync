@@ -244,7 +244,7 @@ export function DemoConsole() {
             onFix={setResolving}
           />
         ) : (
-          <ClosedLoopStage state={state} onRun={runClosedLoop} onReset={reset} busy={busy} />
+          <ClosedLoopStage state={state} activity={activity} onRun={runClosedLoop} onReset={reset} onFix={setResolving} busy={busy} />
         )}
 
         {/* The "what this does / doesn't prove" note is only shown in the local
@@ -810,6 +810,9 @@ function MachineFloor({
 }) {
   const awaiting = state.stats.awaitingSync;
   const landed = state.stats.synced + state.stats.partial;
+  // Machine speed shows only the OUTBOUND batch's exceptions — inbound (CON-7)
+  // has its own board on the closed-loop act.
+  const batchExceptions = state.exceptions.filter((e) => !String(e.reference ?? '').startsWith('CON-7'));
   return (
     <div className="relative">
       {preparing && (
@@ -831,8 +834,8 @@ function MachineFloor({
         onBack={onBack}
         onFreeze={onFreeze}
       />
-      <KpiBar stats={state.stats} exceptionCount={state.exceptions.length} />
-      <ExceptionsQueue exceptions={state.exceptions} onFix={onFix} />
+      <KpiBar stats={state.stats} exceptionCount={batchExceptions.length} />
+      <ExceptionsQueue exceptions={batchExceptions} onFix={onFix} />
       <ActivityFeed activity={activity} />
       <div className="grid gap-4 lg:grid-cols-3">
         <SourcePanel
@@ -1607,19 +1610,26 @@ const LOOP_ORDER: LoopStage[] = ['idle', 'intake', 'complete', 'sync', 'done'];
  */
 function ClosedLoopStage({
   state,
+  activity,
   onRun,
   onReset,
+  onFix,
   busy,
 }: {
   state: DemoState;
+  activity: ActivityLine[];
   onRun: (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => Promise<void>;
   onReset: () => void;
+  onFix: (item: ExceptionItem) => void;
   busy: boolean;
 }) {
   const [stage, setStage] = useState<LoopStage>('idle');
   const running = stage !== 'idle' && stage !== 'done';
   const { raised, dispatched, returned } = state.inbound;
   const total = raised + dispatched; // total the client raised (before/after pickup)
+  // The closed loop's own exceptions — jobs the client raised that couldn't be
+  // written back (missing field, garbled text). Its own queue, not machine speed's.
+  const loopExceptions = state.exceptions.filter((e) => String(e.reference ?? '').startsWith('CON-7'));
 
   const reached = (s: LoopStage) => LOOP_ORDER.indexOf(stage) >= LOOP_ORDER.indexOf(s);
 
@@ -1720,6 +1730,18 @@ function ClosedLoopStage({
           {returned} job{returned === 1 ? '' : 's'} went the full round trip. The client raised them,
           your engineer did them once, and both systems agree — nobody re-keyed a thing.
         </p>
+      )}
+
+      <div className="mt-4">
+        <ActivityFeed activity={activity} />
+      </div>
+
+      {/* The loop's own exceptions — a job the client raised that couldn't be
+          written back until a person fixes it. */}
+      {loopExceptions.length > 0 && (
+        <div className="mt-4">
+          <ExceptionsQueue exceptions={loopExceptions} onFix={onFix} />
+        </div>
       )}
 
       {/* The real records, as a round trip — FOUR columns, because the loop starts

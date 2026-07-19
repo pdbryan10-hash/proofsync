@@ -191,12 +191,25 @@ const COST_CENTRE_BLOCK: TargetWorkOrderBlock = {
   message: 'Cost centre is required for this contract before the work order can be updated.',
   attribute: COST_CENTRE_ATTR,
 };
+const GARBLED_BLOCK: TargetWorkOrderBlock = {
+  kind: 'INVALID_VALUE',
+  label: 'Completion notes',
+  message: "Concerto rejected the update — the completion notes contain characters its validation won't accept.",
+  sourceField: 'engineerComments',
+  badValue: 'Job done â€” see attached ??? notes Ã¢â‚¬™ (encoding lost on the app)',
+};
 // Spread a few across the batch so, at 40 jobs flying past, the "needs a person"
-// moment is visible through the waves rather than a single early blip.
+// moment is visible through the waves — a mix of a missing field and garbled text.
 const BLOCKS: Record<number, TargetWorkOrderBlock> = {
   6: COST_CENTRE_BLOCK,
-  21: COST_CENTRE_BLOCK,
+  21: GARBLED_BLOCK,
   34: COST_CENTRE_BLOCK,
+};
+/** The same, for the inbound (closed-loop) batch. */
+const INBOUND_BLOCKS: Record<number, TargetWorkOrderBlock> = {
+  5: COST_CENTRE_BLOCK,
+  18: GARBLED_BLOCK,
+  31: COST_CENTRE_BLOCK,
 };
 /** Jobs whose site photo Concerto rejects — core data syncs, document doesn't (PARTIAL). */
 const DOCUMENT_REJECTED = new Set<number>();
