@@ -113,28 +113,29 @@ export function ProcessRoi() {
             <strong className="text-[#0b5531]">{Math.round(m.retained * 100)}%</strong> of it.
           </p>
 
-          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-[#0e6b3f]/15 pt-4 text-sm">
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Year-1 investment</dt>
-              <dd className="font-display text-xl font-bold tabular-nums text-[#1a1b1f]">{gbp(m.year1)}</dd>
-              <dd className="text-[11px] text-[#8a8578]">{gbp(m.build)} build + {gbp(m.subYr)} run</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Ongoing, a year</dt>
-              <dd className="font-display text-xl font-bold tabular-nums text-[#1a1b1f]">{gbp(m.subYr)}</dd>
-              <dd className="text-[11px] text-[#8a8578]">{gbp(m.monthly)}/mo · {m.band}</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Net, year 1</dt>
-              <dd className="font-display text-xl font-bold tabular-nums text-[#0e6b3f]">{gbp(m.netYr1)}</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Pays for itself in</dt>
-              <dd className="font-display text-xl font-bold tabular-nums text-[#0e6b3f]">
-                {m.paybackMonths < 1 ? '<1' : m.paybackMonths.toFixed(1)} months
+          {/* THE ANSWER — net saving and payback, made dominant */}
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-[#0e6b3f]/30 bg-white p-3.5 shadow-sm">
+              <dt className="font-mono text-[10px] uppercase tracking-widest text-[#0e6b3f]">Net saving, year 1</dt>
+              <dd className="font-display text-3xl font-black leading-none tabular-nums text-[#0e6b3f] sm:text-4xl">
+                {gbp(m.netYr1)}
               </dd>
             </div>
-          </dl>
+            <div className="rounded-xl border border-[#0e6b3f]/30 bg-white p-3.5 shadow-sm">
+              <dt className="font-mono text-[10px] uppercase tracking-widest text-[#0e6b3f]">Pays for itself in</dt>
+              <dd className="font-display text-3xl font-black leading-none tabular-nums text-[#0e6b3f] sm:text-4xl">
+                {m.paybackMonths < 1 ? '<1' : m.paybackMonths.toFixed(1)}
+                <span className="text-lg font-bold"> mo</span>
+              </dd>
+            </div>
+          </div>
+
+          {/* the cost side — subordinate, so it doesn't stall the read */}
+          <p className="mt-3 border-t border-[#0e6b3f]/15 pt-3 text-xs text-[#8a8578]">
+            Year-1 outlay <strong className="font-semibold text-[#5f6068]">{gbp(m.year1)}</strong> ({gbp(m.build)} build
+            + {gbp(m.subYr)} run) · ongoing <strong className="font-semibold text-[#5f6068]">{gbp(m.subYr)}/yr</strong>{' '}
+            at {gbp(m.monthly)}/mo, {m.band}.
+          </p>
         </div>
       </div>
 
