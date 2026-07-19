@@ -77,7 +77,7 @@ export function FanOutHub() {
     };
   }, [jobs]);
 
-  const shownPounds = useTween(fixed ? 0 : poundsYear);
+  const shownPounds = useTween(poundsYear);
   const n = selected.length;
   const people = (Math.round(fte * 10) / 10).toFixed(1);
   const isPlural = fte >= 1.5;
@@ -193,7 +193,7 @@ export function FanOutHub() {
                 2
               </span>
               <span className="text-[11px] leading-tight text-amber-900">
-                <strong>jobs need a person</strong>
+                <strong>need a decision</strong>
                 <br />
                 the rest flow automatically
               </span>
@@ -219,7 +219,7 @@ export function FanOutHub() {
             </div>
             <p className={`mt-2 text-[11px] font-medium ${fixed ? 'text-[#0b5531]' : 'text-[#9f1239]'}`}>
               {fixed
-                ? `${PERSON} stays — she just isn’t the transport layer any more.`
+                ? `${PERSON} stays — on the couple of jobs a batch that genuinely need a decision (a missing cost centre, a judgement call). ProofSync flags those and refuses to guess; everything else flows.`
                 : `${PERSON} isn’t the problem. Her job is — she was hired to support your contracts, not to be the bridge between your software and your clients’.`}
             </p>
           </div>
@@ -232,25 +232,25 @@ export function FanOutHub() {
               fixed ? 'text-[#0e6b3f]' : 'text-[#9f1239]'
             }`}
           >
-            {fixed ? 'With ProofSync' : 'Today, by hand — a year'}
-          </p>
-          <p
-            className={`mt-1 font-display text-7xl font-black leading-[0.95] tracking-tight tabular-nums transition-colors duration-700 sm:text-8xl ${
-              fixed ? 'text-[#0e6b3f]' : 'text-[#9f1239]'
-            }`}
-          >
-            £{shownPounds.toLocaleString()}
+            {fixed ? 'With ProofSync — that capacity, back' : 'Today, by hand — a year'}
           </p>
           {fixed ? (
             <>
-              <p className="mt-3 text-xl font-bold leading-snug text-[#1a1b1f]">That job doesn’t exist any more.</p>
+              <p className="mt-1 font-display text-6xl font-black leading-[0.95] tracking-tight tabular-nums text-[#0e6b3f] sm:text-7xl">
+                {people} <span className="text-3xl sm:text-4xl">full-time {isPlural ? 'people' : 'person'}</span>
+              </p>
+              <p className="mt-3 text-xl font-bold leading-snug text-[#1a1b1f]">back on the work that grows the business.</p>
               <p className="mt-1.5 text-sm text-[#5f6068]">
-                The {people} full-time {isPlural ? 'people' : 'person'} you spent on re-keying — handed back to quality,
-                winning more work, and looking after clients.
+                The <span className="font-semibold text-[#9f1239]">£{poundsYear.toLocaleString()}</span> of hand
+                re-keying is gone — that time moves to <span className="font-semibold text-[#0b5531]">quality, winning
+                more work, and looking after clients</span>. ProofSync costs a fraction of what it removes.
               </p>
             </>
           ) : (
             <>
+              <p className="mt-1 font-display text-7xl font-black leading-[0.95] tracking-tight tabular-nums text-[#9f1239] sm:text-8xl">
+                £{shownPounds.toLocaleString()}
+              </p>
               <p className="mt-2 text-xl font-bold leading-snug text-[#9f1239] sm:text-2xl">
                 spent moving information that already exists.
               </p>

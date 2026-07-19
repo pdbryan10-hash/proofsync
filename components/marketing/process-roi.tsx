@@ -35,7 +35,11 @@ export function ProcessRoi() {
     const netYr1 = removedYr - year1;
     const paybackMonths = removedYr > 0 ? year1 / (removedYr / 12) : 0;
     const retained = removedYr > 0 ? (removedYr - subYr) / removedYr : 0;
-    return { removedYr, band, monthly, subYr, build, year1, netYr1, paybackMonths, retained };
+    // Cumulative net after fees: year 1 carries the one-off build, years 2–5 are
+    // run only, so the curve steepens.
+    const years = [1, 2, 3, 4, 5].map((k) => ({ year: k, net: removedYr * k - (build + subYr * k) }));
+    const fiveYearNet = years[4]!.net;
+    return { removedYr, band, monthly, subYr, build, year1, netYr1, paybackMonths, retained, years, fiveYearNet };
   }, [jobs, rate, connectors]);
 
   return (
@@ -137,6 +141,29 @@ export function ProcessRoi() {
             at {gbp(m.monthly)}/mo, {m.band}.
           </p>
         </div>
+      </div>
+
+      {/* Year 1–5 cumulative net — the curve steepens once the build is paid */}
+      <div className="mt-6 border-t border-[#e6e1d6] pt-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">Cumulative net saving, after fees</p>
+          <p className="text-sm text-[#5f6068]">
+            Over 5 years: <strong className="font-display text-lg text-[#0e6b3f]">{gbp(m.fiveYearNet)}</strong>
+          </p>
+        </div>
+        <div className="mt-3 grid grid-cols-5 gap-2">
+          {m.years.map((y) => (
+            <div key={y.year} className="rounded-lg border border-[#e6e1d6] bg-[#faf9f5] p-2.5 text-center">
+              <p className="font-mono text-[10px] text-[#8a8578]">Year {y.year}</p>
+              <p className="font-display text-sm font-black leading-tight tabular-nums text-[#0e6b3f] sm:text-base">
+                {gbp(y.net)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-[#8a8578]">
+          Year 1 carries the one-off build; years 2–5 are run only — so the line steepens.
+        </p>
       </div>
 
       <p className="mt-4 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
