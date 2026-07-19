@@ -88,14 +88,14 @@ export function DemoConsole() {
   // The real-browser login that opens each act. `login` drives the embedded
   // live-view curtain; the ref guards it to ONE sign-in per act, so it doesn't
   // re-fire on re-runs or re-renders.
-  const [login, setLogin] = useState<{ act: 'human' | 'machine'; done: boolean } | null>(null);
-  const loginFired = useRef<{ human: boolean; machine: boolean }>({ human: false, machine: false });
+  const [login, setLogin] = useState<{ act: 'human' | 'machine' | 'loop'; done: boolean } | null>(null);
+  const loginFired = useRef<{ human: boolean; machine: boolean; loop: boolean }>({ human: false, machine: false, loop: false });
 
   // Show the sign-in curtain, run the real login, then hand off. Only the FIRST
   // time an act is opened — after that the session is established and re-running
   // the act shouldn't sign in again.
   const runActLogin = useCallback(
-    async (act: 'human' | 'machine') => {
+    async (act: 'human' | 'machine' | 'loop') => {
       if (loginFired.current[act] || !state?.remoteBrowserAvailable) return;
       loginFired.current[act] = true;
       setLogin({ act, done: false });
@@ -244,7 +244,7 @@ export function DemoConsole() {
             onFix={setResolving}
           />
         ) : (
-          <ClosedLoopStage state={state} activity={activity} onRun={runClosedLoop} onReset={reset} onFix={setResolving} busy={busy} />
+          <ClosedLoopStage state={state} activity={activity} onRun={runClosedLoop} onReset={reset} onFix={setResolving} busy={busy} onLogin={() => runActLogin('loop')} />
         )}
 
         {/* The "what this does / doesn't prove" note is only shown in the local
@@ -1671,6 +1671,7 @@ function ClosedLoopStage({
   onRun,
   onReset,
   onFix,
+  onLogin,
   busy,
 }: {
   state: DemoState;
@@ -1678,6 +1679,7 @@ function ClosedLoopStage({
   onRun: (onStage: (s: 'intake' | 'complete' | 'sync' | 'done') => void) => Promise<void>;
   onReset: () => void;
   onFix: (item: ExceptionItem) => void;
+  onLogin: () => Promise<void>;
   busy: boolean;
 }) {
   const [stage, setStage] = useState<LoopStage>('idle');
@@ -1710,6 +1712,10 @@ function ClosedLoopStage({
     if (runningRef.current) return;
     runningRef.current = true;
     try {
+      // Open with the real dual browser sign-in — two tabs keying into Joblogic and
+      // Concerto at once. No-ops where no remote browser is configured (e.g. the
+      // in-VPC build), so it only shows where Browserbase is available.
+      await onLogin();
       // Always start from a known-clean batch. onReset() reseeds SYNCHRONOUSLY (the
       // route holds the beat lock and returns only once both stand-in systems are
       // freshly seeded), so awaiting it guarantees a clean start before intake pulls.
@@ -2147,12 +2153,13 @@ function LiveLoginCurtain({
   joblogicUrl,
   concertoUrl,
 }: {
-  act: 'human' | 'machine';
+  act: 'human' | 'machine' | 'loop';
   done: boolean;
   joblogicUrl: string | null;
   concertoUrl: string | null;
 }) {
-  const heading = act === 'human' ? 'Act 1 · one job' : 'Act 2 · full floor';
+  const heading =
+    act === 'human' ? 'Act 1 · one job' : act === 'machine' ? 'Act 2 · full floor' : 'Closed loop · both directions';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 p-4 backdrop-blur-sm">
