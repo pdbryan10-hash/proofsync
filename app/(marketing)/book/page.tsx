@@ -28,7 +28,7 @@ export default function BookPage() {
       <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-5 py-12 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
         {/* Context column — floated on frosted glass in the gated build so it
             stays readable over the vivid tease behind it. */}
-        <div className={GATED_PREVIEW ? 'self-start rounded-3xl bg-[#f7f5ef]/72 p-6 shadow-sm ring-1 ring-white/60 backdrop-blur-md sm:p-8' : ''}>
+        <div className={GATED_PREVIEW ? 'self-start rounded-3xl bg-[#f7f5ef]/85 p-6 shadow-md ring-1 ring-white/70 backdrop-blur-lg sm:p-8' : ''}>
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-[#5f6068] transition-colors hover:text-[#1a1b1f]">
             <ArrowLeft className="size-4" />
             Back to ProofSync

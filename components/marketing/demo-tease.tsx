@@ -35,8 +35,9 @@ function Bar({ w, tone = 'bg-black/10' }: { w: string; tone?: string }) {
 export function DemoTease() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden select-none">
-      {/* The demo, full-bleed, blurred past reading but bright enough to recognise. */}
-      <div className="absolute inset-x-0 top-0 origin-top scale-[1.12] opacity-[0.9] blur-[5px] saturate-[1.05]">
+      {/* The demo, full-bleed — lightly blurred so it's clearly visible and
+          obviously the product, just soft enough that you can't read the detail. */}
+      <div className="absolute inset-x-0 top-0 origin-top scale-[1.12] opacity-[0.97] blur-[2px] saturate-[1.05]">
         <div className="mx-auto max-w-[1600px] px-6 pt-6">
           {/* Console header mock */}
           <div className="flex items-center justify-between rounded-t-xl border border-black/10 bg-white/90 px-5 py-3">
@@ -109,10 +110,10 @@ export function DemoTease() {
         </div>
       </div>
 
-      {/* Melt the top and bottom edges into the header/footer, keep the middle
-          bright. A light overall tint keeps text legible without killing colour. */}
-      <div className="absolute inset-0 bg-[#f7f5ef]/25" />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#f7f5ef] via-transparent to-[#f7f5ef]" />
+      {/* Melt only the very top and bottom edges into the header/footer; leave the
+          middle fully visible. No heavy tint — the point is to SEE the product. */}
+      <div className="absolute inset-0 bg-[#f7f5ef]/8" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#f7f5ef] via-transparent via-45% to-[#f7f5ef]" />
     </div>
   );
 }
