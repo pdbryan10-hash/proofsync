@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque } from 'next/font/google';
+import Link from 'next/link';
 import {
   Lock, Cloud, Server, Building2, Globe, Database, Cog, Chrome, KeyRound, Network, ArrowLeftRight, ShieldCheck,
-  Check, Minus,
+  Check, Minus, ArrowRight,
 } from 'lucide-react';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { ProofWorksEndorsement } from '@/components/brand/proofworks-badge';
@@ -119,6 +120,13 @@ export default function HostingPage() {
           — a browser pool. Nothing is locked to one cloud provider.{' '}
           <strong className="text-[#1a1b1f]">It runs equally in Azure or AWS.</strong>
         </p>
+        <Link
+          href="/process"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0e6b3f] transition-colors hover:text-[#0b5531]"
+        >
+          What it costs — delivery &amp; pricing
+          <ArrowRight className="size-4" />
+        </Link>
 
         {/* Three models — with pros and cons spelled out */}
         <section className="mt-10">

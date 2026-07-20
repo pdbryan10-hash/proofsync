@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Bricolage_Grotesque } from 'next/font/google';
-import { Check, Lock, ShieldCheck, FileSignature, Database, DoorOpen } from 'lucide-react';
+import { Check, Lock, ShieldCheck, FileSignature, Database, DoorOpen, ArrowRight } from 'lucide-react';
 import { ProofSyncLogo } from '@/components/brand/proofsync-logo';
 import { ProofWorksEndorsement } from '@/components/brand/proofworks-badge';
 import { CyberEssentialsBadge } from '@/components/brand/cyber-essentials-badge';
@@ -139,6 +140,13 @@ export default function ProcessPage() {
           ProofSync is infrastructure that sits between your systems and your clients&apos;. It goes in staged, so you
           prove it on your own data before you commit — and the money follows the value, not the other way round.
         </p>
+        <Link
+          href="/hosting"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#0e6b3f] transition-colors hover:text-[#0b5531]"
+        >
+          Where it runs — hosting &amp; data residency
+          <ArrowRight className="size-4" />
+        </Link>
 
         {/* Stages */}
         <section className="mt-12 space-y-4">
