@@ -92,6 +92,16 @@ export function FanOutHub() {
         @keyframes psChipIn { from { opacity:0; transform: translateY(7px) scale(.92) } to { opacity:1; transform:none } }
         .ps-chip { animation: psChipIn .34s cubic-bezier(.2,.8,.2,1) both; }
         @media (prefers-reduced-motion: reduce){ .ps-chip{ animation:none } }
+        .ps-slider { height: 16px; }
+        .ps-slider::-webkit-slider-thumb {
+          -webkit-appearance: none; appearance: none; width: 30px; height: 30px; border-radius: 9999px;
+          background: #0e6b3f; border: 4px solid #fff; box-shadow: 0 2px 10px rgba(14,107,63,.45); cursor: grab; margin-top: -1px;
+        }
+        .ps-slider::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.08); }
+        .ps-slider::-moz-range-thumb {
+          width: 30px; height: 30px; border-radius: 9999px; background: #0e6b3f; border: 4px solid #fff;
+          box-shadow: 0 2px 10px rgba(14,107,63,.45); cursor: grab;
+        }
       `}</style>
 
       {/* Header — the category line + a live "right now" tension marker */}
@@ -289,13 +299,20 @@ export function FanOutHub() {
         </button>
       </div>
 
-      {/* THE SLIDER — prominent; you're not changing jobs, you're changing payroll */}
-      <div className="border-t border-[#e6e1d6] bg-[#faf9f5] px-5 py-5 sm:px-7">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <label htmlFor="jobs" className="text-sm font-semibold text-[#1a1b1f]">
-            How many jobs do you complete a month?
-          </label>
-          <span className="font-display text-3xl font-black tabular-nums text-[#0e6b3f]">{jobs.toLocaleString()}</span>
+      {/* THE SLIDER — made prominent; you're not changing jobs, you're changing payroll */}
+      <div className="border-t-2 border-[#0e6b3f]/25 bg-[#eef6f0] px-5 py-6 sm:px-7">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <div>
+            <label htmlFor="jobs" className="block font-display text-lg font-bold text-[#1a1b1f] sm:text-xl">
+              How many jobs do you complete a month?
+            </label>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-[#0b5531]">
+              <ArrowRight className="size-3.5" /> Drag to your volume — every number above moves with it.
+            </p>
+          </div>
+          <span className="font-display text-4xl font-black leading-none tabular-nums text-[#0e6b3f] sm:text-5xl">
+            {jobs.toLocaleString()}
+          </span>
         </div>
         <input
           id="jobs"
@@ -305,11 +322,11 @@ export function FanOutHub() {
           step={100}
           value={jobs}
           onChange={(e) => setJobs(Number(e.target.value))}
-          className="mt-3 h-3 w-full cursor-pointer appearance-none rounded-full bg-[#e0dbcd] accent-[#0e6b3f]"
+          className="mt-4 h-4 w-full cursor-pointer appearance-none rounded-full bg-[#cfe3d6] accent-[#0e6b3f] shadow-inner"
         />
-        <div className="mt-2 flex justify-between font-mono text-[10px] text-[#b0a894]">
+        <div className="mt-2.5 flex justify-between font-mono text-[10px] text-[#8a8578]">
           <span>100</span>
-          <span className="text-[#8a8578]">typical mid-sized contractor ≈ 800–1,200</span>
+          <span className="font-semibold text-[#5f6068]">typical mid-sized contractor ≈ 800–1,200</span>
           <span>5,000</span>
         </div>
         <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
