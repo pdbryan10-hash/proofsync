@@ -15,7 +15,7 @@ import { SyncPanel } from '@/components/sync/sync-panel';
 import { SyncTimeline } from '@/components/sync/sync-timeline';
 import { getJobDetail } from '@/lib/services/jobs';
 import { getJobSyncPreview } from '@/lib/sync/preview';
-import { getManualMinutesPerDirection } from '@/lib/config';
+import { getManualMinutesRoundTrip } from '@/lib/config';
 import { targetFieldLabel, TRANSFORMATION_LABELS } from '@/lib/domain/field-labels';
 import { formatDateTime, formatBytes, formatDuration } from '@/lib/utils';
 
@@ -107,7 +107,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             jobId={job.id}
             concertoReference={job.concertoJobReference}
             syncStatus={job.syncStatus}
-            estimatedMinutesPerJob={getManualMinutesPerDirection()}
+            estimatedMinutesPerJob={getManualMinutesRoundTrip()}
           />
         </CardContent>
       </Card>

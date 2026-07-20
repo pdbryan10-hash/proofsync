@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { getManualMinutesPerDirection } from '@/lib/config';
+import { getManualMinutesRoundTrip } from '@/lib/config';
 import { getDemoOrgId } from '@/lib/demo/org';
 
 export interface DashboardMetrics {
@@ -29,7 +29,9 @@ function startOfMonth(): Date {
  * the UI (§16).
  */
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
-  const minutes = getManualMinutesPerDirection();
+  // The closed loop moves each job BOTH ways (in + out), so credit the full
+  // round trip per synced job — matches the finale card's basis (20 min/job).
+  const minutes = getManualMinutesRoundTrip();
   const today = startOfToday();
   const month = startOfMonth();
   const orgId = await getDemoOrgId();
