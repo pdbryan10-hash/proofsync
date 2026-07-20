@@ -18,13 +18,14 @@ import type { SourceJobDoc, SourceAttachmentDoc, TargetWorkOrderDoc, TargetWorkO
  */
 
 const SITES = [
-  { siteName: 'Northgate Shopping Centre — Leeds', siteAddress: 'Briggate, Leeds LS1 6BR' },
-  { siteName: 'Northgate Retail Park — Derby', siteAddress: 'Meteor Centre, Derby DE21 4ST' },
-  { siteName: 'Northgate Retail Park — Warrington', siteAddress: 'Westbrook Centre, Warrington WA5 8UD' },
-  { siteName: 'Northgate Shopping Centre — Chesterfield', siteAddress: 'Vicar Lane, Chesterfield S40 1PY' },
-  { siteName: 'Northgate Retail Park — Stoke', siteAddress: 'Festival Park, Stoke-on-Trent ST1 5NZ' },
-  { siteName: 'Northgate Centre — Doncaster', siteAddress: 'Frenchgate, Doncaster DN1 1SW' },
-  { siteName: 'Northgate Retail Park — Wakefield', siteAddress: 'Westgate Retail Park, Wakefield WF2 9SH' },
+  { siteName: 'Meridian Retail — Leeds', siteAddress: 'Briggate, Leeds LS1 6BR' },
+  { siteName: 'Crowngate Centre — Derby', siteAddress: 'Meteor Centre, Derby DE21 4ST' },
+  { siteName: 'Apex Facilities — Warrington', siteAddress: 'Westbrook Centre, Warrington WA5 8UD' },
+  { siteName: 'Kingsway Shopping — Chesterfield', siteAddress: 'Vicar Lane, Chesterfield S40 1PY' },
+  { siteName: 'Harbourside Estate — Stoke', siteAddress: 'Festival Park, Stoke-on-Trent ST1 5NZ' },
+  { siteName: 'Parkview Centre — Doncaster', siteAddress: 'Frenchgate, Doncaster DN1 1SW' },
+  { siteName: 'Riverside Retail — Wakefield', siteAddress: 'Westgate Retail Park, Wakefield WF2 9SH' },
+  { siteName: 'Bramwell Group — Sheffield', siteAddress: 'The Moor, Sheffield S1 4PF' },
 ];
 
 const WORK_TYPES = [

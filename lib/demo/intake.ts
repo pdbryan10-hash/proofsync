@@ -39,7 +39,17 @@ const ENGINEERS: IntakeAssignment[] = [
   { engineerId: 'ENG-207', engineerName: 'S. Nkemelu' },
   { engineerId: 'ENG-233', engineerName: 'R. Kaur' },
   { engineerId: 'ENG-318', engineerName: 'M. Okonkwo' },
+  { engineerId: 'ENG-402', engineerName: 'L. Faulkner' },
+  { engineerId: 'ENG-455', engineerName: 'A. Bianchi' },
 ];
+
+/** Pick an engineer from the job's reference so it's STABLE and VARIED per job —
+ *  the loop index isn't usable here because intake pulls one job at a time (index
+ *  is always 0), which is why every job used to get the same engineer. */
+function engineerFor(reference: string): IntakeAssignment {
+  const n = parseInt(reference.replace(/\D/g, ''), 10) || 0;
+  return ENGINEERS[n % ENGINEERS.length]!;
+}
 
 /**
  * Deterministic field-system id for a client reference — so re-polling the same
@@ -77,7 +87,7 @@ export async function runIntake(limit?: number): Promise<IntakeResult> {
     // Engine: validate + assign a deterministic id (idempotent) + an engineer.
     if (!job.reference) continue;
     const jobNumber = intakeJobNumber(job.reference);
-    const engineer = ENGINEERS[i % ENGINEERS.length]!;
+    const engineer = engineerFor(job.reference);
 
     await field.createJob(job, jobNumber, engineer); // SEAM: create in the field system
     await client.markReceived(job.reference, jobNumber); // SEAM: acknowledge the pickup
