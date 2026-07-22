@@ -57,8 +57,15 @@ export function setTransportOverride(t: DemoTransport | null): void {
 }
 
 export function getDemoTransport(): DemoTransport {
-  if (transportOverride) return transportOverride;
-  return process.env.DEMO_TRANSPORT === 'browser' ? 'browser' : 'direct';
+  const wanted: DemoTransport =
+    transportOverride ?? (process.env.DEMO_TRANSPORT === 'browser' ? 'browser' : 'direct');
+  // 'browser' drives a real Chromium. On serverless (Vercel) there is no local
+  // Chromium binary, so it can ONLY run when a hosted browser (Browserbase) is
+  // configured. If browser is requested without one, driving it hangs — so we
+  // MUST fall back to the fast direct transport. This keeps the public demo
+  // bulletproof regardless of a stale control-doc override or env default.
+  if (wanted === 'browser' && !isRemoteBrowser()) return 'direct';
+  return wanted;
 }
 
 export function isBrowserTransport(): boolean {
