@@ -1,12 +1,14 @@
 import { Sidebar, MobileNav } from '@/components/layout/sidebar';
 import { ModeBadge } from '@/components/layout/demo-badge';
 import { APP_NAME } from '@/lib/config';
+import { isDemoEnabled } from '@/lib/demo/config';
 
 /** The product shell — control-room chrome for the live application. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const demo = isDemoEnabled();
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <Sidebar demo={demo} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border bg-card/80 px-4 py-3 backdrop-blur lg:px-8">
           <div className="min-w-0">
@@ -19,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <ModeBadge />
         </header>
-        <MobileNav />
+        <MobileNav demo={demo} />
         <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
