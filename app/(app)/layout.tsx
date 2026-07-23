@@ -1,6 +1,9 @@
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { Sidebar, MobileNav } from '@/components/layout/sidebar';
 import { ModeBadge } from '@/components/layout/demo-badge';
 import { DemoTour } from '@/components/demo/demo-tour';
+import { Button } from '@/components/ui/button';
 import { APP_NAME } from '@/lib/config';
 import { isDemoEnabled } from '@/lib/demo/config';
 
@@ -20,7 +23,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               Job completion sync — contractor system → client CAFM
             </p>
           </div>
-          <ModeBadge />
+          <div className="flex shrink-0 items-center gap-3">
+            <Link href="/book" className="hidden sm:block">
+              <Button variant="success" size="sm">
+                Book a 15-min call
+                <ArrowRight />
+              </Button>
+            </Link>
+            <ModeBadge />
+          </div>
         </header>
         <MobileNav />
         <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
