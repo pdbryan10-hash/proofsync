@@ -86,7 +86,8 @@ export function DemoTour({ demo = false }: { demo?: boolean }) {
         dismiss();
         return;
       }
-      router.push(TOUR[to].path);
+      const dest = TOUR[to];
+      if (dest) router.push(dest.path);
     },
     [router, dismiss],
   );
@@ -104,7 +105,9 @@ export function DemoTour({ demo = false }: { demo?: boolean }) {
 
   if (!active) return null;
   const s = TOUR[index];
+  if (!s) return null;
   const last = index === TOUR.length - 1;
+  const next = TOUR[index + 1];
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-6">
@@ -167,7 +170,7 @@ export function DemoTour({ demo = false }: { demo?: boolean }) {
                   </>
                 ) : (
                   <>
-                    Next: {TOUR[index + 1].step} <ArrowRight className="size-4" />
+                    Next: {next?.step} <ArrowRight className="size-4" />
                   </>
                 )}
               </button>
