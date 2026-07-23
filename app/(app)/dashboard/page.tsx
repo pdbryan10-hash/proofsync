@@ -172,7 +172,7 @@ export default async function DashboardPage() {
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/70 lg:text-base">
           One client, one job type, your real systems — we&rsquo;ll prove the round trip before you
-          commit. No procurement exercise, no rip-and-replace.
+          commit.
         </p>
         <div className="mt-7 flex justify-center">
           <Link href="/book">
