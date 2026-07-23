@@ -24,9 +24,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Link href="/book" className="hidden sm:block">
+            <Link href="/book">
               <Button variant="success" size="sm">
-                Book a 15-min call
+                <span className="sm:hidden">Book a call</span>
+                <span className="hidden sm:inline">Book a 15-min call</span>
                 <ArrowRight />
               </Button>
             </Link>
