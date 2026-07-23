@@ -164,6 +164,25 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Big closing CTA — book a call */}
+      <section className="overflow-hidden rounded-2xl border border-success-soft bg-gradient-to-br from-navy-800 to-navy-900 px-6 py-10 text-center lg:px-10 lg:py-14">
+        <h2 className="text-2xl font-bold tracking-tight text-white lg:text-3xl">
+          See this running on your own data.
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/70 lg:text-base">
+          One client, one job type, your real systems — we&rsquo;ll prove the round trip before you
+          commit. No procurement exercise, no rip-and-replace.
+        </p>
+        <div className="mt-7 flex justify-center">
+          <Link href="/book">
+            <Button variant="success" size="lg" className="px-8 text-base">
+              Book a 15-minute call
+              <ArrowRight />
+            </Button>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

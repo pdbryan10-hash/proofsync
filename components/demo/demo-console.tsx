@@ -489,6 +489,11 @@ function SpotlightStage({
                 One completed job is sitting in Joblogic, waiting to cross. Dispatch a worker and
                 watch ProofSync do it — step by step.
               </p>
+              <p className="mx-auto mt-2 max-w-xl text-xs leading-relaxed text-white/50">
+                Joblogic and Concerto here are just stand-ins. ProofSync works with{' '}
+                <span className="font-medium text-white/75">any CAFM</span> — Elogbooks, Planon, MRI,
+                Verisae and the rest — including the ones with no API at all.
+              </p>
               <button
                 type="button"
                 onClick={run}
