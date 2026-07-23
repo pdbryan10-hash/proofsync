@@ -1761,14 +1761,21 @@ function ClosedLoopStage({
               Raised in the client&rsquo;s system → into Joblogic → completed once → back to the client, verified.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="relative flex items-center">
+            {/* Pulsing halo while idle — makes the primary action impossible to miss */}
+            {!running && stage !== 'done' && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-2 rounded-2xl bg-white/40 blur-md motion-safe:animate-pulse"
+              />
+            )}
             <button
               type="button"
               onClick={run}
               disabled={running || busy}
-              className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-bold text-[#0b4f30] shadow-lg transition-transform hover:scale-[1.03] disabled:opacity-70"
+              className="relative inline-flex items-center gap-2.5 rounded-xl bg-white px-8 py-4 text-base font-extrabold text-[#0b4f30] shadow-[0_12px_34px_-8px_rgba(255,255,255,0.65)] ring-2 ring-white/70 transition-transform hover:scale-[1.04] disabled:opacity-70 sm:text-lg"
             >
-              {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4 fill-current" />}
+              {running ? <Loader2 className="size-5 animate-spin" /> : <Play className="size-5 fill-current" />}
               {running ? 'Running the loop…' : stage === 'done' ? 'Run it again' : 'Run the closed loop'}
             </button>
           </div>
