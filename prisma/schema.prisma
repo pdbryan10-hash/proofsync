@@ -252,6 +252,9 @@ model Exception {
 
   @@index([jobId])
   @@index([status])
+  // Loading a SyncRun's exceptions ($lookup on syncRunId) scanned the whole
+  // collection without this — the main driver of the slow-$lookup alert.
+  @@index([syncRunId])
 }
 
 /// Demo-only representation of the TARGET Concerto job record.
@@ -313,4 +316,5 @@ model ProcessedEvent {
   processedAt    DateTime @default(now())
 
   @@index([joblogicJobId])
+  @@index([syncRunId])
 }
