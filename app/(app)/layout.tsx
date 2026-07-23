@@ -24,8 +24,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Link href="/book">
-              <Button variant="success" size="sm">
+            <Link href="/book" className="relative inline-flex">
+              {/* Glow so the CTA is prominent on every page, not just the dashboard */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-1.5 rounded-xl bg-emerald-400/50 blur-md motion-safe:animate-pulse"
+              />
+              <Button variant="success" size="lg" className="relative shadow-lg ring-2 ring-emerald-300/60">
                 <span className="sm:hidden">Book a call</span>
                 <span className="hidden sm:inline">Book a 15-min call</span>
                 <ArrowRight />

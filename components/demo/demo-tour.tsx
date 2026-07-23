@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, X, Compass } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 
 /**
  * Centered guided tour for the demo shell. Walks a first-time visitor through
@@ -52,16 +52,18 @@ const TOUR: Step[] = [
   },
 ];
 
-const KEY = 'ps_demo_tour_v3';
+const KEY = 'ps_demo_tour_v4';
 
 export function DemoTour({ demo = false }: { demo?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [dismissed, setDismissed] = useState(true); // hidden until storage read
 
+  // Session-scoped so it AUTO-LOADS for every fresh visit; a close only lasts
+  // the session (no permanent suppression, no relaunch button needed).
   useEffect(() => {
     try {
-      setDismissed(localStorage.getItem(KEY) === '1');
+      setDismissed(sessionStorage.getItem(KEY) === '1');
     } catch {
       setDismissed(false);
     }
@@ -69,22 +71,12 @@ export function DemoTour({ demo = false }: { demo?: boolean }) {
 
   const dismiss = useCallback(() => {
     try {
-      localStorage.setItem(KEY, '1');
+      sessionStorage.setItem(KEY, '1');
     } catch {
       /* ignore */
     }
     setDismissed(true);
   }, []);
-
-  const restart = useCallback(() => {
-    try {
-      localStorage.removeItem(KEY);
-    } catch {
-      /* ignore */
-    }
-    setDismissed(false);
-    router.push('/dashboard');
-  }, [router]);
 
   const index = TOUR.findIndex((s) => pathname === s.path || pathname.startsWith(s.path + '/'));
   const active = demo && !dismissed && index >= 0;
@@ -113,23 +105,7 @@ export function DemoTour({ demo = false }: { demo?: boolean }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [active, index, go, dismiss]);
 
-  if (!demo) return null;
-
-  // Dismissed, finished, or on a non-tour page → keep a one-click relaunch so
-  // the tour is never truly gone.
-  if (!active) {
-    return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-end px-4 pb-6">
-        <button
-          type="button"
-          onClick={restart}
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-amber-300/50 bg-navy-800 px-4 py-2.5 text-sm font-semibold text-white shadow-xl transition-colors hover:bg-navy-900"
-        >
-          <Compass className="size-4 text-amber-300" /> Show me around
-        </button>
-      </div>
-    );
-  }
+  if (!active) return null;
 
   const s = TOUR[index];
   if (!s) return null;
