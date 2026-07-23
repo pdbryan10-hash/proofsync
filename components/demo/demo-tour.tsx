@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, X, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 
 /**
  * Centered guided tour for the demo shell. Walks a first-time visitor through
@@ -48,7 +48,7 @@ const TOUR: Step[] = [
     path: '/settings',
     step: 'The rules',
     title: 'Set once, then it runs itself.',
-    body: 'How fields map between the two systems, and exactly what each client permits. Configure it once and every sync obeys it — no one babysitting.',
+    body: 'How fields map between the two systems, and exactly what each client permits. Configure it once and every sync obeys it — no one babysitting. That’s the full round trip — now jump into Jobs and open any one to explore it yourself.',
   },
 ];
 
@@ -161,12 +161,19 @@ export function DemoTour({ demo = false }: { demo?: boolean }) {
               )}
               <button
                 type="button"
-                onClick={() => go(index + 1)}
+                onClick={() => {
+                  if (last) {
+                    dismiss();
+                    router.push('/jobs');
+                  } else {
+                    go(index + 1);
+                  }
+                }}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-amber-400 px-4 py-2 text-sm font-bold text-navy-900 transition-colors hover:bg-amber-300"
               >
                 {last ? (
                   <>
-                    Finish <Check className="size-4" />
+                    Explore the jobs yourself <ArrowRight className="size-4" />
                   </>
                 ) : (
                   <>
