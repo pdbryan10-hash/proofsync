@@ -14,8 +14,8 @@ const FIRST_CONNECTOR = 6000;
 const NEXT_CONNECTOR = 2750; // midpoint of £2,500–3,000
 
 function subscriptionBand(jobs: number): { band: string; monthly: number } {
-  if (jobs <= 500) return { band: 'Starter', monthly: 1200 };
-  if (jobs <= 1500) return { band: 'Growth', monthly: 2500 };
+  if (jobs <= 1000) return { band: 'Starter', monthly: 1250 };
+  if (jobs <= 4000) return { band: 'Growth', monthly: 2500 };
   return { band: 'Scale', monthly: 4500 };
 }
 

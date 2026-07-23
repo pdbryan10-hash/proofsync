@@ -65,7 +65,7 @@ const STAGES = [
   {
     n: '04',
     name: 'Run — the engine, kept alive',
-    price: '£1,200 / £2,500 / £4,500 per month',
+    price: '£1,250 / £2,500 / £4,500 per month',
     when: 'ongoing, by volume',
     lead: 'Not maintenance. The layer that keeps your client relationships in step.',
     items: [
@@ -78,9 +78,9 @@ const STAGES = [
 ];
 
 const BANDS = [
-  ['Starter', 'up to ~500 jobs / month', '£1,200 / mo'],
-  ['Growth', '~500–1,500 jobs / month', '£2,500 / mo'],
-  ['Scale', '1,500+ jobs / month', '£4,500 / mo'],
+  ['Starter', 'up to 1,000 jobs / month', '£1,250 / mo'],
+  ['Growth', '1,000–4,000 jobs / month', '£2,500 / mo'],
+  ['Scale', '4,000+ jobs / month', '£4,500 / mo'],
 ];
 
 const LEGAL = [
