@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProofWorks — Sell-Model &amp; Client ROI</title>
+<style>
+  /* ============ TOKENS ============ */
+  /* modeller palette (root) */
+  :root{
+    --ground:#f4f3f0; --panel:#ffffff; --panel-2:#faf9f6;
+    --ink:#1b1f24; --ink-2:#4a525b; --ink-3:#7b838c;
+    --line:#e2ded6; --line-2:#eeeae2;
+    --brass:#b3812f; --brass-soft:#c8943b; --brass-wash:#f6edda;
+    --good:#2f8f66; --good-wash:#e6f2eb;
+    --warn:#c47f22; --warn-wash:#f7edda;
+    --bad:#c24b34; --bad-wash:#f7e6e1;
+    --rec:#1b6b52; --rec-wash:#e7f1ec;
+    --shadow:0 1px 2px rgba(20,24,29,.04),0 8px 24px rgba(20,24,29,.06);
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  /* client palette (scoped to its pane) */
+  #panel-client{
+    --ground:#f5f4f1; --panel:#ffffff; --panel-2:#faf9f6;
+    --ink:#16211f; --ink-2:#4b5855; --ink-3:#7c8884;
+    --line:#e3e0d9; --line-2:#efece5;
+    --brand:#0e5c52; --brand-2:#0b463e; --brand-wash:#e3efec;
+    --return:#1a8f5f; --return-wash:#e6f3ec;
+    --waste:#c0503a; --waste-wash:#f6e7e2; --gold:#b3812f;
+    --shadow:0 1px 2px rgba(16,33,31,.05),0 10px 30px rgba(16,33,31,.07);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#12151a; --panel:#191d23; --panel-2:#15181d;
+      --ink:#eceae4; --ink-2:#adb4bd; --ink-3:#79818b;
+      --line:#2a3038; --line-2:#232830;
+      --brass:#d3a154; --brass-soft:#c8943b; --brass-wash:#2c2413;
+      --good:#4bbd8a; --good-wash:#15251d; --warn:#dca23f; --warn-wash:#2a2312;
+      --bad:#e0745b; --bad-wash:#2a1a15; --rec:#5cc9a0; --rec-wash:#122622;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
+    }
+    #panel-client{
+      --ground:#0f1513; --panel:#161d1b; --panel-2:#121917;
+      --ink:#eaeeec; --ink-2:#a7b3af; --ink-3:#72807b;
+      --line:#26302d; --line-2:#1f2825;
+      --brand:#3fbfa9; --brand-2:#5cd0bb; --brand-wash:#13302b;
+      --return:#4bc088; --return-wash:#122a1f;
+      --waste:#e07a63; --waste-wash:#2c1a15; --gold:#d3a154;
+      --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 32px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#f4f3f0; --panel:#ffffff; --panel-2:#faf9f6;
+    --ink:#1b1f24; --ink-2:#4a525b; --ink-3:#7b838c; --line:#e2ded6; --line-2:#eeeae2;
+    --brass:#b3812f; --brass-soft:#c8943b; --brass-wash:#f6edda;
+    --good:#2f8f66; --good-wash:#e6f2eb; --warn:#c47f22; --warn-wash:#f7edda;
+    --bad:#c24b34; --bad-wash:#f7e6e1; --rec:#1b6b52; --rec-wash:#e7f1ec;
+    --shadow:0 1px 2px rgba(20,24,29,.04),0 8px 24px rgba(20,24,29,.06);
+  }
+  :root[data-theme="light"] #panel-client{
+    --ground:#f5f4f1; --panel:#ffffff; --panel-2:#faf9f6;
+    --ink:#16211f; --ink-2:#4b5855; --ink-3:#7c8884; --line:#e3e0d9; --line-2:#efece5;
+    --brand:#0e5c52; --brand-2:#0b463e; --brand-wash:#e3efec;
+    --return:#1a8f5f; --return-wash:#e6f3ec; --waste:#c0503a; --waste-wash:#f6e7e2; --gold:#b3812f;
+    --shadow:0 1px 2px rgba(16,33,31,.05),0 10px 30px rgba(16,33,31,.07);
+  }
+  :root[data-theme="dark"]{
+    --ground:#12151a; --panel:#191d23; --panel-2:#15181d;
+    --ink:#eceae4; --ink-2:#adb4bd; --ink-3:#79818b; --line:#2a3038; --line-2:#232830;
+    --brass:#d3a154; --brass-soft:#c8943b; --brass-wash:#2c2413;
+    --good:#4bbd8a; --good-wash:#15251d; --warn:#dca23f; --warn-wash:#2a2312;
+    --bad:#e0745b; --bad-wash:#2a1a15; --rec:#5cc9a0; --rec-wash:#122622;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
+  }
+  :root[data-theme="dark"] #panel-client{
+    --ground:#0f1513; --panel:#161d1b; --panel-2:#121917;
+    --ink:#eaeeec; --ink-2:#a7b3af; --ink-3:#72807b; --line:#26302d; --line-2:#1f2825;
+    --brand:#3fbfa9; --brand-2:#5cd0bb; --brand-wash:#13302b;
+    --return:#4bc088; --return-wash:#122a1f; --waste:#e07a63; --waste-wash:#2c1a15; --gold:#d3a154;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 32px rgba(0,0,0,.45);
+  }
+
+  /* ============ BASE + TABS ============ */
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .num{font-variant-numeric:tabular-nums;}
+  .tabs{position:sticky;top:0;z-index:40;display:flex;gap:2px;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:0 clamp(16px,4vw,40px);box-shadow:0 1px 0 var(--line);}
+  .tab-btn{appearance:none;border:none;background:none;font-family:var(--sans);font-size:13.5px;font-weight:600;
+    color:var(--ink-3);padding:15px 16px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.01em;}
+  .tab-btn:hover{color:var(--ink-2);}
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--brass);}
+  .tab-btn.client.active{border-bottom-color:#0e8f7c;}
+  .tab-btn:focus-visible{outline:2px solid var(--brass);outline-offset:-5px;border-radius:4px;}
+  .tab-btn .k{font-weight:400;color:var(--ink-3);font-size:11px;margin-left:6px;letter-spacing:.05em;text-transform:uppercase;}
+  .pane{display:none;background:var(--ground);min-height:100vh;}
+  .pane.active{display:block;}
+
+  /* ============ MODELLER (root palette) ============ */
+  #panel-model .wrap{max-width:1180px;margin:0 auto;padding:clamp(20px,4vw,44px) clamp(16px,4vw,40px) 72px;}
+  #panel-model .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);font-weight:600;margin:0 0 14px;}
+  #panel-model h1{font-family:var(--serif);font-weight:700;font-size:clamp(28px,4.6vw,44px);line-height:1.08;letter-spacing:-.01em;text-wrap:balance;margin:0 0 14px;max-width:22ch;}
+  #panel-model .lede{color:var(--ink-2);font-size:clamp(15px,1.6vw,17px);max-width:62ch;margin:0;}
+  .verdict{margin:28px 0 0;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--rec);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);}
+  .verdict h2{font-family:var(--serif);font-size:19px;margin:0 0 6px;font-weight:700;}
+  .verdict p{margin:0;color:var(--ink-2);font-size:14.5px;} .verdict p+p{margin-top:10px;}
+  .verdict strong{color:var(--ink);} .verdict .hire{color:var(--bad);font-weight:700;}
+  h3.sec{font-family:var(--serif);font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:44px 0 16px;padding-bottom:9px;border-bottom:1px solid var(--line);}
+  .assump{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:14px;}
+  .agroup{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 16px 18px;box-shadow:var(--shadow);}
+  .agroup h4{margin:0 0 3px;font-size:13px;font-weight:700;letter-spacing:.01em;}
+  .agroup h4 .tt{font-weight:600;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-left:6px;}
+  .agroup .hint{margin:0 0 12px;font-size:11.5px;color:var(--ink-3);line-height:1.35;}
+  .field{margin-top:13px;}
+  .field label{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--ink-2);margin-bottom:6px;gap:8px;}
+  .field label b{color:var(--ink);font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+  #panel-model input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--line);border-radius:3px;outline:none;margin:2px 0;}
+  #panel-model input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--brass);cursor:pointer;border:2px solid var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  #panel-model input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--brass);cursor:pointer;border:2px solid var(--panel);}
+  #panel-model input[type=range]:focus-visible{box-shadow:0 0 0 3px var(--brass-wash);}
+  #panel-model input.hrs::-webkit-slider-thumb{background:var(--rec);}
+  #panel-model input.hrs::-moz-range-thumb{background:var(--rec);}
+  .scen{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;}
+  @media(max-width:880px){.scen{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);position:relative;}
+  .card.rec{border-color:var(--rec);box-shadow:0 0 0 1px var(--rec),var(--shadow);}
+  .card-head{padding:16px 18px 14px;border-bottom:1px solid var(--line-2);position:relative;}
+  .card.rec .card-head{background:var(--rec-wash);}
+  .tag{position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:#fff;background:var(--rec);padding:3px 8px;border-radius:20px;}
+  .card-head .ab{font-family:var(--serif);font-size:15px;font-weight:700;}
+  .card-head .nm{font-size:12.5px;color:var(--ink-2);margin-top:2px;max-width:26ch;line-height:1.35;}
+  .levers{padding:14px 18px;border-bottom:1px solid var(--line-2);background:var(--panel-2);}
+  .lever{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0;}
+  .lever span{font-size:12px;color:var(--ink-2);}
+  .lever .in{display:flex;align-items:center;gap:3px;} .lever .in i{font-style:normal;color:var(--ink-3);font-size:13px;}
+  .lever input[type=number]{width:74px;text-align:right;font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 8px;}
+  .lever input:focus-visible{outline:none;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-wash);}
+  .metrics{padding:6px 18px 16px;}
+  .m{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line-2);gap:10px;}
+  .m:last-child{border-bottom:none;}
+  .m .k{font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;gap:1px;}
+  .m .k em{font-style:normal;font-size:10.5px;color:var(--ink-3);}
+  .m .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+  .m.hero{padding:14px 0;} .m.hero .k{font-size:13px;color:var(--ink);font-weight:600;} .m.hero .v{font-size:22px;font-family:var(--serif);}
+  .val .v{color:var(--brass);}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.02em;vertical-align:middle;margin-left:7px;}
+  .pill.good{background:var(--good-wash);color:var(--good);} .pill.warn{background:var(--warn-wash);color:var(--warn);} .pill.bad{background:var(--bad-wash);color:var(--bad);}
+  .sub{font-size:11px;color:var(--ink-3);font-weight:500;}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;} @media(max-width:760px){.charts{grid-template-columns:1fr;}}
+  .chart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px;box-shadow:var(--shadow);}
+  .chart h4{margin:0 0 2px;font-size:14px;font-weight:700;} .chart .csub{margin:0 0 14px;font-size:12px;color:var(--ink-3);}
+  .chart canvas{width:100%;height:230px;display:block;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-2);}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+  .legend i.dash{width:14px;height:0;border-top:2px dashed var(--ink-3);border-radius:0;}
+  .capwrap{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:stretch;} @media(max-width:760px){.capwrap{grid-template-columns:1fr;}}
+  .capside{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:center;}
+  .capside.crit{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad),var(--shadow);}
+  .capside .cl{font-size:12px;color:var(--ink-2);font-weight:600;letter-spacing:.02em;}
+  .capside .cb{font-family:var(--serif);font-weight:700;font-size:clamp(30px,4vw,40px);line-height:1.02;margin:6px 0 10px;color:var(--bad);letter-spacing:-.01em;}
+  .capside.ok .cb{color:var(--rec);}
+  .capside .cn{font-size:12.5px;color:var(--ink-2);line-height:1.5;}
+  .capside .capcash{margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2);font-size:11.5px;color:var(--ink-3);letter-spacing:.02em;text-transform:uppercase;font-weight:600;}
+  .capside .capcash b{font-family:var(--serif);font-size:22px;font-variant-numeric:tabular-nums;display:block;margin-top:4px;text-transform:none;letter-spacing:-.01em;}
+  .capside .capcash b.neg{color:var(--bad);} .capside .capcash b.pos{color:var(--rec);}
+  .capchart{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px;box-shadow:var(--shadow);}
+  .capchart h4{margin:0 0 2px;font-size:14px;font-weight:700;} .capchart .csub{margin:0 0 14px;font-size:12px;color:var(--ink-3);}
+  .capchart canvas{width:100%;height:236px;display:block;}
+  .rule{margin-top:20px;background:var(--brass-wash);border:1px solid var(--line);border-radius:14px;padding:22px 24px;}
+  .rule h4{font-family:var(--serif);margin:0 0 8px;font-size:18px;color:var(--ink);}
+  .rule p{margin:0;color:var(--ink-2);font-size:14px;max-width:70ch;} .rule p+p{margin-top:10px;}
+  .rule .give{color:var(--good);font-weight:700;} .rule .never{color:var(--bad);font-weight:700;}
+  #panel-model .foot{margin-top:34px;font-size:11.5px;color:var(--ink-3);line-height:1.6;max-width:80ch;}
+  #panel-model .foot b{color:var(--ink-2);}
+
+  /* ============ CLIENT ROI (client palette) ============ */
+  .topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;max-width:1060px;margin:0 auto;padding:20px clamp(16px,4vw,40px);}
+  .brand{display:flex;align-items:baseline;gap:9px;}
+  .brand .mark{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:-.01em;color:var(--ink);}
+  .brand .by{font-size:12px;color:var(--ink-3);} .brand .by b{color:var(--brand);font-weight:600;}
+  .tagline{font-size:12.5px;color:var(--ink-2);letter-spacing:.01em;}
+  .cwrap{max-width:1060px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 80px;}
+  .hero{padding:20px 0 8px;}
+  .ceyebrow{font-size:12px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--waste);margin:0 0 14px;}
+  #panel-client h1{font-family:var(--serif);font-weight:700;font-size:clamp(30px,5.2vw,50px);line-height:1.06;letter-spacing:-.015em;text-wrap:balance;margin:0 0 16px;max-width:18ch;}
+  .clede{font-size:clamp(15px,1.7vw,18px);color:var(--ink-2);max-width:58ch;margin:0;}
+  #panel-client h2.sec{font-family:var(--serif);font-size:14px;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:46px 0 16px;padding-bottom:9px;border-bottom:1px solid var(--line);}
+  .calc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px 24px 22px;box-shadow:var(--shadow);}
+  .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(188px,1fr));gap:22px;padding-top:18px;}
+  @media(max-width:820px){.inputs{grid-template-columns:repeat(2,1fr);}} @media(max-width:480px){.inputs{grid-template-columns:1fr;}}
+  .cfield label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--ink-2);margin-bottom:8px;gap:8px;}
+  .cfield label b{color:var(--ink);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .cfield .cap{font-size:11px;color:var(--ink-3);margin-top:7px;}
+  #panel-client input[type=range]{width:100%;height:5px;-webkit-appearance:none;appearance:none;background:var(--line);border-radius:3px;outline:none;}
+  #panel-client input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--brand);cursor:pointer;border:3px solid var(--panel);box-shadow:0 1px 4px rgba(0,0,0,.25);}
+  #panel-client input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--brand);cursor:pointer;border:3px solid var(--panel);}
+  #panel-client input[type=range]:focus-visible{box-shadow:0 0 0 3px var(--brand-wash);}
+  .headline{margin-top:16px;background:var(--waste-wash);border:1px solid var(--line);border-radius:16px;padding:26px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;}
+  .headline .big{font-family:var(--serif);font-weight:700;line-height:1.02;letter-spacing:-.02em;font-size:clamp(34px,6vw,58px);color:var(--waste);}
+  .headline .big span{display:block;font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--ink-2);margin-top:8px;max-width:34ch;}
+  .headline .hours{text-align:right;font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:3px;max-width:32ch;}
+  .headline .hours .hl b{font-weight:700;color:var(--ink);}
+  .headline .hours .ann{margin-top:2px;} .headline .hours .ann b{font-family:var(--serif);font-size:30px;color:var(--ink);font-weight:700;}
+  .headline .hours .spread{font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-top:5px;}
+  .dayscale{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;background:var(--brand-wash);border:1px solid var(--line);border-radius:16px;padding:22px 26px;}
+  .dayscale .ds{display:flex;flex-direction:column;}
+  .dayscale .ds span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:700;}
+  .dayscale .ds b{font-family:var(--serif);font-size:clamp(30px,5vw,44px);line-height:1;color:var(--brand);letter-spacing:-.01em;}
+  .dayscale .ds.save b{color:var(--return);}
+  .dayscale .ds em{font-style:normal;font-size:12px;color:var(--ink-2);margin-top:4px;}
+  .dayscale .dsx{font-size:13px;color:var(--ink-3);font-weight:700;align-self:center;}
+  .dayscale .dsnote{flex:1 1 190px;font-size:13px;color:var(--ink-2);min-width:170px;text-align:right;line-height:1.45;}
+  .bar{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);}
+  .bar h4{margin:0 0 3px;font-size:14px;font-weight:700;} .bar .bsub{margin:0 0 16px;font-size:12.5px;color:var(--ink-3);}
+  .track{display:flex;height:46px;border-radius:9px;overflow:hidden;border:1px solid var(--line);}
+  .track .seg{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;min-width:0;transition:flex-grow .35s ease;}
+  .track .cost{background:var(--brand);} .track .kept{background:var(--return);} .track .seg small{opacity:.85;font-weight:500;margin-left:6px;}
+  .barkey{display:flex;gap:20px;margin-top:12px;font-size:12px;color:var(--ink-2);flex-wrap:wrap;}
+  .barkey i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px;} @media(max-width:720px){.tiles{grid-template-columns:1fr;}}
+  .tile{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 22px 20px;box-shadow:var(--shadow);position:relative;}
+  .tile.accent{border-color:var(--return);box-shadow:0 0 0 1px var(--return),var(--shadow);}
+  .tile .lab{font-size:12px;color:var(--ink-2);font-weight:600;letter-spacing:.02em;}
+  .tile .big{font-family:var(--serif);font-weight:700;font-size:clamp(30px,4.6vw,42px);line-height:1.05;margin:8px 0 4px;letter-spacing:-.01em;color:var(--ink);}
+  .tile.accent .big{color:var(--return);}
+  .tile .note{font-size:12.5px;color:var(--ink-3);}
+  .tile .ratio{display:inline-block;margin-top:12px;font-size:13px;font-weight:700;color:var(--return);background:var(--return-wash);padding:5px 11px;border-radius:20px;}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);}
+  @media(max-width:640px){.compare{grid-template-columns:1fr;}}
+  .col{padding:4px 0 8px;} .col.today{background:var(--panel-2);}
+  .col .ch{padding:16px 22px 12px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line-2);}
+  .col.today .ch{color:var(--waste);} .col.tool .ch{color:var(--brand);}
+  .col .ch .dot{width:9px;height:9px;border-radius:50%;} .col.today .dot{background:var(--waste);} .col.tool .dot{background:var(--brand);}
+  .row{padding:13px 22px;border-bottom:1px solid var(--line-2);} .row:last-child{border-bottom:none;}
+  .row .rl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);margin-bottom:3px;}
+  .row .rv{font-size:14px;color:var(--ink);} .row .rv b{font-variant-numeric:tabular-nums;}
+  .compare .tool{border-left:1px solid var(--line);} @media(max-width:640px){.compare .tool{border-left:none;border-top:1px solid var(--line);}}
+  .invest{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;} @media(max-width:720px){.invest{grid-template-columns:1fr;}}
+  .icard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow);}
+  .icard h4{margin:0 0 4px;font-size:15px;font-weight:700;} .icard p.small{margin:0 0 16px;font-size:12.5px;color:var(--ink-3);}
+  .iline{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line-2);gap:12px;} .iline:last-of-type{border-bottom:none;}
+  .iline .il{font-size:13.5px;color:var(--ink-2);} .iline .il em{font-style:normal;display:block;font-size:11.5px;color:var(--ink-3);margin-top:1px;}
+  .iline .iv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .band-chip{display:inline-block;font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-wash);padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;}
+  .frac{background:var(--brand-wash);border:1px solid var(--line);border-radius:16px;padding:22px 24px;display:flex;flex-direction:column;justify-content:center;}
+  .frac .pctbig{font-family:var(--serif);font-weight:700;font-size:clamp(30px,5vw,46px);color:var(--brand);line-height:1;letter-spacing:-.01em;}
+  .frac p{margin:12px 0 0;font-size:13.5px;color:var(--ink-2);}
+  .beyond{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;} @media(max-width:820px){.beyond{grid-template-columns:repeat(2,1fr);}} @media(max-width:480px){.beyond{grid-template-columns:1fr;}}
+  .bcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow);}
+  .bcard .bt{font-weight:700;font-size:14.5px;margin:0 0 6px;color:var(--ink);}
+  .bcard .bd{font-size:12.5px;color:var(--ink-2);margin:0;line-height:1.5;}
+  .bcard .bmark{width:26px;height:3px;border-radius:2px;background:var(--brand);margin-bottom:14px;}
+  .cta{margin-top:40px;background:var(--brand);border-radius:18px;padding:34px clamp(22px,4vw,44px);color:#fff;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px;}
+  @media (prefers-color-scheme:dark){#panel-client .cta{background:var(--brand-2);}}
+  :root[data-theme="dark"] #panel-client .cta{background:var(--brand-2);}
+  :root[data-theme="light"] #panel-client .cta{background:var(--brand);}
+  .cta h3{font-family:var(--serif);margin:0 0 6px;font-size:clamp(22px,3vw,30px);font-weight:700;color:#fff;}
+  .cta p{margin:0;font-size:14px;color:rgba(255,255,255,.85);max-width:44ch;}
+  .cta .btn{background:#fff;color:var(--brand-2);font-weight:700;font-size:15px;padding:14px 26px;border-radius:11px;white-space:nowrap;text-decoration:none;}
+  .cfoot{margin-top:28px;font-size:11.5px;color:var(--ink-3);line-height:1.65;max-width:82ch;} .cfoot b{color:var(--ink-2);}
+</style>
+</head>
+<body>
+
+
+<div class="tabs">
+  <button class="tab-btn model active" data-tab="model">Sell-model<span class="k">internal</span></button>
+  <button class="tab-btn client" data-tab="client">Client ROI<span class="k">share</span></button>
+</div>
+
+<!-- ========================= MODELLER ========================= -->
+<div id="panel-model" class="pane active">
+  <div class="wrap">
+    <p class="eyebrow">ProofWorks · Sell-model modeller</p>
+    <h1>Build pays for the work. Run pays for the company. Your hours decide when you hire.</h1>
+    <p class="lede">The same model you've sold for thirty years — the install is the one-off, the PPM contract is what makes the business worth buying. Move the levers and watch three sell-models play out across the first 12 months: your cash after you've paid yourself, the client's ROI, what ProofWorks is worth after churn — and the month your own hours run out.</p>
+
+    <div class="verdict" id="verdict">
+      <h2 id="v-title">…</h2>
+      <p id="v-body">…</p>
+      <p id="v-hire">…</p>
+    </div>
+
+    <h3 class="sec">Assumptions — the numbers behind every scenario</h3>
+    <div class="assump">
+      <div class="agroup">
+        <h4>Growth &amp; retention</h4>
+        <p class="hint">How fast you win customers — and how fast they leak away again.</p>
+        <div class="field"><label>New customers / month <b id="l-ramp">2</b></label><input type="range" id="ramp" min="1" max="8" step="1" value="2"></div>
+        <div class="field"><label>Monthly churn <b id="l-churn">1.5%</b></label><input type="range" id="churn" min="0" max="6" step="0.5" value="1.5"></div>
+        <div class="field"><label>Connectors / client (pairs) <b id="l-pairs">3</b></label><input type="range" id="pairs" min="1" max="10" step="1" value="3"></div>
+      </div>
+      <div class="agroup">
+        <h4>Your cash out <span class="tt">£ leaving</span></h4>
+        <p class="hint">Actual cash, including what you draw to live. Your build <em>time</em> isn't here — it's in Your hours.</p>
+        <div class="field"><label>Ops overhead / mo <b>£<span id="l-ops">1,000</span></b></label><input type="range" id="ops" min="0" max="4000" step="100" value="1000"></div>
+        <div class="field"><label>Your drawings / mo <b>£<span id="l-draw">4,000</span></b></label><input type="range" id="draw" min="0" max="10000" step="250" value="4000"></div>
+        <div class="field"><label>AWS VPC / client / mo <b>£<span id="l-vpc">150</span></b></label><input type="range" id="vpc" min="0" max="500" step="10" value="150"></div>
+        <div class="field"><label>Cash cost / build <b>£<span id="l-cashdeliv">750</span></b></label><input type="range" id="cashdeliv" min="0" max="6000" step="250" value="750"></div>
+      </div>
+      <div class="agroup">
+        <h4>Your hours <span class="tt">the real constraint</span></h4>
+        <p class="hint">One person — and ProofSync isn't your only project. Quotes, compliance and SLA work come off the top; ProofSync lives on what's left.</p>
+        <div class="field"><label>Build hours / client <b id="l-buildhrs">45</b></label><input type="range" class="hrs" id="buildhrs" min="10" max="120" step="5" value="45"></div>
+        <div class="field"><label>Support hrs / client / mo <b id="l-suphrs">3</b></label><input type="range" class="hrs" id="suphrs" min="0" max="12" step="0.5" value="3"></div>
+        <div class="field"><label>Hours you have / mo <b id="l-availhrs">150</b></label><input type="range" class="hrs" id="availhrs" min="60" max="220" step="10" value="150"></div>
+        <div class="field"><label>Held for other work / mo <b id="l-other">40</b></label><input type="range" class="hrs" id="otherhrs" min="0" max="160" step="10" value="40"></div>
+      </div>
+      <div class="agroup">
+        <h4>Company value</h4>
+        <p class="hint">Recurring is valued on a multiple; one-off build revenue barely counts.</p>
+        <div class="field"><label>ARR multiple <b id="l-mult">6×</b></label><input type="range" id="mult" min="2" max="15" step="0.5" value="6"></div>
+        <div class="field"><label>One-off revenue multiple <b id="l-omult">0.5×</b></label><input type="range" id="omult" min="0" max="2" step="0.1" value="0.5"></div>
+      </div>
+      <div class="agroup">
+        <h4>What the client saves</h4>
+        <p class="hint">Re-keying removed: jobs × minutes each × loaded admin rate.</p>
+        <div class="field"><label>Jobs re-keyed / mo <b id="l-jobs">1,000</b></label><input type="range" id="jobs" min="100" max="3000" step="50" value="1000"></div>
+        <div class="field"><label>Minutes / job <b id="l-mins">20</b></label><input type="range" id="mins" min="5" max="45" step="1" value="20"></div>
+        <div class="field"><label>Loaded admin rate / hr <b>£<span id="l-rate">19</span></b></label><input type="range" id="rate" min="12" max="40" step="1" value="19"></div>
+      </div>
+    </div>
+
+    <h3 class="sec">The three sell-models</h3>
+    <div class="scen" id="scen"></div>
+
+    <h3 class="sec">Cash &amp; company value over 12 months</h3>
+    <div class="charts">
+      <div class="chart">
+        <h4>Cash in the bank — after you've paid yourself</h4>
+        <p class="csub">Cumulative, month by month, drawings included. Below the line = your household is funding the business.</p>
+        <canvas id="cashChart"></canvas><div class="legend" id="cashLegend"></div>
+      </div>
+      <div class="chart">
+        <h4>What ProofWorks is worth at month 12</h4>
+        <p class="csub">Churn-adjusted run-rate ARR × multiple, plus a small credit for one-off build revenue.</p>
+        <canvas id="valChart"></canvas><div class="legend" id="valLegend"></div>
+      </div>
+    </div>
+
+    <h3 class="sec">The binding constraint — your hours, not your cash</h3>
+    <div class="capwrap">
+      <div class="capside" id="capside">
+        <div class="cl">You run out of hours in</div>
+        <div class="cb" id="cap-hire">month 9</div>
+        <div class="cn" id="cap-note">…</div>
+        <div class="capcash"><span id="cap-cash-label">Your bank then (model C)</span><b id="cap-cash">£—</b></div>
+      </div>
+      <div class="capchart">
+        <h4>Hours you need vs hours you have</h4>
+        <p class="csub">Builds are lumpy and front-loaded; support grows with every live client. Same for all three price models — pricing doesn't buy you time.</p>
+        <canvas id="capChart"></canvas><div class="legend" id="capLegend"></div>
+      </div>
+    </div>
+
+    <div class="rule">
+      <h4>The trade rule — for the conversation with Jeff</h4>
+      <p>Capital pays for the work; recurring pays for the company. The build fee should cover your delivery and keep you liquid. The monthly <em>is</em> the asset — it's what someone buys when they buy ProofWorks, and it's the price OCS and the MML 300 behind them will anchor to.</p>
+      <p>So when a customer pushes on price — and they will — <span class="give">give away the upfront</span>, <span class="never">never the monthly</span>. "We'll credit the POC and waive half the connector fee" costs you once. "£299 a month" costs you every month, for years, on every deal after it.</p>
+    </div>
+
+    <p class="foot"><b>How the maths works.</b> Each customer pays the build fee once, then the monthly for as long as they stay — <b>churn</b> leaks the active base away at the rate you set, so recurring, month-12 MRR and valuation are all net of it. <b>Cash</b> is real money: fees in, minus AWS per live client, ops, cash build costs, and <b>your drawings</b> — so the low-point is your household exposure, not just the company's. Your build <b>time</b> is deliberately not a cash cost (you don't pay yourself twice); it lives in <b>hours</b>. <b>Net margin</b> = 12-month revenue minus all of that cash. <b>Company value</b> = churn-adjusted run-rate ARR (month-12 MRR × 12) × multiple, plus one-off revenue × the one-off multiple. <b>Hours required</b> each month = new builds × build hours + live clients × support hours; where it crosses the hours you have is the month you must hire. Excludes VAT; a planning model, not a forecast.</p>
+  </div>
+</div>
+
+<!-- ========================= CLIENT ROI ========================= -->
+<!--CLIENT-PANEL-START-->
+<div id="panel-client" class="pane">
+  <div class="topbar">
+    <div class="brand"><span class="mark">ProofSync</span><span class="by">by <b>ProofWorks</b></span></div>
+    <div class="tagline">Verified completions, synced. Nobody re-types anything.</div>
+  </div>
+  <div class="cwrap">
+    <div class="hero">
+      <p class="ceyebrow">The re-keying tax</p>
+      <h1>Every completed job you re-key by hand is money leaving the business.</h1>
+      <p class="clede">Your engineers close jobs in your job-management system. Then someone re-types each one into your client's CAFM — by hand, days later, with the odd typo and the odd one missed. ProofSync syncs each verified completion across automatically, with a full audit trail. Put your own numbers in and see what that's worth.</p>
+    </div>
+
+    <h2 class="sec">Your operation — move the sliders</h2>
+    <div class="calc">
+      <div class="inputs">
+        <div class="cfield"><label>Jobs completed / month <b id="cr_l-jobs">2,700</b></label><input type="range" id="cr_jobs" min="100" max="8000" step="100" value="2700"><div class="cap">Jobs re-keyed into a client CAFM.</div></div>
+        <div class="cfield"><label>Minutes to re-key each <b id="cr_l-mins">20</b></label><input type="range" id="cr_mins" min="5" max="45" step="1" value="20"><div class="cap">Find it, re-type it, attach the paperwork, check it.</div></div>
+        <div class="cfield"><label>Admin cost / hour <b>£<span id="cr_l-rate">19</span></b></label><input type="range" id="cr_rate" min="12" max="40" step="1" value="19"><div class="cap">Fully-loaded — salary, on-costs, overhead.</div></div>
+        <div class="cfield"><label>Client systems you feed <b id="cr_l-conn">3</b></label><input type="range" id="cr_conn" min="1" max="10" step="1" value="3"><div class="cap">Separate client CAFMs you sync into — one pair each.</div></div>
+        <div class="cfield"><label>Mis-keyed &amp; redone <b id="cr_l-err">10%</b></label><input type="range" id="cr_err" min="0" max="30" step="1" value="10"><div class="cap">Share of manual entries with errors found and re-keyed.</div></div>
+        <div class="cfield"><label>Still needs a human <b id="cr_l-resid">5%</b></label><input type="range" id="cr_resid" min="0" max="20" step="1" value="5"><div class="cap">Exceptions ProofSync can't auto-sync — someone still handles them.</div></div>
+      </div>
+    </div>
+
+    <div class="headline">
+      <div class="big" id="cr_h-perjob">£6.97<span>in admin on every single job — re-typing something your engineer already recorded.</span></div>
+      <div class="hours">
+        <div class="hl">across <b id="cr_h-vol">2,700</b> jobs a month</div>
+        <div class="ann"><b id="cr_h-waste">£226k</b> a year</div>
+        <div class="spread">roughly a person's worth of time — spread across your coordinators, supervisors and engineers, not a dedicated desk.</div>
+      </div>
+    </div>
+
+    <div class="dayscale">
+      <div class="ds"><span>Costs</span><b id="cr_ds-cost">£148</b><em>a day to run</em></div>
+      <div class="dsx">vs</div>
+      <div class="ds save"><span>Saves</span><b id="cr_ds-save">£590</b><em>a day in admin</em></div>
+      <div class="dsnote" id="cr_ds-note">A fraction of what it removes — and it pays for itself in under a month.</div>
+    </div>
+
+    <div class="bar">
+      <h4>Where the money goes in year one</h4>
+      <p class="bsub">Against the labour ProofSync removes, this is what you pay for it — and what you keep.</p>
+      <div class="track" id="cr_track">
+        <div class="seg cost" id="cr_seg-cost">Pay for ProofSync</div>
+        <div class="seg kept" id="cr_seg-kept">You keep</div>
+      </div>
+      <div class="barkey">
+        <span><i style="background:var(--brand)"></i>What you pay ProofSync in year one (build + 12 months)</span>
+        <span><i style="background:var(--return)"></i>Net saving you keep</span>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="lab">Pays for itself in</div><div class="big" id="cr_t-payback">3.4 months</div><div class="note">The one-off connector cost is back in your pocket this fast.</div></div>
+      <div class="tile"><div class="lab">Net gain, year one</div><div class="big" id="cr_t-yr1">£33,000</div><div class="note" id="cr_t-yr1note">After every penny of build and monthly fees.</div></div>
+      <div class="tile accent"><div class="lab">Net gain over five years</div><div class="big" id="cr_t-yr3">£240,000</div><div class="ratio" id="cr_t-ratio">£2.60 back for every £1</div></div>
+    </div>
+
+    <h2 class="sec">By hand, versus with ProofSync</h2>
+    <div class="compare">
+      <div class="col today">
+        <div class="ch"><span class="dot"></span>Today — re-keyed by hand</div>
+        <div class="row"><div class="rl">Admin time</div><div class="rv"><b id="cr_c-hours">4,000</b> hours a year re-typing</div></div>
+        <div class="row"><div class="rl">Annual cost</div><div class="rv"><b id="cr_c-cost">£76,000</b> in wages on data entry</div></div>
+        <div class="row"><div class="rl">Errors</div><div class="rv">Mis-keys, missed jobs, client disputes</div></div>
+        <div class="row"><div class="rl">Audit trail</div><div class="rv">A spreadsheet, if you're lucky</div></div>
+        <div class="row"><div class="rl">Client sees completion</div><div class="rv">Days later, once someone gets to it</div></div>
+      </div>
+      <div class="col tool">
+        <div class="ch"><span class="dot"></span>With ProofSync</div>
+        <div class="row"><div class="rl">Admin time</div><div class="rv"><b id="cr_c-hours2">200</b> hours — exceptions only</div></div>
+        <div class="row"><div class="rl">Annual cost</div><div class="rv"><b id="cr_c-cost2">£30,000</b> service — a fraction of the wages</div></div>
+        <div class="row"><div class="rl">Errors</div><div class="rv">An exact copy of the source record, every field</div></div>
+        <div class="row"><div class="rl">Audit trail</div><div class="rv">Every sync logged, timestamped, verifiable</div></div>
+        <div class="row"><div class="rl">Client sees completion</div><div class="rv">Minutes after the engineer closes the job</div></div>
+      </div>
+    </div>
+
+    <h2 class="sec">What ProofSync costs</h2>
+    <div class="invest">
+      <div class="icard">
+        <h4>Transparent, and mostly one-off</h4>
+        <p class="small">One connector per client system you feed. The build is a single payment; the monthly keeps it running and supported.</p>
+        <div class="iline"><div class="il">Connectors — one-off build<em id="cr_i-connnote">£6,000 first + £3,000 × 2 more</em></div><div class="iv" id="cr_i-build">£12,000</div></div>
+        <div class="iline"><div class="il">Monthly service<em>Sync, hosting, support, audit trail</em></div><div class="iv"><span id="cr_i-monthly">£2,500</span><span class="band-chip" id="cr_i-band">Mid</span></div></div>
+        <div class="iline"><div class="il">Which is, per day<em>Every day of the year — you save about £<span id="cr_i-savedday">208</span> a day</em></div><div class="iv" id="cr_i-perday">£82</div></div>
+        <div class="iline"><div class="il">Year-one total<em>Build + 12 months</em></div><div class="iv" id="cr_i-yr1">£43,000</div></div>
+      </div>
+      <div class="frac">
+        <div class="pctbig" id="cr_f-pct">57%</div>
+        <p id="cr_f-text">That's how much of your current re-keying bill ProofSync costs in year one — and after that it's just the monthly against the same saving, every year.</p>
+      </div>
+    </div>
+
+    <h2 class="sec">Beyond the money</h2>
+    <div class="beyond">
+      <div class="bcard"><div class="bmark"></div><p class="bt">Nothing slips</p><p class="bd">Every completed job syncs. No forgotten entries, no end-of-month scramble to reconcile what actually got done.</p></div>
+      <div class="bcard"><div class="bmark"></div><p class="bt">Right first time</p><p class="bd">The client's system holds an exact copy of the source record — not a tired re-type at 5pm. Fewer disputes, cleaner invoices.</p></div>
+      <div class="bcard"><div class="bmark"></div><p class="bt">Get paid sooner</p><p class="bd">Completions land in the client's CAFM minutes after close, not days. The clock to your payment starts earlier.</p></div>
+      <div class="bcard"><div class="bmark"></div><p class="bt">Capacity back</p><p class="bd">Your admin team stops re-typing and starts on work that actually needs a person. Growth without another hire.</p></div>
+    </div>
+
+    <div class="cta">
+      <div><h3>See it run on your own jobs</h3><p>A short working session on your real completions and client systems — no re-keying, start to finish.</p></div>
+      <a class="btn" href="#">Book a walkthrough</a>
+    </div>
+
+    <p class="cfoot"><b>How these figures are worked out.</b> The saving is your own numbers: jobs re-keyed each month × minutes each × your fully-loaded admin rate, plus a rework allowance for entries that are mis-keyed and re-done (10% by default). The saving is net of the exceptions ProofSync can't auto-sync (5% by default), which still need a person. Connector build is £6,000 for the first client system and £3,000 for each additional one. The monthly is a per-pair ratchet — one pair is one client CAFM you sync into: £299 for the first, £200 for each of the next four, then £180 each beyond that. The per-job figure is the current annual admin cost divided by annual jobs, so the yearly total is simply that per-job cost across your own volume — check the one, and the other follows. Figures exclude missed-job and late-payment costs, which ProofSync also reduces, and exclude VAT. A planning estimate to size the opportunity, not a quote.</p>
+  </div>
+</div>
+
+<!--CLIENT-PANEL-END-->
+
+<script>
+/* ---------- TABS ---------- */
+(function(){
+  var btns=[].slice.call(document.querySelectorAll('.tab-btn'));
+  var panes=[].slice.call(document.querySelectorAll('.pane'));
+  function show(name){
+    panes.forEach(function(p){p.classList.toggle('active',p.id==='panel-'+name);});
+    btns.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-tab')===name);});
+    if(name==='model'){window.dispatchEvent(new Event('resize'));}
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){show(b.getAttribute('data-tab'));});});
+})();
+
+/* ---------- MODELLER ---------- */
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var HORIZON=12;
+  /* Per-pair MRR ratchet — one pair = one client CAFM. 1st £299 · 2–5 £200 · 6+ £180. */
+  function ratchet(pairs){pairs=Math.max(0,Math.round(pairs));if(pairs<=0)return 0;return 299+200*Math.min(Math.max(pairs-1,0),4)+180*Math.max(pairs-5,0);}
+  /* Recurring is now fixed policy (the ratchet); the sell-models differ only on the UPFRONT. */
+  var scenarios=[
+    {id:"A", ab:"A — Front-loaded upfront", nm:"Charge more of the value upfront; the ratchet monthly sits on top. Suits FM buyers who prefer capex.", build:16000},
+    {id:"B", ab:"B — Minimal upfront", nm:"Near-zero setup to win the deal; the ratchet monthly does the work. Lowest barrier to yes.", build:2000},
+    {id:"C", ab:"C — Balanced (current)", nm:"£6k first pair + £3k each extra covers delivery; the ratchet monthly is the annuity.", build:12000, rec:true}
+  ];
+  function colVar(){
+    var dark=matchMedia("(prefers-color-scheme:dark)").matches;
+    var attr=document.documentElement.getAttribute("data-theme");
+    if(attr==="dark")dark=true; if(attr==="light")dark=false;
+    return {A:dark?"#8b939d":"#6b7079", B:dark?"#d3a154":"#b3812f", C:dark?"#5cc9a0":"#1b6b52",
+            brass:dark?"#d3a154":"#b3812f", bad:dark?"#e0745b":"#c24b34", rec:dark?"#5cc9a0":"#1b6b52",
+            grid:dark?"#2a3038":"#e8e4dc", txt:dark?"#79818b":"#7b838c", ink:dark?"#adb4bd":"#4a525b",
+            badWash:dark?"rgba(224,116,91,.14)":"rgba(194,75,52,.10)"};
+  }
+  function gv(id){return parseFloat($(id).value);}
+  function inputs(){
+    return {ramp:gv("ramp"),churn:gv("churn"),ops:gv("ops"),draw:gv("draw"),vpc:gv("vpc"),cashDeliv:gv("cashdeliv"),
+      buildHrs:gv("buildhrs"),supHrs:gv("suphrs"),availHrs:gv("availhrs"),other:gv("otherhrs"),mult:gv("mult"),omult:gv("omult"),
+      pairs:gv("pairs"),jobs:gv("jobs"),mins:gv("mins"),rate:gv("rate")};
+  }
+  function activeSeries(I){var k=I.ramp,c=I.churn/100,active=0,arr=[];for(var m=1;m<=HORIZON;m++){active=active*(1-c)+k;arr.push(active);}return arr;}
+  function model(s,I){
+    var k=I.ramp,act=activeSeries(I),monthly=ratchet(I.pairs);
+    var buildRev=0,recRev=0,vpcCost=0,cashDeliv=0,opsCost=0,drawCost=0,cash=0,minCash=Infinity,series=[];
+    for(var m=1;m<=HORIZON;m++){
+      var active=act[m-1],newC=k;
+      buildRev+=newC*s.build; recRev+=active*monthly;
+      cashDeliv+=newC*I.cashDeliv; vpcCost+=active*I.vpc; opsCost+=I.ops; drawCost+=I.draw;
+      var inflow=newC*s.build+active*monthly;
+      var outflow=newC*I.cashDeliv+active*I.vpc+I.ops+I.draw;
+      cash+=inflow-outflow; series.push(cash); if(cash<minCash)minCash=cash;
+    }
+    var dipped=false,breakeven=null;
+    for(var i=0;i<series.length;i++){if(series[i]<0)dipped=true;if(series[i]>=0&&dipped){breakeven=i+1;break;}}
+    if(!dipped)breakeven=1;
+    var revenue=buildRev+recRev, cashCost=cashDeliv+vpcCost+opsCost+drawCost;
+    var margin=revenue-cashCost, marginPct=revenue>0?margin/revenue*100:0;
+    var endActive=act[HORIZON-1], endMRR=endActive*monthly, arr=endMRR*12;
+    var valuation=arr*I.mult+buildRev*I.omult, totalCust=k*HORIZON;
+    var save=(I.jobs*I.mins/60)*I.rate, netMo=save-monthly;
+    var payback=netMo>0?s.build/netMo:Infinity, yr1cost=monthly*12+s.build, yr1roi=(save*12-yr1cost)/yr1cost*100;
+    return {totalCust:totalCust,endActive:endActive,buildRev:buildRev,recRev:recRev,revenue:revenue,margin:margin,marginPct:marginPct,
+      endMRR:endMRR,arr:arr,valuation:valuation,minCash:minCash,breakeven:breakeven,series:series,
+      payback:payback,yr1roi:yr1roi,monthly:monthly,build:s.build};
+  }
+  function capacity(I){var act=activeSeries(I),k=I.ramp,req=[],hire=null;
+    var avail=Math.max(0,I.availHrs-I.other);
+    for(var m=1;m<=HORIZON;m++){var h=k*I.buildHrs+act[m-1]*I.supHrs;req.push(h);if(hire===null&&h>avail)hire=m;}
+    return {req:req,avail:avail,total:I.availHrs,other:I.other,hire:hire,act:act,buildLoad:k*I.buildHrs};}
+  function gbp(n){var neg=n<0;n=Math.abs(Math.round(n));return (neg?"−£":"£")+n.toLocaleString("en-GB");}
+  function gbpK(n){var neg=n<0,a=Math.abs(n),s;if(a>=1e6)s="£"+(a/1e6).toFixed(a>=1e7?1:2).replace(/\.0+$/,'')+"m";else if(a>=1000)s="£"+Math.round(a/1000)+"k";else s="£"+Math.round(a);return neg?"−"+s:s;}
+  function pct(n){return (n>=0?"":"−")+Math.abs(Math.round(n))+"%";}
+  function months(n){if(!isFinite(n))return "never";if(n<1)return "<1 mo";return Math.round(n)+" mo";}
+  function renderCards(res){
+    var host=$("scen");host.innerHTML="";
+    var maxVal=Math.max.apply(null,res.map(function(r){return r.m.valuation;}));
+    res.forEach(function(o){
+      var s=o.s,r=o.m;
+      var cashPill=r.minCash>=0?'<span class="pill good">never in the red</span>':(r.minCash<-0.25*Math.max(r.revenue,1)?'<span class="pill bad">deep cash hole</span>':'<span class="pill warn">funds it a while</span>');
+      var roiClass=r.yr1roi>=100?"good":(r.yr1roi>=0?"warn":"bad");
+      var valBest=Math.abs(r.valuation-maxVal)<1?'<span class="pill good">most valuable</span>':'';
+      var card=document.createElement("div");card.className="card"+(s.rec?" rec":"");
+      card.innerHTML=(s.rec?'<span class="tag">Recommended</span>':'')+
+        '<div class="card-head"><div class="ab">'+s.ab+'</div><div class="nm">'+s.nm+'</div></div>'+
+        '<div class="levers">'+
+          '<div class="lever"><span>Build fee (one-off)</span><span class="in"><i>£</i><input type="number" data-s="'+s.id+'" data-f="build" value="'+s.build+'" step="500" min="0"></span></div>'+
+          '<div class="lever"><span>Monthly / client <i style="font-style:normal;color:var(--ink-3);font-size:11px">ratchet</i></span><span class="in"><b style="font-variant-numeric:tabular-nums;color:var(--ink)">'+gbp(r.monthly)+'</b></span></div>'+
+        '</div>'+
+        '<div class="metrics">'+
+          '<div class="m hero val"><div class="k">Company value @ mo 12'+valBest+'</div><div class="v">'+gbp(r.valuation)+'</div></div>'+
+          '<div class="m"><div class="k">12-mo revenue<em>'+gbp(r.buildRev)+' build · '+gbp(r.recRev)+' run</em></div><div class="v">'+gbp(r.revenue)+'</div></div>'+
+          '<div class="m"><div class="k">Net margin<em>after ops + your drawings</em></div><div class="v" style="'+(r.margin<0?'color:var(--bad)':'')+'">'+gbp(r.margin)+' <span class="sub">'+Math.round(r.marginPct)+'%</span></div></div>'+
+          '<div class="m"><div class="k">Run-rate ARR @ mo 12<em>'+gbp(r.endMRR)+' MRR · '+r.endActive.toFixed(1)+' live</em></div><div class="v">'+gbp(r.arr)+'</div></div>'+
+          '<div class="m"><div class="k">Cash low-point '+cashPill+'<em>break-even '+(r.breakeven?("mo "+r.breakeven):"—")+'</em></div><div class="v" style="'+(r.minCash<0?'color:var(--bad)':'')+'">'+gbp(r.minCash)+'</div></div>'+
+          '<div class="m"><div class="k">Client payback<em>year-1 ROI '+pct(r.yr1roi)+'</em></div><div class="v">'+months(r.payback)+' <span class="pill '+roiClass+'">'+pct(r.yr1roi)+'</span></div></div>'+
+        '</div>';
+      host.appendChild(card);
+    });
+    host.querySelectorAll('input[type=number]').forEach(function(inp){
+      inp.addEventListener("input",function(){
+        var sid=inp.getAttribute("data-s"),f=inp.getAttribute("data-f");
+        var sc=scenarios.filter(function(x){return x.id===sid;})[0];
+        var v=parseFloat(inp.value);if(isNaN(v))v=0;sc[f]=v;recompute();
+      });
+    });
+  }
+  function setup(cv){var dpr=Math.max(1,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
+    cv.width=w*dpr;cv.height=h*dpr;var ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);return {ctx:ctx,w:w,h:h};}
+  function drawCash(res){
+    var c=setup($("cashChart")),ctx=c.ctx,w=c.w,h=c.h,C=colVar(),pad={l:52,r:12,t:12,b:24};
+    var all=[];res.forEach(function(o){o.m.series.forEach(function(v){all.push(v);});});all.push(0);
+    var min=Math.min.apply(null,all),max=Math.max.apply(null,all);if(min===max)max=min+1;var p=(max-min)*0.08;min-=p;max+=p;
+    var X=function(m){return pad.l+(w-pad.l-pad.r)*(m/(HORIZON-1));},Y=function(v){return pad.t+(h-pad.t-pad.b)*(1-(v-min)/(max-min));};
+    ctx.font="10px -apple-system,Segoe UI,sans-serif";ctx.textBaseline="middle";
+    for(var g=0;g<=4;g++){var val=min+(max-min)*g/4,yy=Y(val);ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillStyle=C.txt;ctx.textAlign="right";ctx.fillText(gbpK(val),pad.l-8,yy);}
+    if(min<0&&max>0){var yz=Y(0);ctx.strokeStyle=C.ink;ctx.lineWidth=1.4;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(pad.l,yz);ctx.lineTo(w-pad.r,yz);ctx.stroke();ctx.setLineDash([]);}
+    ctx.fillStyle=C.txt;ctx.textAlign="center";ctx.textBaseline="top";[1,4,8,12].forEach(function(mm){ctx.fillText("mo "+mm,X(mm-1),h-pad.b+6);});
+    res.forEach(function(o){var col=C[o.s.id];ctx.strokeStyle=col;ctx.lineWidth=o.s.rec?2.6:1.8;ctx.beginPath();
+      o.m.series.forEach(function(v,i){var xx=X(i),yy=Y(v);i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);});ctx.stroke();
+      var lv=o.m.series[o.m.series.length-1];ctx.fillStyle=col;ctx.beginPath();ctx.arc(X(HORIZON-1),Y(lv),o.s.rec?4:3,0,7);ctx.fill();});
+    $("cashLegend").innerHTML=res.map(function(o){return '<span><i style="background:'+C[o.s.id]+'"></i>'+o.s.id+' · low '+gbpK(o.m.minCash)+'</span>';}).join("");
+  }
+  function drawVal(res){
+    var c=setup($("valChart")),ctx=c.ctx,w=c.w,h=c.h,C=colVar(),pad={l:52,r:12,t:12,b:24};
+    var max=Math.max.apply(null,res.map(function(o){return o.m.valuation;}));if(max<=0)max=1;max*=1.12;
+    var Y=function(v){return pad.t+(h-pad.t-pad.b)*(1-v/max);};
+    ctx.font="10px -apple-system,Segoe UI,sans-serif";ctx.textBaseline="middle";
+    for(var g=0;g<=4;g++){var val=max*g/4,yy=Y(val);ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillStyle=C.txt;ctx.textAlign="right";ctx.fillText(gbpK(val),pad.l-8,yy);}
+    var n=res.length,band=(w-pad.l-pad.r)/n,bw=Math.min(84,band*0.5);
+    res.forEach(function(o,i){var cx=pad.l+band*i+band/2,yy=Y(o.m.valuation),y0=Y(0),col=C[o.s.id];
+      ctx.fillStyle=col;var rx=cx-bw/2,r=6;ctx.beginPath();ctx.moveTo(rx,y0);ctx.lineTo(rx,yy+r);ctx.arcTo(rx,yy,rx+r,yy,r);ctx.lineTo(rx+bw-r,yy);ctx.arcTo(rx+bw,yy,rx+bw,yy+r,r);ctx.lineTo(rx+bw,y0);ctx.closePath();ctx.fill();
+      ctx.fillStyle=C.ink;ctx.textAlign="center";ctx.textBaseline="bottom";ctx.font="600 12px -apple-system,Segoe UI,sans-serif";ctx.fillText(gbpK(o.m.valuation),cx,yy-5);
+      ctx.fillStyle=C.txt;ctx.textBaseline="top";ctx.font="11px -apple-system,Segoe UI,sans-serif";ctx.fillText(o.s.id,cx,h-pad.b+6);});
+    $("valLegend").innerHTML=res.map(function(o){return '<span><i style="background:'+C[o.s.id]+'"></i>'+o.s.id+' · '+gbpK(o.m.arr)+' ARR</span>';}).join("");
+  }
+  function drawCap(cap){
+    var c=setup($("capChart")),ctx=c.ctx,w=c.w,h=c.h,C=colVar(),pad={l:44,r:12,t:12,b:24};
+    var max=Math.max(cap.avail,Math.max.apply(null,cap.req))*1.12;if(max<=0)max=1;
+    var X=function(m){return pad.l+(w-pad.l-pad.r)*(m/(HORIZON-1));},Y=function(v){return pad.t+(h-pad.t-pad.b)*(1-v/max);};
+    ctx.font="10px -apple-system,Segoe UI,sans-serif";ctx.textBaseline="middle";
+    for(var g=0;g<=4;g++){var val=max*g/4,yy=Y(val);ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillStyle=C.txt;ctx.textAlign="right";ctx.fillText(Math.round(val)+"h",pad.l-8,yy);}
+    ctx.fillStyle=C.txt;ctx.textAlign="center";ctx.textBaseline="top";[1,4,8,12].forEach(function(mm){ctx.fillText("mo "+mm,X(mm-1),h-pad.b+6);});
+    ctx.fillStyle=C.badWash;
+    for(var i=0;i<cap.req.length;i++){if(cap.req[i]>cap.avail){var x0=X(i-0.5<0?0:i-0.5),x1=X(i+0.5>HORIZON-1?HORIZON-1:i+0.5);ctx.fillRect(x0,pad.t,x1-x0,Y(cap.avail)-pad.t);}}
+    var ya=Y(cap.avail);ctx.strokeStyle=C.txt;ctx.lineWidth=1.6;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(pad.l,ya);ctx.lineTo(w-pad.r,ya);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=C.txt;ctx.textAlign="left";ctx.textBaseline="bottom";ctx.font="10px -apple-system,Segoe UI,sans-serif";ctx.fillText("free for ProofSync",pad.l+4,ya-3);
+    ctx.strokeStyle=C.brass;ctx.lineWidth=2.6;ctx.beginPath();cap.req.forEach(function(v,i){var xx=X(i),yy=Y(v);i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);});ctx.stroke();
+    cap.req.forEach(function(v,i){ctx.fillStyle=v>cap.avail?C.bad:C.brass;ctx.beginPath();ctx.arc(X(i),Y(v),2.6,0,7);ctx.fill();});
+    if(cap.hire){var xh=X(cap.hire-1);ctx.strokeStyle=C.bad;ctx.lineWidth=1.4;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xh,pad.t);ctx.lineTo(xh,h-pad.b);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=C.bad;ctx.textAlign="center";ctx.textBaseline="top";ctx.font="700 11px -apple-system,Segoe UI,sans-serif";var lbl="hire · mo "+cap.hire,tw=ctx.measureText(lbl).width,lx=Math.min(Math.max(xh,pad.l+tw/2),w-pad.r-tw/2);ctx.fillText(lbl,lx,pad.t+2);}
+    $("capLegend").innerHTML='<span><i style="background:'+C.brass+'"></i>Hours you need</span><span><i class="dash"></i>Hours free for ProofSync ('+cap.avail+'/mo)</span>';
+  }
+  function renderVerdict(res,cap,I){
+    var C=res[2].m, mR=ratchet(I.pairs);
+    var byVal=res.slice().sort(function(a,b){return b.m.valuation-a.m.valuation;});
+    var byCash=res.slice().sort(function(a,b){return b.m.minCash-a.m.minCash;});
+    var valSpread=byVal[0].m.valuation-byVal[byVal.length-1].m.valuation;
+    $("v-title").textContent="At "+I.pairs+" pair"+(I.pairs>1?"s":"")+" a client, every model earns "+gbp(mR)+"/mo. The annuity is the asset — the upfront barely moves it.";
+    var b='The monthly is now fixed by the ratchet — <strong>'+gbp(mR)+' per client at '+I.pairs+' pair'+(I.pairs>1?'s':'')+'</strong> — so all three sell-models build the same recurring base and land within <strong>'+gbp(valSpread)+'</strong> of each other on company value ('+gbp(byVal[byVal.length-1].m.valuation)+'–'+gbp(byVal[0].m.valuation)+'). ';
+    b+='The only real difference is cash: model <strong>'+byCash[0].s.id+'</strong> is easiest on the bank (low-point '+gbp(byCash[0].m.minCash)+', after drawings) because a bigger upfront brings cash in sooner. ';
+    b+='That is the whole point of the ratchet — <strong>give away the upfront to win the deal; the monthly, and so the company value, is protected either way.</strong>';
+    $("v-body").innerHTML=b;
+    var hire;
+    if(cap.hire){var cah=C.series[cap.hire-1];
+      hire='And whatever you charge, <span class="hire">your own hours run out in month '+cap.hire+'</span> — builds alone eat '+Math.round(cap.buildLoad)+' of the '+cap.avail+' hours left for ProofSync each month (after '+cap.other+'h of other projects), before you support a single live client. By then your bank on model C reads <strong>'+gbp(cah)+'</strong> — that\'s what has to fund the hire, or the signal to slow the ramp. The hours decision lands before the cash one, and no price model buys it back.';}
+    else{hire='And on these numbers <span style="color:var(--rec);font-weight:700">your hours hold for the full year</span> ('+Math.round(Math.max.apply(null,cap.req))+'h peak vs '+cap.avail+'h available) — but watch this line the moment you lift the ramp or the support load.';}
+    $("v-hire").innerHTML=hire;
+  }
+  function recompute(){
+    var I=inputs();
+    $("l-ramp").textContent=I.ramp;$("l-churn").textContent=I.churn+"%";
+    $("l-ops").textContent=I.ops.toLocaleString("en-GB");$("l-draw").textContent=I.draw.toLocaleString("en-GB");
+    $("l-vpc").textContent=I.vpc.toLocaleString("en-GB");$("l-cashdeliv").textContent=I.cashDeliv.toLocaleString("en-GB");
+    $("l-buildhrs").textContent=I.buildHrs;$("l-suphrs").textContent=I.supHrs;$("l-availhrs").textContent=I.availHrs;$("l-other").textContent=I.other;
+    $("l-mult").textContent=I.mult+"×";$("l-omult").textContent=I.omult+"×";
+    $("l-pairs").textContent=I.pairs;
+    $("l-jobs").textContent=I.jobs.toLocaleString("en-GB");$("l-mins").textContent=I.mins;$("l-rate").textContent=I.rate;
+    var res=scenarios.map(function(s){return {s:s,m:model(s,I)};});
+    var cap=capacity(I);
+    renderCards(res);drawCash(res);drawVal(res);drawCap(cap);renderVerdict(res,cap,I);
+    var side=$("capside"), cC=res[2].m;
+    if(cap.hire){side.className="capside crit";$("cap-hire").textContent="month "+cap.hire;
+      var pctBuild=Math.round(cap.buildLoad/Math.max(cap.avail,1)*100);
+      $("cap-note").innerHTML="Building "+I.ramp+" clients a month is <b>"+Math.round(cap.buildLoad)+"h</b> — "+pctBuild+"% of the "+cap.avail+"h left for ProofSync after "+cap.other+"h of other work — before you support anyone. This is a hiring decision, and it lands before cash gets tight.";
+      var cah=cC.series[cap.hire-1];
+      $("cap-cash").textContent=gbp(cah);$("cap-cash").className=cah>=0?"pos":"neg";
+      $("cap-cash-label").textContent="Your bank then (model C)";}
+    else{side.className="capside ok";$("cap-hire").textContent="not yet";
+      $("cap-note").innerHTML="Peak load is <b>"+Math.round(Math.max.apply(null,cap.req))+"h</b> against the "+cap.avail+"h free for ProofSync — you hold for the year. Lift the ramp or the other-work load and this flips fast.";
+      var end=cC.series[HORIZON-1];
+      $("cap-cash").textContent=gbp(end);$("cap-cash").className=end>=0?"pos":"neg";
+      $("cap-cash-label").textContent="Your bank at month 12 (model C)";}
+  }
+  ["ramp","churn","ops","draw","vpc","cashdeliv","buildhrs","suphrs","availhrs","otherhrs","mult","omult","pairs","jobs","mins","rate"].forEach(function(id){$(id).addEventListener("input",recompute);});
+  window.addEventListener("resize",function(){var I=inputs();var res=scenarios.map(function(s){return {s:s,m:model(s,I)};});drawCash(res);drawVal(res);drawCap(capacity(I));});
+  matchMedia("(prefers-color-scheme:dark)").addEventListener("change",recompute);
+  new MutationObserver(recompute).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  recompute();
+})();
+
+/*CLIENT-JS-START*/
+/* ---------- CLIENT ROI ---------- */
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var gv=function(id){return parseFloat($(id).value);};
+  /* Per-pair MRR ratchet — one pair = one client CAFM you sync into.
+     1st pair £299 · pairs 2–5 £200 each · pairs 6+ £180 each. */
+  function ratchet(pairs){pairs=Math.max(0,Math.round(pairs));if(pairs<=0)return 0;return 299+200*Math.min(Math.max(pairs-1,0),4)+180*Math.max(pairs-5,0);}
+  function gbp(n){var neg=n<0;n=Math.abs(Math.round(n));return (neg?"−£":"£")+n.toLocaleString("en-GB");}
+  function gbpR(n){return gbp(Math.round(n/100)*100);}
+  function gbpK(n){var a=Math.abs(n),s;if(a>=1e6)s="£"+(a/1e6).toFixed(2).replace(/\.?0+$/,'')+"m";else if(a>=1000)s="£"+Math.round(a/1000)+"k";else s="£"+Math.round(a);return n<0?"−"+s:s;}
+  function months(n){if(!isFinite(n)||n<=0)return "—";if(n<1)return "under a month";var r=Math.round(n*10)/10;return (Math.abs(r-Math.round(r))<0.05?Math.round(r):r.toFixed(1))+" months";}
+  function calc(){
+    var jobs=gv("cr_jobs"),mins=gv("cr_mins"),rate=gv("cr_rate"),conn=gv("cr_conn"),err=gv("cr_err")/100,resid=gv("cr_resid")/100;
+    var build=6000+Math.max(0,conn-1)*3000,monthly=ratchet(conn);
+    var handled=jobs*(1+err);                    // errors get re-keyed, so effective manual volume is higher
+    var grossMo=(handled*mins/60)*rate;          // today's manual cost per month (incl rework)
+    var residualMo=(jobs*resid*mins/60)*rate;    // labour still needed with ProofSync (exceptions)
+    var saveMo=grossMo-residualMo;               // what ProofSync actually saves per month
+    var annualCurrentCost=grossMo*12;            // headline "costing you"
+    var annualSave=saveMo*12;                    // net labour saved — drives the ROI
+    var annualHours=handled*mins/60*12, residualHours=jobs*resid*mins/60*12;
+    var perJob=annualCurrentCost/Math.max(jobs*12,1);
+    var netMo=saveMo-monthly,payback=netMo>0?build/netMo:Infinity;
+    var yr1cost=build+monthly*12,yr1net=annualSave-yr1cost;
+    var yr5net=saveMo*60-(build+monthly*60),yr5ratio=(saveMo*60)/(build+monthly*60);
+    var yr1pctOfWaste=annualCurrentCost>0?yr1cost/annualCurrentCost*100:0;
+    $("cr_l-jobs").textContent=jobs.toLocaleString("en-GB");$("cr_l-mins").textContent=mins;$("cr_l-rate").textContent=rate;$("cr_l-conn").textContent=conn;$("cr_l-err").textContent=Math.round(err*100)+"%";$("cr_l-resid").textContent=Math.round(resid*100)+"%";
+    $("cr_h-perjob").childNodes[0].nodeValue="£"+perJob.toFixed(2);
+    $("cr_h-vol").textContent=jobs.toLocaleString("en-GB");
+    $("cr_h-waste").textContent=gbpK(annualCurrentCost);
+    $("cr_ds-cost").textContent=gbp(monthly*12/365);
+    $("cr_ds-save").textContent=gbp(annualSave/365);
+    $("cr_ds-note").innerHTML=(payback<12?"Pays for itself in "+months(payback)+".":"A fraction of what it removes.")+" It's "+Math.round(yr1pctOfWaste)+"% of what re-keying already costs you.";
+    var costW=Math.max(2,Math.min(100,yr1cost/Math.max(annualSave,1)*100)),keptW=Math.max(0,100-costW);
+    $("cr_seg-cost").style.flexGrow=costW;$("cr_seg-kept").style.flexGrow=keptW;
+    $("cr_seg-cost").innerHTML='Pay ProofSync <small>'+gbpR(yr1cost)+'</small>';
+    $("cr_seg-kept").innerHTML=(yr1net>0?'You keep <small>'+gbpR(yr1net)+'</small>':'');
+    $("cr_seg-kept").style.display=yr1net>0?'flex':'none';
+    $("cr_t-payback").textContent=months(payback);
+    $("cr_t-yr1").textContent=gbpR(yr1net);
+    $("cr_t-yr3").textContent=gbpR(yr5net);
+    $("cr_t-ratio").textContent="£"+yr5ratio.toFixed(2)+" back for every £1";
+    if(yr1net<0){$("cr_t-yr1").style.color="var(--waste)";$("cr_t-yr1note").textContent="At this size the saving is below the service cost — too few jobs across these pairs to pay back in year one.";}
+    else{$("cr_t-yr1").style.color="";$("cr_t-yr1note").textContent="After every penny of build and monthly fees.";}
+    $("cr_c-hours").textContent=Math.round(annualHours).toLocaleString("en-GB");
+    $("cr_c-cost").textContent=gbpR(annualCurrentCost);
+    $("cr_c-hours2").textContent=Math.round(residualHours).toLocaleString("en-GB");
+    $("cr_c-cost2").textContent=gbpR(monthly*12);
+    var connNote=conn<=1?"£6,000 first connector":"£6,000 first + £3,000 × "+(conn-1)+" more";
+    $("cr_i-connnote").textContent=connNote;
+    $("cr_i-build").textContent=gbp(build);
+    $("cr_i-monthly").textContent=gbp(monthly);
+    $("cr_i-band").textContent=conn+(conn===1?" pair":" pairs");
+    $("cr_i-perday").textContent=gbp(monthly*12/365);
+    $("cr_i-savedday").textContent=Math.round(annualSave/365).toLocaleString("en-GB");
+    $("cr_i-yr1").textContent=gbp(yr1cost);
+    $("cr_f-pct").textContent=Math.round(yr1pctOfWaste)+"%";
+  }
+  ["cr_jobs","cr_mins","cr_rate","cr_conn","cr_err","cr_resid"].forEach(function(id){$(id).addEventListener("input",calc);});
+  calc();
+})();
+/*CLIENT-JS-END*/
+</script>
+
+</body>
+</html>

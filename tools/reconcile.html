@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CSV Reconciler — match two CAFM exports · ProofSync</title>
+<meta name="robots" content="noindex" />
+<style>
+:root{
+  --bg:#fdfcf8; --bg-2:#f7f5ef; --surface:#ffffff; --surface-2:#f7f5ef;
+  --line:rgba(13,52,67,.12); --line-2:rgba(13,52,67,.2);
+  --text:#0d3443; --muted:#3a5765; --faint:#6b7c86;
+  --a:#2b8fb5; --a2:#4bb3d4; --a-deep:#22738f;
+  --soft:rgba(43,143,181,.12); --soft-b:rgba(43,143,181,.25);
+  --diff:#c2506e; --diff-bg:rgba(194,80,110,.10); --diff-b:rgba(194,80,110,.30);
+  --miss:#b8860b; --miss-bg:rgba(184,134,11,.12);
+  --ok:#0e6b3f; --ok-bg:rgba(14,107,63,.09);
+  --grad:linear-gradient(120deg,#2b8fb5,#4bb3d4);
+  --fd:"Inter Tight","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --fb:"Montserrat","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--fb);color:var(--text);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--fd);letter-spacing:-.02em;line-height:1.1}
+.wrap{max-width:1240px;margin:0 auto;padding:0 26px}
+a{color:var(--a-deep)}
+.hdr{border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(43,143,181,.05),transparent)}
+.hdr .wrap{padding:26px 26px 24px}
+.hdr::before{content:"";display:block;height:5px;background:var(--grad);position:fixed;top:0;left:0;right:0;z-index:10}
+.kick{font-family:var(--fd);font-weight:600;font-size:12px;letter-spacing:.11em;text-transform:uppercase;color:var(--a-deep);display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.kick::before{content:"";width:26px;height:2px;background:var(--grad);border-radius:2px}
+h1{font-size:34px;font-weight:700}
+h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:15px;color:var(--muted);margin-top:8px;max-width:80ch}
+.priv{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;font-weight:600;color:var(--a-deep);
+  background:var(--soft);border:1px solid var(--soft-b);border-radius:999px;padding:7px 13px}
+main{padding:26px 0 80px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:18px;box-shadow:0 1px 2px rgba(14,43,49,.04)}
+.card h2{font-size:20px;font-weight:700;display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.card h2 .no{width:28px;height:28px;border-radius:9px;background:var(--grad);color:#fff;font-size:14px;display:grid;place-items:center;flex-shrink:0}
+.card .hint{font-size:13.5px;color:var(--muted);margin:2px 0 18px;padding-left:40px}
+.card.off{opacity:.5;pointer-events:none}
+/* file loaders */
+.loaders{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.drop{border:1.6px dashed var(--line-2);border-radius:14px;padding:22px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:var(--bg-2)}
+.drop:hover,.drop.over{border-color:var(--a);background:var(--soft)}
+.drop .tag{font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--a-deep)}
+.drop .big{font-family:var(--fd);font-weight:700;font-size:17px;margin:6px 0 3px}
+.drop .ex{font-size:12.5px;color:var(--faint)}
+.drop .stat{margin-top:12px;font-size:13px;font-weight:600;color:var(--ok);display:none}
+.drop.loaded{border-style:solid;border-color:var(--ok);background:var(--ok-bg)}
+.drop.loaded .stat{display:block}
+.drop input{display:none}
+/* selects & mapping */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end}
+label{display:block;font-family:var(--fd);font-weight:600;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+select,input[type=text]{width:100%;font-family:var(--fb);font-size:14px;color:var(--text);background:var(--surface);
+  border:1px solid var(--line-2);border-radius:10px;padding:10px 12px}
+select:focus,input:focus{outline:2px solid var(--soft-b);border-color:var(--a)}
+.keystat{margin-top:14px;font-size:13.5px;color:var(--muted)}
+.keystat b{color:var(--a-deep);font-family:var(--fd)}
+.keystat .warn{color:var(--miss)}
+table.map{width:100%;border-collapse:collapse}
+table.map th{font-family:var(--fd);font-weight:600;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);text-align:left;padding:6px 10px}
+table.map td{padding:6px 10px;vertical-align:middle}
+table.map select{padding:8px 10px;font-size:13px}
+.arrow{color:var(--a);font-weight:800;text-align:center;font-size:18px}
+.del{background:none;border:1px solid var(--line-2);color:var(--faint);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:15px}
+.del:hover{border-color:var(--diff);color:var(--diff)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--fd);font-weight:600;font-size:14.5px;padding:11px 20px;
+  border-radius:999px;border:none;cursor:pointer}
+.btn-accent{background:var(--grad);color:#fff;box-shadow:0 8px 22px -10px var(--a)}
+.btn-accent:hover{filter:brightness(1.06)}
+.btn-accent:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn-ghost{background:rgba(13,52,67,.04);color:var(--text);border:1px solid var(--line-2)}
+.btn-ghost:hover{border-color:var(--a)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.big-run{font-size:16px;padding:14px 30px}
+/* results */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.tile{border:1px solid var(--line);border-radius:13px;padding:16px 18px;background:var(--surface)}
+.tile .l{font-family:var(--fd);font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.tile .v{font-family:var(--fd);font-weight:700;font-size:30px;letter-spacing:-.02em;margin-top:4px}
+.tile.diff .v{color:var(--diff)} .tile.miss .v{color:var(--miss)} .tile.ok .v{color:var(--ok)} .tile.a .v{color:var(--a-deep)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.chip{font-family:var(--fd);font-weight:600;font-size:12.5px;padding:7px 13px;border-radius:999px;border:1px solid var(--line-2);
+  background:var(--surface);color:var(--muted);cursor:pointer}
+.chip.on{background:var(--grad);color:#fff;border-color:transparent}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:13px;max-height:60vh}
+table.res{width:100%;border-collapse:collapse;font-size:13px}
+table.res th{position:sticky;top:0;background:var(--surface-2);font-family:var(--fd);font-weight:600;font-size:11.5px;
+  letter-spacing:.03em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-2);white-space:nowrap;z-index:2}
+table.res td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.res tr.exc{background:var(--diff-bg)}
+table.res tr.onlyA,table.res tr.onlyB{background:var(--miss-bg)}
+table.res .key{font-family:var(--mono);font-weight:600;color:var(--a-deep);white-space:nowrap}
+table.res td.cell{white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+table.res td.d{background:var(--diff-bg);position:relative}
+table.res td.d .av{color:var(--diff);font-weight:600}
+table.res td.d .bv{color:var(--text)}
+table.res td.d .vs{color:var(--faint);font-family:var(--mono);font-size:11px;margin:0 5px}
+table.res td.m{background:var(--miss-bg)}
+table.res .badge{font-family:var(--fd);font-weight:700;font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:6px}
+.badge.exc{background:var(--diff);color:#fff}.badge.mis{background:var(--miss);color:#fff}.badge.a{background:var(--a-deep);color:#fff}.badge.ok{background:var(--ok);color:#fff}
+.empty{padding:40px;text-align:center;color:var(--faint);font-size:14px}
+.foot{font-size:12px;color:var(--faint);margin-top:22px;text-align:center}
+/* process explainer strip */
+.proc{display:flex;gap:8px;flex-wrap:wrap}
+.proc .p{flex:1;min-width:150px;border:1px solid var(--line);border-radius:12px;padding:13px 15px;background:var(--surface);position:relative}
+.proc .p.eng{background:var(--soft);border-color:var(--soft-b)}
+.proc .p .n{font-family:var(--fd);font-weight:700;font-size:11px;color:var(--a-deep);letter-spacing:.06em;text-transform:uppercase}
+.proc .p h4{font-size:14.5px;font-weight:700;margin:5px 0 3px}
+.proc .p p{font-size:12px;color:var(--muted);line-height:1.4}
+.proc .p .here{position:absolute;top:-9px;right:12px;font-family:var(--fd);font-weight:700;font-size:9.5px;letter-spacing:.05em;
+  text-transform:uppercase;color:#fff;background:var(--grad);border-radius:999px;padding:2px 8px}
+.callout{background:var(--soft);border:1px solid var(--soft-b);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:14.5px;color:var(--text);line-height:1.5}
+.callout b{color:var(--a-deep)}
+.demoline{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px}
+@media(max-width:820px){.loaders,.row2,.tiles{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="hdr"><div class="wrap">
+  <div class="kick">ProofSync · reconciliation workbench</div>
+  <h1>Match two CAFM exports. Map the fields. <span>Surface every disagreement.</span></h1>
+  <p class="sub">This is what ProofSync does to every job: take the same job from two systems, match it on its reference, line up the fields, and flag anything that disagrees. Upload two exports (say six months from the contractor's Joblogic and the client's Concerto) — or press play and watch it on a worked example.</p>
+  <div class="demoline">
+    <button class="btn btn-accent" id="playSample">▶ Play the worked example</button>
+    <span class="priv">🔒 Runs entirely in your browser — nothing is uploaded, nothing leaves this machine.</span>
+  </div>
+</div></header>
+
+<main><div class="wrap">
+
+  <!-- PROCESS -->
+  <section class="card" id="c0">
+    <h2><span class="no">›</span> The process, in five steps</h2>
+    <p class="hint">Every completed job travels the same path. This tool is steps 3–4, run on two exports — so a client can see exactly what would sync clean and what would land in the exception queue.</p>
+    <div class="proc">
+      <div class="p"><div class="n">01 · Client</div><h4>Raised</h4><p>The job starts in the client's system (Concerto).</p></div>
+      <div class="p"><div class="n">02 · Contractor</div><h4>Completed once</h4><p>The engineer finishes it in your system (Joblogic).</p></div>
+      <div class="p eng"><div class="n">03 · ProofSync</div><span class="here">You are here</span><h4>Matched</h4><p>On the job's unique reference — never a guess.</p></div>
+      <div class="p eng"><div class="n">04 · ProofSync</div><span class="here">You are here</span><h4>Mapped &amp; checked</h4><p>Fields lined up, values compared, disagreements caught.</p></div>
+      <div class="p"><div class="n">05 · Person</div><h4>Only exceptions</h4><p>Clean jobs flow, verified. A person sees only what needs judgement.</p></div>
+    </div>
+  </section>
+
+  <!-- STEP 1 -->
+  <section class="card" id="c1">
+    <h2><span class="no">1</span> Load your two exports</h2>
+    <p class="hint">Two CSV files. First row must be the column headers. Big files are fine — they're parsed locally.</p>
+    <div class="loaders">
+      <label class="drop" id="dropA">
+        <div class="tag">System A</div>
+        <div class="big">Contractor export</div>
+        <div class="ex">e.g. Joblogic · the completed job</div>
+        <div class="stat" id="statA"></div>
+        <input type="file" id="fileA" accept=".csv,text/csv" />
+      </label>
+      <label class="drop" id="dropB">
+        <div class="tag">System B</div>
+        <div class="big">Client CAFM export</div>
+        <div class="ex">e.g. Concerto · the same job, their side</div>
+        <div class="stat" id="statB"></div>
+        <input type="file" id="fileB" accept=".csv,text/csv" />
+      </label>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="card off" id="c2">
+    <h2><span class="no">2</span> Choose the reference to match on</h2>
+    <p class="hint">The unique job reference that appears in both systems — the key ProofSync would match on. We've guessed; change it if we're wrong.</p>
+    <div class="row2">
+      <div><label>System A — match key</label><select id="keyA"></select></div>
+      <div><label>System B — match key</label><select id="keyB"></select></div>
+    </div>
+    <div class="keystat" id="keystat"></div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="card off" id="c3">
+    <h2><span class="no">3</span> Map the fields to compare</h2>
+    <p class="hint">Each row pairs a System-A column with the System-B column that should hold the same value, and how to compare them. We've auto-suggested from the header names.</p>
+    <table class="map">
+      <thead><tr><th style="width:34%">System A column</th><th style="width:4%"></th><th style="width:34%">System B column</th><th style="width:22%">Compare as</th><th></th></tr></thead>
+      <tbody id="mapBody"></tbody>
+    </table>
+    <div class="btnrow">
+      <button class="btn btn-ghost" id="addMap">+ Add mapping</button>
+      <button class="btn btn-ghost" id="autoMap">↻ Re-suggest from headers</button>
+      <button class="btn btn-accent big-run" id="run">Reconcile →</button>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="card off" id="c4">
+    <h2><span class="no">4</span> The reconciliation</h2>
+    <p class="hint" id="resHint"></p>
+    <div class="callout" id="resCallout"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="filters" id="filters"></div>
+    <div class="tablewrap"><table class="res"><thead id="resHead"></thead><tbody id="resBody"></tbody></table></div>
+    <div class="btnrow"><button class="btn btn-ghost" id="exportBtn">⤓ Export exceptions to CSV</button></div>
+  </section>
+
+  <p class="foot">ProofSync reconciliation workbench · a ProofWorks tool. Deterministic matching, no data leaves your browser. The full product does this continuously and writes the result back — verified.</p>
+
+</div></main>
+
+<script>
+/* ---------- CSV parsing (quotes, escaped quotes, CRLF, BOM) ---------- */
+function parseCSV(text){
+  if(text.charCodeAt(0)===0xFEFF) text=text.slice(1);
+  var rows=[],row=[],f='',i=0,q=false,c;
+  while(i<text.length){
+    c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){f+='"';i+=2;continue;} q=false;i++;continue; }
+      f+=c;i++;continue;
+    }
+    if(c==='"'){q=true;i++;continue;}
+    if(c===','){row.push(f);f='';i++;continue;}
+    if(c==='\r'){i++;continue;}
+    if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue;}
+    f+=c;i++;
+  }
+  if(f!==''||row.length){row.push(f);rows.push(row);}
+  if(!rows.length) return {headers:[],rows:[]};
+  var headers=rows[0].map(function(h){return h.trim();});
+  var body=rows.slice(1).filter(function(r){return r.some(function(v){return String(v).trim()!=='';});});
+  return {headers:headers,rows:body};
+}
+
+/* ---------- state ---------- */
+var A=null,B=null,mappings=[],lastResults=null,filter='exc';
+
+/* ---------- header similarity for auto-suggest ---------- */
+function normH(s){return String(s).toLowerCase().replace(/[^a-z0-9]/g,'');}
+function lev(a,b){var m=a.length,n=b.length,d=[],i,j;for(i=0;i<=m;i++)d[i]=[i];for(j=0;j<=n;j++)d[0][j]=j;
+  for(i=1;i<=m;i++)for(j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[m][n];}
+function sim(a,b){a=normH(a);b=normH(b);if(!a||!b)return 0;if(a===b)return 1;
+  if(a.indexOf(b)>=0||b.indexOf(a)>=0)return .82;
+  var L=Math.max(a.length,b.length);return 1-lev(a,b)/L;}
+function bestMatch(header,candidates){var best=-1,score=.5;candidates.forEach(function(h,idx){var s=sim(header,h);if(s>score){score=s;best=idx;}});return best;}
+
+function guessKey(headers){
+  var pats=[/^reference$/,/jobref|joborder|woref|workorder/,/reference/,/\bref\b/,/jobno|jobnumber|jobid/,/orderno|ordernumber/,/\bid$/,/number|\bno\b/];
+  for(var p=0;p<pats.length;p++){for(var i=0;i<headers.length;i++){if(pats[p].test(normH(headers[i])))return i;}}
+  return 0;
+}
+function guessType(a,b){var h=normH(a)+normH(b);
+  if(/date|time|arriv|depart|complet|start|end|due/.test(h) && !/minutes|duration/.test(h))return 'date';
+  if(/minutes/.test(normH(a)) && /hour|duration/.test(normH(b)))return 'min-hr';
+  if(/cost|price|amount|value|total|qty|quantity|duration|minutes|hours|time/.test(h))return 'number';
+  return 'text';}
+
+/* ---------- file loading ---------- */
+function wireDrop(dropId,inputId,statId,which){
+  var drop=document.getElementById(dropId),input=document.getElementById(inputId),stat=document.getElementById(statId);
+  input.addEventListener('change',function(){if(input.files[0])load(input.files[0]);});
+  ['dragover','dragenter'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.add('over');});});
+  ['dragleave','drop'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.remove('over');});});
+  drop.addEventListener('drop',function(ev){ev.preventDefault();var f=ev.dataTransfer.files[0];if(f)load(f);});
+  function load(file){
+    var rd=new FileReader();
+    rd.onload=function(){
+      var parsed=parseCSV(rd.result);
+      if(which==='A')A=parsed;else B=parsed;
+      drop.classList.add('loaded');
+      stat.textContent='✓ '+file.name+' — '+parsed.rows.length.toLocaleString()+' rows · '+parsed.headers.length+' columns';
+      onLoaded();
+    };
+    rd.readAsText(file);
+  }
+}
+wireDrop('dropA','fileA','statA','A');
+wireDrop('dropB','fileB','statB','B');
+
+function fillSelect(sel,headers,selIdx){sel.innerHTML=headers.map(function(h,i){return '<option value="'+i+'"'+(i===selIdx?' selected':'')+'>'+escapeHtml(h||('(column '+(i+1)+')'))+'</option>';}).join('');}
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function onLoaded(){
+  if(!A||!B)return;
+  document.getElementById('c2').classList.remove('off');
+  document.getElementById('c3').classList.remove('off');
+  fillSelect(document.getElementById('keyA'),A.headers,guessKey(A.headers));
+  fillSelect(document.getElementById('keyB'),B.headers,guessKey(B.headers));
+  document.getElementById('keyA').onchange=updateKeyStat;
+  document.getElementById('keyB').onchange=updateKeyStat;
+  autoSuggest();
+  updateKeyStat();
+}
+
+function updateKeyStat(){
+  if(!A||!B)return;
+  var ka=+document.getElementById('keyA').value,kb=+document.getElementById('keyB').value;
+  var setB={},dupB=0;
+  B.rows.forEach(function(r){var k=keyNorm(r[kb]);if(k==='')return;if(setB[k])dupB++;setB[k]=1;});
+  var setA={},dupA=0,found=0,blankA=0;
+  A.rows.forEach(function(r){var k=keyNorm(r[ka]);if(k===''){blankA++;return;}if(setA[k])dupA++;setA[k]=1;if(setB[k])found++;});
+  var el=document.getElementById('keystat');
+  var html='<b>'+found.toLocaleString()+'</b> of '+Object.keys(setA).length.toLocaleString()+' unique A keys found in B.';
+  if(dupA||dupB)html+=' <span class="warn">Duplicate keys: '+dupA+' in A, '+dupB+' in B (first match used).</span>';
+  if(blankA)html+=' <span class="warn">'+blankA+' A rows have a blank key.</span>';
+  if(found===0)html+=' <span class="warn">No matches — is this the right reference column?</span>';
+  el.innerHTML=html;
+}
+function keyNorm(v){return String(v==null?'':v).trim().toLowerCase();}
+
+/* ---------- mapping UI ---------- */
+function mapRowHtml(m,idx){
+  function opts(headers,sel){return headers.map(function(h,i){return '<option value="'+i+'"'+(i===sel?' selected':'')+'>'+escapeHtml(h||('(col '+(i+1)+')'))+'</option>';}).join('');}
+  var types=[['text','Text (trim, case)'],['exact','Exact'],['number','Number'],['min-hr','Minutes ↔ Hours'],['date','Date']];
+  return '<tr data-i="'+idx+'">'+
+    '<td><select class="mA">'+opts(A.headers,m.a)+'</select></td>'+
+    '<td class="arrow">→</td>'+
+    '<td><select class="mB">'+opts(B.headers,m.b)+'</select></td>'+
+    '<td><select class="mT">'+types.map(function(t){return '<option value="'+t[0]+'"'+(t[0]===m.t?' selected':'')+'>'+t[1]+'</option>';}).join('')+'</select></td>'+
+    '<td><button class="del" title="Remove">×</button></td></tr>';
+}
+function renderMap(){
+  var tb=document.getElementById('mapBody');
+  tb.innerHTML=mappings.map(mapRowHtml).join('');
+  [].forEach.call(tb.querySelectorAll('tr'),function(tr){
+    var i=+tr.dataset.i;
+    tr.querySelector('.mA').onchange=function(){mappings[i].a=+this.value;};
+    tr.querySelector('.mB').onchange=function(){mappings[i].b=+this.value;};
+    tr.querySelector('.mT').onchange=function(){mappings[i].t=this.value;};
+    tr.querySelector('.del').onclick=function(){mappings.splice(i,1);renderMap();};
+  });
+}
+function autoSuggest(){
+  var ka=+document.getElementById('keyA').value,kb=+document.getElementById('keyB').value;
+  mappings=[];
+  A.headers.forEach(function(h,ai){
+    if(ai===ka)return;
+    var bi=bestMatch(h,B.headers);
+    if(bi<0||bi===kb)return;
+    mappings.push({a:ai,b:bi,t:guessType(h,B.headers[bi])});
+  });
+  if(!mappings.length&&A.headers.length>1&&B.headers.length>1)mappings.push({a:(ka===0?1:0),b:(kb===0?1:0),t:'text'});
+  renderMap();
+}
+document.getElementById('addMap').onclick=function(){mappings.push({a:0,b:0,t:'text'});renderMap();};
+document.getElementById('autoMap').onclick=autoSuggest;
+
+/* ---------- comparison ---------- */
+function isBlank(v){return v==null||String(v).trim()==='';}
+function toNum(v){var n=parseFloat(String(v).replace(/[^0-9.\-]/g,''));return isNaN(n)?null:n;}
+function toDate(v){v=String(v).trim();if(!v)return null;
+  var m=v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/); // dd/mm/yyyy (UK)
+  if(m){var d=+m[1],mo=+m[2],y=+m[3];if(y<100)y+=2000;if(mo>12&&d<=12){var t=d;d=mo;mo=t;}return y*10000+mo*100+d;}
+  var t=Date.parse(v);if(!isNaN(t)){var dt=new Date(t);return dt.getFullYear()*10000+(dt.getMonth()+1)*100+dt.getDate();}
+  return null;}
+function cmp(a,b,type){
+  if(isBlank(a)&&isBlank(b))return 'same';
+  if(isBlank(a)||isBlank(b))return 'missing';
+  switch(type){
+    case 'exact': return String(a)===String(b)?'same':'diff';
+    case 'number': {var x=toNum(a),y=toNum(b);return (x!=null&&y!=null&&Math.abs(x-y)<1e-6)?'same':'diff';}
+    case 'min-hr': {var x=toNum(a),y=toNum(b);return (x!=null&&y!=null&&Math.abs(x/60-y)<1e-3)?'same':'diff';}
+    case 'date': {var x=toDate(a),y=toDate(b);if(x==null||y==null)return String(a).toLowerCase().trim()===String(b).toLowerCase().trim()?'same':'diff';return x===y?'same':'diff';}
+    default: return String(a).toLowerCase().replace(/\s+/g,' ').trim()===String(b).toLowerCase().replace(/\s+/g,' ').trim()?'same':'diff';
+  }
+}
+
+/* ---------- reconcile ---------- */
+document.getElementById('run').onclick=function(){
+  var ka=+document.getElementById('keyA').value,kb=+document.getElementById('keyB').value;
+  var idxB={};
+  for(var j=0;j<B.rows.length;j++){var k=keyNorm(B.rows[j][kb]);if(k===''||idxB[k]!==undefined)continue;idxB[k]=j;}
+  var seen={},rows=[],stats={a:A.rows.length,b:B.rows.length,matched:0,onlyA:0,onlyB:0,clean:0,exc:0,diffs:0};
+  A.rows.forEach(function(ra){
+    var k=keyNorm(ra[ka]);
+    if(k===''){rows.push({key:'(blank key)',kind:'onlyA',cells:mappings.map(function(m){return {a:ra[m.a],b:'',s:'missing',t:m.t};})});stats.onlyA++;return;}
+    seen[k]=1;
+    if(idxB[k]===undefined){rows.push({key:ra[ka],kind:'onlyA',cells:mappings.map(function(m){return {a:ra[m.a],b:'',s:'missing',t:m.t};})});stats.onlyA++;return;}
+    var rb=B.rows[idxB[k]];stats.matched++;
+    var cells=mappings.map(function(m){var s=cmp(ra[m.a],rb[m.b],m.t);if(s!=='same')stats.diffs++;return {a:ra[m.a],b:rb[m.b],s:s,t:m.t};});
+    var bad=cells.some(function(c){return c.s!=='same';});
+    if(bad){stats.exc++;rows.push({key:ra[ka],kind:'exc',cells:cells});}else{stats.clean++;rows.push({key:ra[ka],kind:'clean',cells:cells});}
+  });
+  B.rows.forEach(function(rb){var k=keyNorm(rb[kb]);if(k===''||seen[k])return;
+    rows.push({key:rb[kb],kind:'onlyB',cells:mappings.map(function(m){return {a:'',b:rb[m.b],s:'missing',t:m.t};})});stats.onlyB++;});
+  lastResults={rows:rows,stats:stats,heads:mappings.map(function(m){return A.headers[m.a]+' / '+B.headers[m.b];})};
+  filter='exc';renderResults();
+  document.getElementById('c4').classList.remove('off');
+  document.getElementById('c4').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
+function renderResults(){
+  var s=lastResults.stats;
+  document.getElementById('resHint').innerHTML='Matched on the reference; '+mappings.length+' field'+(mappings.length===1?'':'s')+' compared. Rows in red are jobs the two systems disagree on — the exceptions a person has to resolve.';
+  var reach=s.exc+s.onlyA+s.onlyB;
+  document.getElementById('resCallout').innerHTML='In <b>ProofSync</b>, the <b>'+s.clean.toLocaleString()+'</b> clean matches sync straight through — written into the other system and read back to prove it landed. Only the <b>'+reach.toLocaleString()+'</b> exceptions below would ever reach a person. That is the whole point: not zero admin, but admin only where a human is genuinely needed.';
+  document.getElementById('tiles').innerHTML=[
+    ['a','Rows · A',s.a.toLocaleString()],['a','Rows · B',s.b.toLocaleString()],
+    ['a','Matched',s.matched.toLocaleString()],['ok','Clean matches',s.clean.toLocaleString()],
+    ['diff','Jobs with differences',s.exc.toLocaleString()],['diff','Total field diffs',s.diffs.toLocaleString()],
+    ['miss','Only in A',s.onlyA.toLocaleString()],['miss','Only in B',s.onlyB.toLocaleString()]
+  ].map(function(t){return '<div class="tile '+t[0]+'"><div class="l">'+t[1]+'</div><div class="v">'+t[2]+'</div></div>';}).join('');
+  var counts={exc:s.exc,clean:s.clean,onlyA:s.onlyA,onlyB:s.onlyB,all:lastResults.rows.length};
+  var defs=[['exc','Exceptions'],['onlyA','Only in A'],['onlyB','Only in B'],['clean','Clean'],['all','All']];
+  document.getElementById('filters').innerHTML=defs.map(function(d){return '<button class="chip'+(filter===d[0]?' on':'')+'" data-f="'+d[0]+'">'+d[1]+' · '+counts[d[0]].toLocaleString()+'</button>';}).join('');
+  [].forEach.call(document.querySelectorAll('#filters .chip'),function(c){c.onclick=function(){filter=c.dataset.f;renderResults();};});
+  document.getElementById('resHead').innerHTML='<tr><th>Status</th><th>Reference</th>'+lastResults.heads.map(function(h){return '<th>'+escapeHtml(h)+'</th>';}).join('')+'</tr>';
+  var show=lastResults.rows.filter(function(r){return filter==='all'?true:r.kind===filter;});
+  var MAX=2000,clipped=show.length>MAX;show=show.slice(0,MAX);
+  var badge={exc:'<span class="badge exc">Diff</span>',clean:'<span class="badge ok">Clean</span>',onlyA:'<span class="badge mis">Only A</span>',onlyB:'<span class="badge mis">Only B</span>'};
+  var body=show.map(function(r){
+    var cls=r.kind==='exc'?'exc':(r.kind==='onlyA'?'onlyA':(r.kind==='onlyB'?'onlyB':''));
+    var tds=r.cells.map(function(c){
+      if(c.s==='same')return '<td class="cell">'+escapeHtml(c.a)+'</td>';
+      if(c.s==='missing')return '<td class="cell m">'+(isBlankStr(c.a)?'<span style="color:var(--miss)">— missing —</span>':escapeHtml(c.a))+(isBlankStr(c.b)?'':' <span class="vs">/</span> '+escapeHtml(c.b))+'</td>';
+      return '<td class="cell d"><span class="av">'+escapeHtml(c.a)+'</span><span class="vs">≠</span><span class="bv">'+escapeHtml(c.b)+'</span></td>';
+    }).join('');
+    return '<tr class="'+cls+'">'+'<td>'+(badge[r.kind]||'')+'</td><td class="key">'+escapeHtml(r.key)+'</td>'+tds+'</tr>';
+  }).join('');
+  document.getElementById('resBody').innerHTML=body||'<tr><td colspan="99" class="empty">Nothing in this view.</td></tr>';
+  if(clipped)document.getElementById('resBody').insertAdjacentHTML('beforeend','<tr><td colspan="99" class="empty">Showing first '+MAX.toLocaleString()+' rows — export to see them all.</td></tr>');
+}
+function isBlankStr(v){return v==null||String(v).trim()==='';}
+
+/* ---------- export exceptions ---------- */
+document.getElementById('exportBtn').onclick=function(){
+  if(!lastResults)return;
+  var q=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  var head=['status','reference'];lastResults.heads.forEach(function(h){head.push(h+' (A)',h+' (B)','match');});
+  var lines=[head.map(q).join(',')];
+  lastResults.rows.filter(function(r){return r.kind==='exc'||r.kind==='onlyA'||r.kind==='onlyB';}).forEach(function(r){
+    var row=[r.kind,r.key];r.cells.forEach(function(c){row.push(c.a,c.b,c.s);});lines.push(row.map(q).join(','));
+  });
+  var blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='reconciliation-exceptions.csv';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},200);
+};
+/* ---------- worked example: embedded sample exports ---------- */
+var SAMPLE_A=
+'Reference,Engineer Notes,Time On Site (mins),Completion Date,Total Cost,Certificate\n'+
+'WO-24001,Serviced AHU,90,03/06/2026,180,EIC issued\n'+
+'WO-24002,Replaced actuator,120,04/06/2026,220,N/A\n'+
+'WO-24003,Repaired leak,60,05/06/2026,240,Gas Safe\n'+
+'WO-24004,Cleaned filters,45,06/06/2026,95,N/A\n'+
+'WO-24005,Boiler service,105,07/06/2026,160,CP12 issued\n'+
+'WO-24006,Emergency callout,75,08/06/2026,210,N/A\n'+
+'WO-24007,Pump replacement,150,09/06/2026,320,N/A\n'+
+'WO-24008,Lighting repair,30,10/06/2026,70,N/A\n'+
+'WO-24009,Fire alarm test,90,11/06/2026,140,Cert issued\n'+
+'WO-24010,Drainage clear,60,12/06/2026,130,N/A\n'+
+'WO-24011,HVAC inspection,120,13/06/2026,240,N/A\n'+
+'WO-24012,Door closer fix,45,14/06/2026,85,N/A\n'+
+'WO-24013,Extra visit not billed to client,60,15/06/2026,110,N/A\n';
+var SAMPLE_B=
+'Reference,Completion Notes,Labour Duration (hrs),Actual Completion Date,Contractor Cost,Cert Status\n'+
+'WO-24001,Serviced AHU,1.5,03/06/2026,180,EIC issued\n'+
+'WO-24002,Replaced actuator,2,04/06/2026,220,N/A\n'+
+'WO-24003,Repaired leak,1,05/06/2026,285,Gas Safe\n'+
+'WO-24004,Cleaned filters,0.75,06/06/2026,95,N/A\n'+
+'WO-24005,Boiler service,1.75,07/06/2026,160,CP12 issued\n'+
+'WO-24006,Emergency callout,1.25,08/06/2026,210,N/A\n'+
+'WO-24007,Pump replacement,1.5,09/06/2026,320,N/A\n'+
+'WO-24008,Lighting repair,0.5,10/06/2026,70,N/A\n'+
+'WO-24009,Fire alarm test,1.5,11/06/2026,140,Cert issued\n'+
+'WO-24010,Drainage clear,1,,130,N/A\n'+
+'WO-24011,HVAC inspection,2,13/06/2026,240,N/A\n'+
+'WO-24012,Door closer fix,0.75,14/06/2026,85,N/A\n'+
+'WO-24014,Raised client-side only,1,16/06/2026,100,N/A\n';
+
+function loadSampleSide(csv,which,dropId,statId,label){
+  var parsed=parseCSV(csv);
+  if(which==='A')A=parsed;else B=parsed;
+  var drop=document.getElementById(dropId),stat=document.getElementById(statId);
+  drop.classList.add('loaded');
+  stat.textContent='✓ '+label+' — '+parsed.rows.length+' rows · '+parsed.headers.length+' columns';
+}
+document.getElementById('playSample').onclick=function(){
+  loadSampleSide(SAMPLE_A,'A','dropA','statA','Sample · Joblogic export');
+  loadSampleSide(SAMPLE_B,'B','dropB','statB','Sample · Concerto export');
+  onLoaded();                                   // fills key selects + auto-suggests
+  document.getElementById('keyA').value='0';    // Reference in both
+  document.getElementById('keyB').value='0';
+  /* curated mapping so the demo shows the ideal pairing incl. minutes↔hours */
+  mappings=[
+    {a:1,b:1,t:'text'},      // Engineer Notes  → Completion Notes
+    {a:2,b:2,t:'min-hr'},    // Time On Site (mins) → Labour Duration (hrs)
+    {a:3,b:3,t:'date'},      // Completion Date → Actual Completion Date
+    {a:4,b:4,t:'number'},    // Total Cost      → Contractor Cost
+    {a:5,b:5,t:'text'}       // Certificate     → Cert Status
+  ];
+  renderMap();
+  updateKeyStat();
+  document.getElementById('run').click();
+};
+</script>
+</body>
+</html>

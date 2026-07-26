@@ -11,7 +11,7 @@ import { useMemo, useState } from 'react';
 const MIN_PER_JOB = 20; // ~10 in + ~10 out, the round trip
 const POC = 2500;
 const FIRST_CONNECTOR = 6000;
-const NEXT_CONNECTOR = 2750; // midpoint of £2,500–3,000
+const NEXT_CONNECTOR = 3000;
 
 function subscriptionBand(jobs: number): { band: string; monthly: number } {
   if (jobs <= 1000) return { band: 'Starter', monthly: 1250 };

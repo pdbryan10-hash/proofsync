@@ -144,8 +144,26 @@ export function transformField(
 
       case TransformationType.CUSTOM:
       default:
-        // CUSTOM transforms are intentionally explicit: default to DIRECT and
-        // flag that a bespoke rule must be implemented for production.
+        // CUSTOM is the SINGLE sanctioned slot for logic that config can't express.
+        // It passes through (DIRECT) on purpose — deliberately empty until a real
+        // client need forces the decision. When that day comes (under deadline, with
+        // a client waiting), the decision is already made. Fill it ONE of two ways,
+        // never a third:
+        //
+        //   1. PROMOTE — if the need is even slightly general, add a new generic
+        //      TransformationType (enum case + a branch above). Every tenant then
+        //      gets it from config. This is the "promote on the third ask" path and
+        //      is the default answer.
+        //
+        //   2. REGISTER — if it is genuinely client-specific, look it up in ONE
+        //      versioned named-transform registry, keyed by a name held in
+        //      transformConfig (e.g. {"custom":"acme-cost-centre-v2"}). One place,
+        //      versioned with the core, upgradable centrally.
+        //
+        // NEVER branch on client / tenant / org identity inside this function
+        // (no `if (clientId === ...)`). That is the fork that ends
+        // one-deploy-for-all and turns every sale into permanent maintenance weight.
+        // The edge layer must stay data, not code.
         return { ok: true, value: sourceValue, preview: String(sourceValue) };
     }
   } catch (err) {

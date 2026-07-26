@@ -52,7 +52,7 @@ const STAGES = [
   {
     n: '03',
     name: 'Additional connectors',
-    price: '£2,500–3,000 each',
+    price: '£3,000 each',
     when: 'rolling',
     lead: 'Every further client system, on the engine that’s already proven.',
     items: [
