@@ -77,7 +77,10 @@ export default function SalesPage() {
               back — no narration, no overlay. The headline above is its caption.
               It autoplays for everyone — a gentle muted UI loop, so it runs even
               under Reduce Motion; the poster is only the pre-load frame. */}
-          <figure className="mt-9">
+          {/* Capped at the video's native width (1878px) so a high-DPI display
+              never upscales it — above ~940px CSS a 2× screen would stretch the
+              1878px source and soften the board text. Sharp beats slightly wider. */}
+          <figure className="mt-9 w-full max-w-[940px]">
             <div className="overflow-hidden rounded-2xl border border-[#e6e1d6] bg-[#0d0f0e] shadow-2xl shadow-black/10 ring-1 ring-black/5">
               <video
                 className="block w-full"
