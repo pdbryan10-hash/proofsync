@@ -86,15 +86,18 @@ export default function SalesPage() {
                 loop
                 playsInline
                 preload="auto"
-                poster="/proofsync-hero-poster.jpg"
+                poster="/proofsync-hero-poster-v2.jpg"
                 aria-label="ProofSync running live: jobs completing in a contractor's system, an exception flagging for review, and completions writing back into the client's CAFM — verified, with no re-keying."
               >
-                <source src="/proofsync-hero.webm" type="video/webm" />
-                <source src="/proofsync-hero.mp4" type="video/mp4" />
+                <source src="/proofsync-hero-v2.webm" type="video/webm" />
+                <source src="/proofsync-hero-v2.mp4" type="video/mp4" />
               </video>
             </div>
-            <figcaption className="mt-3 font-mono text-xs text-[#8a8578]">
-              Live: a job completing, written back into the client&apos;s CAFM — then read back and proven. Every sync leaves an audit trail.
+            <figcaption className="mt-3 text-sm leading-relaxed text-[#5f6068]">
+              <span className="font-semibold text-[#1a1b1f]">This is ProofSync running.</span> A completed job
+              crossing from the contractor&apos;s system into the client&apos;s CAFM — matched to the right job,
+              written back, and read back to prove it landed. The one job that needs a human is flagged, not guessed.
+              Nobody re-keying anything.
             </figcaption>
           </figure>
 
