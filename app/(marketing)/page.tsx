@@ -72,11 +72,36 @@ export default function SalesPage() {
             verified, audited, and only the exceptions reach a human.
           </p>
 
-          {/* THE ONE ENGINE — the hub + calculator, right under the headline. The
-              closed loop (job raised → done → synced → verified) lives inside it. */}
-          <div className="mt-9">
-            <FanOutHub />
-          </div>
+          {/* THE HERO IS THE PRODUCT RUNNING. A muted, looping capture of the live
+              sync board: jobs completing, an exception flagging, completions written
+              back — no narration, no overlay. The headline above is its caption.
+              Reduced-motion users get the poster still, which is already mid-flight. */}
+          <figure className="mt-9">
+            <div className="overflow-hidden rounded-2xl border border-[#e6e1d6] bg-[#0d0f0e] shadow-2xl shadow-black/10 ring-1 ring-black/5">
+              <video
+                className="block w-full motion-reduce:hidden"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster="/proofsync-hero-poster.jpg"
+                aria-label="ProofSync running live: jobs completing in a contractor's system, an exception flagging for review, and completions writing back into the client's CAFM — verified, with no re-keying."
+              >
+                <source src="/proofsync-hero.webm" type="video/webm" />
+                <source src="/proofsync-hero.mp4" type="video/mp4" />
+              </video>
+              {/* Reduced-motion / no-autoplay fallback — a frame that already looks alive. */}
+              <img
+                src="/proofsync-hero-poster.jpg"
+                alt="The ProofSync live-sync board: jobs moving from awaiting pickup to completed to verified, with an exception flagged for a human."
+                className="hidden w-full motion-reduce:block"
+              />
+            </div>
+            <figcaption className="mt-3 font-mono text-xs text-[#8a8578]">
+              Live: a job completing, written back into the client&apos;s CAFM — then read back and proven. Every sync leaves an audit trail.
+            </figcaption>
+          </figure>
 
           {/* CTA — below the one-engine graphic. In the gated build the live demo is
               1:1 only, so the one loud button books a call; otherwise it opens the demo. */}
@@ -104,6 +129,23 @@ export default function SalesPage() {
           <p className="mt-3 font-mono text-xs text-[#8a8578]">
             {GATED_PREVIEW ? '30-minute call · on your real data · no slides' : 'No sign-up · runs on real data · no slides'}
           </p>
+        </div>
+      </section>
+
+      {/* ── THE ONE ENGINE — interactive loop + calculator, relocated from the hero
+           so the running product leads. Framed on proof, not just sync. ───── */}
+      <section className="border-t border-[#e6e1d6]">
+        <div className="mx-auto w-full max-w-6xl px-5 py-16 lg:py-24">
+          <p className={EYEBROW}>The one engine</p>
+          <h2 className={`mt-5 ${H2}`}>One proven loop, every client system you serve.</h2>
+          <p className={`mt-5 max-w-2xl ${BODY}`}>
+            The same closed loop runs for every client CAFM you touch: raised → completed once →
+            written back → <span className="text-[#1a1b1f] font-semibold">read back and proven</span>.
+            Move the numbers and see what it returns.
+          </p>
+          <div className="mt-9">
+            <FanOutHub />
+          </div>
         </div>
       </section>
 
