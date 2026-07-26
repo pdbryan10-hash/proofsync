@@ -58,7 +58,7 @@ export default function SalesPage() {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_80%_-10%,rgba(14,107,63,0.10),transparent)]" />
-        <div className="relative mx-auto w-full max-w-6xl px-5 py-14 lg:py-20">
+        <div className="relative mx-auto w-full max-w-6xl px-5 pt-14 lg:pt-20">
           <p className={EYEBROW}>For FM contractors</p>
           <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] font-bold leading-[1.03] tracking-[-0.02em] text-[#1a1b1f] sm:text-6xl lg:text-[4.2rem]">
             You employ someone to copy your own data into someone else&apos;s software.
@@ -71,17 +71,16 @@ export default function SalesPage() {
             they&apos;re done. <span className="text-[#1a1b1f]">Across every client system you serve</span> —
             verified, audited, and only the exceptions reach a human.
           </p>
+        </div>
 
-          {/* THE HERO IS THE PRODUCT RUNNING. A muted, looping capture of the live
-              sync board: jobs completing, an exception flagging, completions written
-              back — no narration, no overlay. The headline above is its caption.
-              It autoplays for everyone — a gentle muted UI loop, so it runs even
-              under Reduce Motion; the poster is only the pre-load frame. */}
-          {/* Capped at the video's native width (1878px) so a high-DPI display
-              never upscales it — above ~940px CSS a 2× screen would stretch the
-              1878px source and soften the board text. Sharp beats slightly wider. */}
-          <figure className="mt-9 w-full max-w-[940px]">
-            <div className="overflow-hidden rounded-2xl border border-[#e6e1d6] bg-[#0d0f0e] shadow-2xl shadow-black/10 ring-1 ring-black/5">
+        {/* THE HERO IS THE PRODUCT RUNNING — a muted, looping capture of the live
+            sync board. Rendered as a full-width band capped at the recording's
+            native width (1878px): it maps ~1:1 on a 1080p/100% screen — crisp,
+            legible board text — and is never upscaled on wider displays. Shrinking
+            it into the text column is what made the dense board read as soft.
+            Autoplays for all — a gentle muted UI loop, runs even under Reduce Motion. */}
+        <figure className="relative mx-auto mt-9 w-full max-w-[1878px] px-5">
+          <div className="overflow-hidden rounded-2xl border border-[#e6e1d6] bg-[#0d0f0e] shadow-2xl shadow-black/10 ring-1 ring-black/5">
               <video
                 className="block w-full"
                 autoPlay
@@ -96,16 +95,17 @@ export default function SalesPage() {
                 <source src="/proofsync-hero-v2.mp4" type="video/mp4" />
               </video>
             </div>
-            <figcaption className="mt-3 text-sm leading-relaxed text-[#5f6068]">
+            <figcaption className="mt-3 max-w-3xl text-sm leading-relaxed text-[#5f6068]">
               <span className="font-semibold text-[#1a1b1f]">This is ProofSync running.</span> A completed job
               crossing from the contractor&apos;s system into the client&apos;s CAFM — matched to the right job,
               written back, and read back to prove it landed. The one job that needs a human is flagged, not guessed.
               Nobody re-keying anything.
             </figcaption>
-          </figure>
+        </figure>
 
-          {/* CTA — below the one-engine graphic. In the gated build the live demo is
-              1:1 only, so the one loud button books a call; otherwise it opens the demo. */}
+        <div className="relative mx-auto w-full max-w-6xl px-5 pb-14 lg:pb-20">
+          {/* CTA — in the gated build the live demo is 1:1 only, so the one loud
+              button books a call; otherwise it opens the demo. */}
           <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <Link
               href={WATCH_HREF}
