@@ -75,28 +75,23 @@ export default function SalesPage() {
           {/* THE HERO IS THE PRODUCT RUNNING. A muted, looping capture of the live
               sync board: jobs completing, an exception flagging, completions written
               back — no narration, no overlay. The headline above is its caption.
-              Reduced-motion users get the poster still, which is already mid-flight. */}
+              It autoplays for everyone — a gentle muted UI loop, so it runs even
+              under Reduce Motion; the poster is only the pre-load frame. */}
           <figure className="mt-9">
             <div className="overflow-hidden rounded-2xl border border-[#e6e1d6] bg-[#0d0f0e] shadow-2xl shadow-black/10 ring-1 ring-black/5">
               <video
-                className="block w-full motion-reduce:hidden"
+                className="block w-full"
                 autoPlay
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                preload="auto"
                 poster="/proofsync-hero-poster.jpg"
                 aria-label="ProofSync running live: jobs completing in a contractor's system, an exception flagging for review, and completions writing back into the client's CAFM — verified, with no re-keying."
               >
                 <source src="/proofsync-hero.webm" type="video/webm" />
                 <source src="/proofsync-hero.mp4" type="video/mp4" />
               </video>
-              {/* Reduced-motion / no-autoplay fallback — a frame that already looks alive. */}
-              <img
-                src="/proofsync-hero-poster.jpg"
-                alt="The ProofSync live-sync board: jobs moving from awaiting pickup to completed to verified, with an exception flagged for a human."
-                className="hidden w-full motion-reduce:block"
-              />
             </div>
             <figcaption className="mt-3 font-mono text-xs text-[#8a8578]">
               Live: a job completing, written back into the client&apos;s CAFM — then read back and proven. Every sync leaves an audit trail.
