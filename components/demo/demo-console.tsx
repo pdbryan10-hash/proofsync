@@ -223,14 +223,14 @@ export function DemoConsole() {
         {/* Real-money proof, above the interactive demo — the first thing an
             emailed prospect sees, whether or not they press Run. Framed as a
             real contractor, kept separate from the demo's own live counters. */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-success-soft bg-gradient-to-br from-emerald-50 to-teal-50 px-5 py-4">
-          <span className="text-3xl font-bold tabular-nums text-success-text sm:text-4xl">
-            £228,000<span className="ml-1.5 text-base font-semibold text-muted-foreground">a year</span>
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl bg-gradient-to-br from-[#0e6b3f] to-[#0a4f2e] px-6 py-5 shadow-lg shadow-emerald-950/25 ring-1 ring-inset ring-white/10">
+          <span className="text-4xl font-extrabold tabular-nums text-white sm:text-5xl">
+            £228,000<span className="ml-2 text-lg font-semibold text-emerald-200/90">a year</span>
           </span>
-          <span className="max-w-xl text-sm leading-snug text-navy-800">
-            of human cost <strong>one contractor</strong> — 3,000 jobs a month — found in a{' '}
-            <strong>single</strong> re-keying process, on their own numbers.{' '}
-            <span className="text-muted-foreground">This is that process, running.</span>
+          <span className="max-w-xl text-sm font-medium leading-snug text-emerald-50">
+            of human cost <strong className="font-bold text-white">one contractor</strong> — 3,000 jobs a month —
+            found in a <strong className="font-bold text-white">single</strong> re-keying process, on their own
+            numbers. <span className="text-emerald-200/80">This is that process, running.</span>
           </span>
         </div>
         <CrossSystemSearch />
