@@ -489,9 +489,9 @@ function SpotlightStage({
                 One completed job is sitting in Joblogic, waiting to cross. Dispatch a worker and
                 watch ProofSync do it — step by step.
               </p>
-              <p className="mx-auto mt-2 max-w-xl text-xs leading-relaxed text-white/50">
-                Joblogic and Concerto here are just stand-ins. ProofSync works with{' '}
-                <span className="font-medium text-white/75">any CAFM</span> — Elogbooks, Planon, MRI,
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-white/65">
+                <span className="font-semibold text-white/90">Joblogic and Concerto are just examples.</span> ProofSync syncs{' '}
+                <span className="font-semibold text-white/90">any CAFM</span> — Elogbooks, Planon, MRI,
                 Verisae and the rest — including the ones with no API at all.
               </p>
               <button
@@ -2101,11 +2101,12 @@ function ConsoleHeader({
     <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
         <div className="mr-auto">
-          <h1 className="flex items-center gap-2 text-base font-semibold text-navy-800">
+          <h1 className="flex flex-wrap items-center gap-2 text-base font-semibold text-navy-800">
             Live sync
             <span className="font-normal text-muted-foreground">Joblogic</span>
             <ArrowRight className="size-3.5 text-muted-foreground" />
             <span className="font-normal text-muted-foreground">Concerto</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">examples · syncs any CAFM</span>
           </h1>
           <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0b5531]">
             <span className="relative flex size-1.5">
