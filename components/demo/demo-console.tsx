@@ -223,15 +223,16 @@ export function DemoConsole() {
         {/* Real-money proof, above the interactive demo — the first thing an
             emailed prospect sees, whether or not they press Run. Framed as a
             real contractor, kept separate from the demo's own live counters. */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl bg-gradient-to-br from-[#0e6b3f] to-[#0a4f2e] px-6 py-5 shadow-lg shadow-emerald-950/25 ring-1 ring-inset ring-white/10">
-          <span className="text-4xl font-extrabold tabular-nums text-white sm:text-5xl">
-            £228,000<span className="ml-2 text-lg font-semibold text-emerald-200/90">a year</span>
-          </span>
-          <span className="max-w-xl text-sm font-medium leading-snug text-emerald-50">
+        <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#0e6b3f] to-[#0a4f2e] px-6 py-6 shadow-xl shadow-emerald-950/30 ring-1 ring-inset ring-white/10 sm:px-9 sm:py-8">
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+            <span className="text-6xl font-extrabold leading-[0.9] tracking-tight tabular-nums text-white sm:text-7xl lg:text-8xl">£228,000</span>
+            <span className="pb-1.5 text-xl font-semibold text-emerald-200/90 sm:text-2xl">a year</span>
+          </div>
+          <p className="mt-4 max-w-3xl text-base font-medium leading-snug text-emerald-50 sm:text-lg">
             of human cost <strong className="font-bold text-white">one contractor</strong> — 3,000 jobs a month —
             found in a <strong className="font-bold text-white">single</strong> re-keying process, on their own
-            numbers. <span className="text-emerald-200/80">This is that process, running.</span>
-          </span>
+            numbers. <span className="text-emerald-200/85">This is that process, running.</span>
+          </p>
         </div>
         <CrossSystemSearch />
         {act === 'human' ? (
@@ -2119,7 +2120,7 @@ function ConsoleHeader({
             <span className="font-normal text-muted-foreground">Joblogic</span>
             <ArrowRight className="size-3.5 text-muted-foreground" />
             <span className="font-normal text-muted-foreground">Concerto</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">examples · any CAFM, API or not</span>
+            <span className="rounded-full border border-[#0e6b3f]/30 bg-[#e7f0ea] px-3 py-1 text-xs font-semibold text-[#0b5531]">examples · any CAFM, API or not</span>
           </h1>
           <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0b5531]">
             <span className="relative flex size-1.5">
