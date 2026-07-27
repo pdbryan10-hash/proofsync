@@ -220,6 +220,19 @@ export function DemoConsole() {
       <ConsoleHeader state={state} busy={busy} onReset={reset} onForce={forceTick} />
 
       <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6">
+        {/* Real-money proof, above the interactive demo — the first thing an
+            emailed prospect sees, whether or not they press Run. Framed as a
+            real contractor, kept separate from the demo's own live counters. */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-success-soft bg-gradient-to-br from-emerald-50 to-teal-50 px-5 py-4">
+          <span className="text-3xl font-bold tabular-nums text-success-text sm:text-4xl">
+            £228,000<span className="ml-1.5 text-base font-semibold text-muted-foreground">a year</span>
+          </span>
+          <span className="max-w-xl text-sm leading-snug text-navy-800">
+            of human cost <strong>one contractor</strong> — 3,000 jobs a month — found in a{' '}
+            <strong>single</strong> re-keying process, on their own numbers.{' '}
+            <span className="text-muted-foreground">This is that process, running.</span>
+          </span>
+        </div>
         <CrossSystemSearch />
         {act === 'human' ? (
           <SpotlightStage
@@ -2106,7 +2119,7 @@ function ConsoleHeader({
             <span className="font-normal text-muted-foreground">Joblogic</span>
             <ArrowRight className="size-3.5 text-muted-foreground" />
             <span className="font-normal text-muted-foreground">Concerto</span>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">examples · syncs any CAFM</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">examples · any CAFM, API or not</span>
           </h1>
           <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0b5531]">
             <span className="relative flex size-1.5">
