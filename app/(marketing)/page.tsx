@@ -275,7 +275,20 @@ export default function SalesPage() {
           <p className={EYEBROW}>What it gives back</p>
           <h2 className={`mt-5 ${H2}`}>Measured in people, not seconds.</h2>
 
-          <div className="mt-8 overflow-hidden rounded-2xl border border-[#e6e1d6] bg-white">
+          {/* A real, anonymous customer number leading the modelled table below. */}
+          <div className="mt-8 rounded-2xl border border-[#0e6b3f]/25 bg-white p-6 sm:p-8">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">One contractor, one process</p>
+            <p className="mt-3 font-display text-5xl font-bold leading-none text-[#0e6b3f] sm:text-6xl">
+              £228,000<span className="ml-2.5 align-baseline text-lg font-semibold text-[#5f6068]">a year</span>
+            </p>
+            <p className="mt-4 max-w-2xl leading-relaxed text-[#5f6068]">
+              of human cost a contractor completing <strong className="text-[#1a1b1f]">3,000 jobs a month</strong> found
+              in a <strong className="text-[#1a1b1f]">single</strong> re-keying process — quantified on their own
+              numbers, before a line of code. The table below is the same maths at other volumes.
+            </p>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-[#e6e1d6] bg-white">
             <table className="w-full text-left">
               <thead className="bg-[#f7f5ef]">
                 <tr className="font-mono text-[10px] uppercase tracking-widest text-[#8a8578]">
