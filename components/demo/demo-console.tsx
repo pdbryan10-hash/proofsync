@@ -229,9 +229,10 @@ export function DemoConsole() {
             <span className="pb-1.5 text-xl font-semibold text-emerald-200/90 sm:text-2xl">a year</span>
           </div>
           <p className="mt-4 max-w-3xl text-base font-medium leading-snug text-emerald-50 sm:text-lg">
-            of human cost <strong className="font-bold text-white">one contractor</strong> — 3,000 jobs a month —
-            found in a <strong className="font-bold text-white">single</strong> re-keying process, on their own
-            numbers. <span className="text-emerald-200/85">This is that process, running.</span>
+            That&rsquo;s what <strong className="font-bold text-white">one contractor</strong> was paying to copy
+            completed jobs out of the field and into the client&rsquo;s CAFM — <strong className="font-bold text-white">by hand,
+            every job</strong>. Watch ProofSync do it instead:{' '}
+            <span className="text-emerald-200/85">matched, verified, both directions, nobody re-keying.</span>
           </p>
         </div>
         <CrossSystemSearch />
@@ -296,6 +297,17 @@ interface SearchHit {
   subtitle: string;
   reference: string;
 }
+
+/**
+ * Vendor-neutral display labels for the two example systems. The raw values
+ * ('Joblogic' | 'Concerto') stay as the internal discriminators used everywhere
+ * in logic; only what a visitor READS is genericised — the demo works with any
+ * CAFM, and these two are just examples.
+ */
+const SYS_LABEL: Record<'Joblogic' | 'Concerto', string> = {
+  Joblogic: 'Contractor system',
+  Concerto: 'Client CAFM',
+};
 
 /**
  * One box that searches BOTH systems (and finds files in either). The point it
@@ -387,7 +399,7 @@ function CrossSystemSearch() {
                   <p className="truncate text-xs text-muted-foreground">{h.subtitle}</p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-0.5">
-                  <Badge tone={h.system === 'Joblogic' ? 'neutral' : 'success'}>{h.system}</Badge>
+                  <Badge tone={h.system === 'Joblogic' ? 'neutral' : 'success'}>{SYS_LABEL[h.system]}</Badge>
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{h.kind}</span>
                 </div>
               </li>
@@ -402,9 +414,9 @@ function CrossSystemSearch() {
 // --- Act 1: the spotlight ----------------------------------------------------
 
 const SPOT_NODES = [
-  { icon: Database, label: 'Joblogic', sub: 'job completed' },
+  { icon: Database, label: 'Contractor system', sub: 'job completed' },
   { icon: Cog, label: 'ProofSync', sub: 'reads & matches' },
-  { icon: Chrome, label: 'Concerto', sub: 'fills the form' },
+  { icon: Chrome, label: 'Client CAFM', sub: 'fills the form' },
   { icon: CheckCircle2, label: 'Verified', sub: 'read back' },
 ];
 
@@ -500,11 +512,12 @@ function SpotlightStage({
           {phase === 'idle' && (
             <div className="relative mx-auto mt-7 max-w-2xl text-center">
               <p className="text-sm text-white/70">
-                One completed job is sitting in Joblogic, waiting to cross. Dispatch a worker and
+                One completed job is sitting in the contractor&rsquo;s system, waiting to cross. Dispatch a worker and
                 watch ProofSync do it — step by step.
               </p>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-white/65">
-                <span className="font-semibold text-white/90">Joblogic and Concerto are just examples.</span> ProofSync syncs{' '}
+                <span className="font-semibold text-white/90">Works with any CAFM.</span> The contractor&rsquo;s system and
+                the client&rsquo;s CAFM here are just examples — ProofSync syncs{' '}
                 <span className="font-semibold text-white/90">any CAFM</span> — Elogbooks, Planon, MRI,
                 Verisae and the rest — including the ones with no API at all.
               </p>
@@ -606,7 +619,7 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
   if (stop === 0) {
     return (
       <FocusCard
-        chip="Joblogic"
+        chip="Contractor system"
         chipTone="slate"
         title={spot.jobNumber}
         badge={<Badge tone="success" dot>Completed on site</Badge>}
@@ -619,7 +632,7 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
           <Fact label="Paperwork" value={`${spot.documentCount} document(s) attached`} />
         </dl>
         <p className="mt-3 rounded-md bg-muted px-2.5 py-1.5 text-[11px] text-muted-foreground">
-          Finished in Joblogic. The client&rsquo;s system knows nothing about it yet — today a person
+          Finished in the contractor&rsquo;s system. The client&rsquo;s CAFM knows nothing about it yet — today a person
           would re-key all of this by hand.
         </p>
       </FocusCard>
@@ -628,7 +641,7 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
 
   if (stop === 1) {
     return (
-      <FocusCard chip="ProofSync" chipTone="indigo" title="Reads Joblogic — and finds the match">
+      <FocusCard chip="ProofSync" chipTone="indigo" title="Reads the contractor system — and finds the match">
         <ul className="mt-3 space-y-2 text-sm">
           <Step done>Read the completed job</Step>
           <Step done>
@@ -636,7 +649,7 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
             order
           </Step>
           <Step done>Client rules loaded — costs withheld by policy</Step>
-          <Step>Mapping {spot.fields.length} field(s) into Concerto&rsquo;s form…</Step>
+          <Step>Mapping {spot.fields.length} field(s) into the CAFM&rsquo;s form…</Step>
         </ul>
         <p className="mt-3 rounded-md bg-info-soft px-2.5 py-1.5 text-[11px] text-info-text">
           It refuses to guess: no matching reference means the job is set aside for a person, never
@@ -649,9 +662,9 @@ function SpotlightFocus({ spot, stop }: { spot: SpotlightData; stop: number }) {
   if (stop === 2) {
     return (
       <FocusCard
-        chip="Concerto"
+        chip="Client CAFM"
         chipTone="teal"
-        title={`Fills ${spot.reference} in Concerto`}
+        title={`Fills ${spot.reference} in the CAFM`}
         badge={<Badge tone="info" dot>typing it in</Badge>}
       >
         <dl className="mt-3 space-y-1.5">
@@ -918,7 +931,7 @@ function MachineHeader({
           </h2>
           <p className="mt-2 text-xs text-white/50">
             {syncing
-              ? 'Syncing into Concerto — watch them cross, a few at a time…'
+              ? 'Syncing into the CAFM — watch them cross, a few at a time…'
               : ready
                 ? 'Signed in and ready — press Run to watch the whole batch sync.'
                 : done
@@ -988,7 +1001,7 @@ function KpiBar({ stats, exceptionCount }: { stats: DemoState['stats']; exceptio
   const flagged = useCountUp(exceptionCount);
 
   const items = [
-    { label: 'Synced to Concerto', value: synced.toLocaleString(), tone: 'success' as const },
+    { label: 'Synced to the CAFM', value: synced.toLocaleString(), tone: 'success' as const },
     { label: 'Minutes of re-keying returned', value: minutes.toLocaleString(), tone: 'info' as const },
     { label: 'Completed on site', value: complete.toLocaleString(), tone: 'plain' as const },
     { label: 'Set aside for a person', value: flagged.toLocaleString(), tone: 'plain' as const },
@@ -1039,7 +1052,7 @@ function ExceptionsQueue({
     return (
       <div className="mb-4 flex items-center gap-2 rounded-xl border border-success-soft bg-success-soft/50 px-4 py-3 text-sm text-success-text">
         <CheckCircle2 className="size-4" />
-        Nothing waiting for a person — every job Concerto could accept is in.
+        Nothing waiting for a person — every job the CAFM could accept is in.
       </div>
     );
   }
@@ -1130,7 +1143,7 @@ function ResolveModal({
       >
         <div className="flex items-center gap-2 border-b border-border bg-warning-soft/50 px-5 py-3">
           <FileWarning className="size-4 text-warning-text" />
-          <span className="text-sm font-semibold text-warning-text">Concerto refused this save</span>
+          <span className="text-sm font-semibold text-warning-text">The CAFM refused this save</span>
           <button
             type="button"
             onClick={onClose}
@@ -1157,12 +1170,12 @@ function ResolveModal({
             {item.kind === 'MISSING_FIELD' ? (
               <>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-foreground">
-                  This contract makes <strong>{item.label}</strong> mandatory on every work order. Joblogic never
-                  captured one, so ProofSync has nothing to write into Concerto — and it won&rsquo;t guess.
+                  This contract makes <strong>{item.label}</strong> mandatory on every work order. The contractor&rsquo;s
+                  system never captured one, so ProofSync has nothing to write into the CAFM — and it won&rsquo;t guess.
                 </p>
                 <div className="mt-2 flex items-center gap-2 rounded border border-border bg-card px-2.5 py-1.5 text-xs">
                   <span className="font-mono font-medium text-navy-800">{item.label}</span>
-                  <span className="text-muted-foreground">· required by Concerto</span>
+                  <span className="text-muted-foreground">· required by the CAFM</span>
                   <span className="ml-auto rounded bg-danger-soft px-1.5 py-0.5 font-mono text-[11px] text-danger-text">
                     empty
                   </span>
@@ -1172,7 +1185,7 @@ function ResolveModal({
               <>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-foreground">
                   The {item.label.toLowerCase()} came across with a broken text encoding. The highlighted characters
-                  below aren&rsquo;t valid, so Concerto&rsquo;s validation refuses the save.
+                  below aren&rsquo;t valid, so the CAFM&rsquo;s validation refuses the save.
                 </p>
                 <div className="mt-2 rounded border border-border bg-card px-2.5 py-2 font-mono text-xs leading-relaxed text-foreground">
                   {renderGarbled(item.badValue ?? '')}
@@ -1205,7 +1218,7 @@ function ResolveModal({
           <p className="mt-1.5 text-[11px] text-muted-foreground">
             {item.kind === 'MISSING_FIELD'
               ? 'A cost-centre code your finance team recognises — then ProofSync writes it and the job syncs.'
-              : 'Remove the broken characters and re-enter the note; ProofSync resubmits it to Concerto.'}
+              : 'Remove the broken characters and re-enter the note; ProofSync resubmits it to the CAFM.'}
           </p>
 
           {error && <p className="mt-2 text-xs text-danger-text">{error}</p>}
@@ -1216,7 +1229,7 @@ function ResolveModal({
             </Button>
             <Button size="sm" onClick={submit} disabled={saving}>
               {saving ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
-              Resubmit to Concerto
+              Resubmit to the CAFM
             </Button>
           </div>
         </div>
@@ -1260,7 +1273,7 @@ function FinaleCard({
   onClose: () => void;
 }) {
   const rows = [
-    { to: data.jobs, label: 'jobs completed into Concerto' },
+    { to: data.jobs, label: 'jobs completed into the CAFM' },
     { to: data.fields, label: 'fields updated' },
     { to: data.certs, label: 'documents uploaded' },
   ];
@@ -1431,12 +1444,12 @@ function buildSteps(r: LedgerRow): TheatreStep[] {
   const docs = r.documentsTransferred;
 
   const steps: TheatreStep[] = [
-    { label: 'Logging in to Concerto', tone: 'ok' },
+    { label: 'Logging in to the CAFM', tone: 'ok' },
     { label: `Finding ${ref}`, tone: 'ok' },
     { label: 'Reading the completed job', tone: 'ok' },
   ];
   if (!ok) {
-    steps.push({ label: 'Concerto refused the save — set aside for a person', tone: 'fail' });
+    steps.push({ label: 'The CAFM refused the save — set aside for a person', tone: 'fail' });
     return steps;
   }
   steps.push({ label: `Updating ${fields} field${fields === 1 ? '' : 's'}`, tone: 'ok' });
@@ -1591,7 +1604,7 @@ function BrowserWindow({ win }: { win: TheatreWindow }) {
         <span className="size-2.5 rounded-full bg-amber-400" />
         <span className="size-2.5 rounded-full bg-emerald-400" />
         <span className="ml-1 flex-1 truncate rounded bg-white px-2.5 py-1 font-mono text-[11px] text-slate-500 ring-1 ring-slate-200">
-          concerto.client-fm.co.uk&thinsp;·&thinsp;{win.reference ?? 'work order'}
+          cafm.client-fm.co.uk&thinsp;·&thinsp;{win.reference ?? 'work order'}
         </span>
       </div>
 
@@ -1749,11 +1762,11 @@ function ClosedLoopStage({
   };
 
   const steps: { key: LoopStage; system: 'concerto' | 'engine' | 'joblogic'; title: string; sub: string; count?: number }[] = [
-    { key: 'intake', system: 'concerto', title: 'Client raises the job', sub: 'in Concerto', count: total },
+    { key: 'intake', system: 'concerto', title: 'Client raises the job', sub: 'in the CAFM', count: total },
     { key: 'intake', system: 'engine', title: 'Work Intake pulls it', sub: 'reference kept' },
-    { key: 'complete', system: 'joblogic', title: 'Dispatched to the engineer', sub: 'in Joblogic', count: dispatched },
+    { key: 'complete', system: 'joblogic', title: 'Dispatched to the engineer', sub: 'in the contractor system', count: dispatched },
     { key: 'sync', system: 'engine', title: 'Completed → returned & verified', sub: 'the outbound sync' },
-    { key: 'done', system: 'concerto', title: 'Back in Concerto, verified', sub: 'both sides agree', count: returned },
+    { key: 'done', system: 'concerto', title: 'Back in the CAFM, verified', sub: 'both sides agree', count: returned },
   ];
 
   const sysColor: Record<string, string> = {
@@ -1772,7 +1785,7 @@ function ClosedLoopStage({
             </span>
             <h2 className="mt-1.5 text-lg font-semibold sm:text-xl">The whole job, both directions — nobody re-keys</h2>
             <p className="mt-1 text-xs text-white/60">
-              Raised in the client&rsquo;s system → into Joblogic → completed once → back to the client, verified.
+              Raised in the client&rsquo;s system → into the contractor&rsquo;s system → completed once → back to the client, verified.
             </p>
           </div>
           <div className="relative flex items-center">
@@ -1904,7 +1917,7 @@ function ClosedLoopStage({
             </div>
             <div className="mt-3 grid items-start gap-4 xl:grid-cols-4">
               <TargetPanel
-                title="Concerto"
+                title="Client CAFM"
                 subtitle="① client raises"
                 rows={awaiting}
                 session={state.sessions.concerto}
@@ -1923,7 +1936,7 @@ function ClosedLoopStage({
               />
               <LedgerPanel rows={ledgerRows} db={state.databases.ledger} />
               <TargetPanel
-                title="Concerto"
+                title="Client CAFM"
                 subtitle={followOnOnly ? '④ follow-on flagged' : '④ back, verified'}
                 rows={followOnOnly ? back.filter((w) => w.followOnDetail) : back}
                 session={state.sessions.concerto}
@@ -2117,9 +2130,9 @@ function ConsoleHeader({
         <div className="mr-auto">
           <h1 className="flex flex-wrap items-center gap-2 text-base font-semibold text-navy-800">
             Live sync
-            <span className="font-normal text-muted-foreground">Joblogic</span>
+            <span className="font-normal text-muted-foreground">Contractor system</span>
             <ArrowRight className="size-3.5 text-muted-foreground" />
-            <span className="font-normal text-muted-foreground">Concerto</span>
+            <span className="font-normal text-muted-foreground">Client CAFM</span>
             <span className="rounded-full border border-[#0e6b3f]/30 bg-[#e7f0ea] px-3 py-1 text-xs font-semibold text-[#0b5531]">examples · any CAFM, API or not</span>
           </h1>
           <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-[#0e6b3f]/25 bg-[#e7f0ea] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-[#0b5531]">
@@ -2210,15 +2223,15 @@ function LiveLoginCurtain({
               )}
             </p>
             <p className="truncate text-xs text-white/50">
-              Two real browser tabs keying in side by side — Joblogic and Concerto. No API, no shortcut.
+              Two real browser tabs keying in side by side — the contractor&rsquo;s system and the client&rsquo;s CAFM. No API, no shortcut.
             </p>
           </div>
           <Chrome className="ml-auto size-4 shrink-0 text-white/40" />
         </div>
 
         <div className="grid gap-px bg-white/10 sm:grid-cols-2">
-          <LoginPane label="Joblogic" sub="contractor's system" url={joblogicUrl} done={done} />
-          <LoginPane label="Concerto" sub="client's system" url={concertoUrl} done={done} />
+          <LoginPane label="Contractor system" sub="contractor's system" url={joblogicUrl} done={done} />
+          <LoginPane label="Client CAFM" sub="client's system" url={concertoUrl} done={done} />
         </div>
       </div>
     </div>
@@ -2425,7 +2438,7 @@ function SourcePanel({
 
   return (
     <Panel
-      title="Joblogic"
+      title="Contractor system"
       subtitle={subtitle}
       db={db}
       // In browser mode the session shown in the header belongs to Chromium, not
@@ -2561,7 +2574,7 @@ function LedgerPanel({
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-navy-800 transition-colors hover:bg-muted"
               >
-                Joblogic <span aria-hidden>↗</span>
+                Contractor system <span aria-hidden>↗</span>
               </a>
               {row.reference && (
                 <a
@@ -2570,7 +2583,7 @@ function LedgerPanel({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-emerald-700 transition-colors hover:bg-muted"
                 >
-                  Concerto <span aria-hidden>↗</span>
+                  Client CAFM <span aria-hidden>↗</span>
                 </a>
               )}
             </div>
@@ -2694,7 +2707,7 @@ function TargetPanel({
   systemUrl,
   transport,
   activeRefs,
-  title = 'Concerto',
+  title = 'Client CAFM',
   subtitle = "client's system",
 }: {
   rows: TargetRow[];
