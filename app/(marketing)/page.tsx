@@ -71,6 +71,10 @@ export default function SalesPage() {
             they&apos;re done. <span className="text-[#1a1b1f]">Across every client system you serve</span> —
             verified, audited, and only the exceptions reach a human.
           </p>
+          <div className="mt-7 inline-flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-2xl border border-[#0e6b3f]/25 bg-[#e7f0ea] px-5 py-3.5">
+            <span className="font-display text-3xl font-extrabold tracking-tight tabular-nums text-[#0e6b3f] sm:text-[2.6rem]">£228,000<span className="ml-1.5 align-baseline text-base font-semibold text-[#5f6068]">a year</span></span>
+            <span className="max-w-xs text-sm leading-snug text-[#3a3b42]">— what one contractor was paying to re-key completed jobs by hand.</span>
+          </div>
         </div>
 
         {/* THE HERO IS THE PRODUCT RUNNING — a muted, looping capture of the live

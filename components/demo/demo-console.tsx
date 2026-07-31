@@ -45,6 +45,22 @@ import { useChangedRows, useDemoState, type ActivityLine } from './use-demo-stat
  * arrived in another system. Showing only the middle would ask the viewer to
  * take the ends on trust.
  */
+/**
+ * Neutral, self-describing labels for the three real databases, shown on the
+ * public page in place of their internal names. DISPLAY ONLY — the connection
+ * layer (lib/demo/mongo.ts) reads the real names from config directly, so this
+ * changes nothing about what the demo connects to. Unknown names (e.g. an env
+ * override) fall through unchanged rather than leaking as a broken chip.
+ */
+const DB_DISPLAY_LABELS: Record<string, string> = {
+  proofsync_demo_joblogic: 'contractor-jobs-db',
+  proofsync_demo_concerto: 'client-cafm-db',
+  see_cafm_sync: 'proofsync-ledger',
+};
+function dbLabel(name: string): string {
+  return DB_DISPLAY_LABELS[name] ?? name;
+}
+
 export function DemoConsole() {
   const { state, error, busy, activity, reset, forceTick, resolve, replay, runLogin, runMachineBatch, runClosedLoop } =
     useDemoState();
@@ -81,6 +97,63 @@ export function DemoConsole() {
     didInit.current = true;
     if (state.inbound.dispatched > 0 || state.inbound.returned > 0) void reset();
   }, [state, reset]);
+
+  // A cold visitor must never land on a dead board (Awaiting 20, everything else
+  // 0) under the £228k headline — it reads as broken. So the FIRST time a visitor
+  // opens the demo in a browser session, drive the closed loop once by itself:
+  // the counters climb and the panels fill on their own, then the manual "Run the
+  // closed loop" button is still there for replays.
+  //
+  // Fired exactly once per session, guarded two ways: a ref (so re-renders/the 1s
+  // state poll can't re-arm it within this mount) AND a sessionStorage flag (so a
+  // refresh or in-session navigation doesn't re-run it). It runs only AFTER the
+  // initial state has loaded and the didInit reset has settled — the `busy` guard
+  // holds it off while a reset/replay is in flight, and a short delay lets the
+  // seeded board paint first — so it never fights AutoReset.
+  const autoRunArmed = useRef(false);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    // Already armed this mount, or preconditions not yet met — do nothing. Only
+    // the closed-loop act auto-runs; wait for first state + the didInit reset.
+    if (autoRunArmed.current) return;
+    if (!state || !didInit.current || busy || act !== 'loop') return;
+
+    let already = false;
+    try {
+      already = typeof window !== 'undefined' && window.sessionStorage.getItem('proofsync_demo_autorun') === '1';
+    } catch {
+      // sessionStorage can throw (private mode / blocked storage) — treat as not-yet-run.
+    }
+    // Arm once regardless of outcome, so neither the ref nor a storage hiccup lets
+    // this effect schedule a second run on a later poll.
+    autoRunArmed.current = true;
+    if (already) return;
+    try {
+      window.sessionStorage.setItem('proofsync_demo_autorun', '1');
+    } catch {
+      // Non-fatal: worst case the loop auto-runs again on the next fresh load.
+    }
+
+    // No effect-cleanup timer here on purpose: the 1s state poll re-runs this
+    // effect, and a returned clearTimeout would cancel the pending run every tick.
+    // The mountedRef check makes a late fire after unmount safe instead.
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 900));
+      if (!mountedRef.current) return;
+      try {
+        await runClosedLoop(() => {});
+      } catch {
+        // Never surface an auto-run failure — the manual button remains available.
+      }
+    })();
+  }, [state, busy, act, runClosedLoop]);
+
   const [preparing, setPreparing] = useState(false);
   // True while the on-demand Act 2 batch run is in flight (the "Run the sync" button).
   const [syncing, setSyncing] = useState(false);
@@ -873,19 +946,19 @@ function MachineFloor({
         <SourcePanel
           rows={state.source.filter((j) => !String(j.jobNumber).startsWith('JL-97'))}
           session={state.sessions.joblogic}
-          db={state.databases.source}
+          db={dbLabel(state.databases.source)}
           systemUrl={state.systemUrls.source}
           transport={state.transport}
         />
         <LedgerPanel
           rows={state.ledger.filter((r) => !String(r.reference ?? '').startsWith('CON-7'))}
-          db={state.databases.ledger}
+          db={dbLabel(state.databases.ledger)}
           activeRefs={activeRefs}
         />
         <TargetPanel
           rows={state.target.filter((w) => !String(w.reference).startsWith('CON-7'))}
           session={state.sessions.concerto}
-          db={state.databases.target}
+          db={dbLabel(state.databases.target)}
           systemUrl={state.systemUrls.target}
           transport={state.transport}
           activeRefs={activeRefs}
@@ -1921,7 +1994,7 @@ function ClosedLoopStage({
                 subtitle="① client raises"
                 rows={awaiting}
                 session={state.sessions.concerto}
-                db={state.databases.target}
+                db={dbLabel(state.databases.target)}
                 systemUrl={state.systemUrls.target}
                 transport={state.transport}
                 activeRefs={EMPTY_REFS}
@@ -1930,17 +2003,17 @@ function ClosedLoopStage({
                 subtitle="② dispatched & done"
                 rows={inField}
                 session={state.sessions.joblogic}
-                db={state.databases.source}
+                db={dbLabel(state.databases.source)}
                 systemUrl={state.systemUrls.source}
                 transport={state.transport}
               />
-              <LedgerPanel rows={ledgerRows} db={state.databases.ledger} />
+              <LedgerPanel rows={ledgerRows} db={dbLabel(state.databases.ledger)} />
               <TargetPanel
                 title="Client CAFM"
                 subtitle={followOnOnly ? '④ follow-on flagged' : '④ back, verified'}
                 rows={followOnOnly ? back.filter((w) => w.followOnDetail) : back}
                 session={state.sessions.concerto}
-                db={state.databases.target}
+                db={dbLabel(state.databases.target)}
                 systemUrl={state.systemUrls.target}
                 transport={state.transport}
                 activeRefs={EMPTY_REFS}
