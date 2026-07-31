@@ -26,7 +26,7 @@ export function ConcertoChrome({
               C
             </div>
             <div className="leading-none">
-              <span className="text-sm font-semibold text-[#1e4d8c]">Concerto</span>
+              <span className="text-sm font-semibold text-[#1e4d8c]">Client CAFM</span>
               <span className="ml-2 text-[10px] uppercase tracking-wider text-slate-400">
                 Estates &amp; Facilities
               </span>

@@ -22,7 +22,7 @@ export function JoblogicChrome({
             <div className="flex size-7 items-center justify-center rounded bg-[#f97316] text-sm font-bold text-white">
               J
             </div>
-            <span className="text-sm font-semibold text-white">Joblogic</span>
+            <span className="text-sm font-semibold text-white">Contractor system</span>
           </Link>
 
           <nav className="flex items-center gap-1 text-xs">
