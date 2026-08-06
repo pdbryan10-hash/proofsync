@@ -124,6 +124,20 @@ export function DemoConsole() {
     if (autoRunArmed.current) return;
     if (!state || !didInit.current || busy || act !== 'loop') return;
 
+    // ?autorun=0 — suppress the auto-run entirely. The demo fires the closed loop
+    // ~900ms after the board paints, which is right for a visitor and wrong for
+    // anyone filming it: the sequence has already started before the shot is set
+    // up. With this flag the board seeds and waits for the button to be pressed.
+    try {
+      if (typeof window !== 'undefined'
+          && new URLSearchParams(window.location.search).get('autorun') === '0') {
+        autoRunArmed.current = true;
+        return;
+      }
+    } catch {
+      // Malformed query string — fall through to normal behaviour.
+    }
+
     let already = false;
     try {
       already = typeof window !== 'undefined' && window.sessionStorage.getItem('proofsync_demo_autorun') === '1';
