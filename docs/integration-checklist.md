@@ -101,15 +101,40 @@ nothing writes until reading has been proven.
 - [ ] **Written confirmation from the contractor** that using their account in this
       way is authorised, and by whom.
 
-### E2. Read-only first — non-negotiable
+### E2. Three phases, in this order
+
+Writes never happen as an experiment. The route is proven away from the
+contractor's live data first, and the first live write is one a person approves.
+
+**Phase 1 — read-only.**
 
 - [ ] Both logins start **read-only**. Where the platform supports a role with no
       write permission, use it; where it does not, the operator runs with writes
       disabled in configuration and that is verified before credentials are loaded.
 - [ ] Prove access by **reading** only: sign in, find a known job by reference,
-      read its fields back. No note, no status change, no upload.
-- [ ] Only after read access is proven and the mapping is agreed does any write
-      capability get enabled, and then against a test job first.
+      read its fields back. No note, no status change, no upload, in either system.
+- [ ] Produce the screen and field map (E3) from what is read.
+
+**Phase 2 — prove it offline.**
+
+- [ ] The operator is built and exercised **against the map, not against the
+      contractor's systems**. Nothing is written anywhere in this phase.
+- [ ] The full journey runs end to end offline: lookup, field extraction,
+      completion form, validation handling, upload, read-back comparison.
+- [ ] Failure paths are exercised too — no match, ambiguous match, validation
+      rejection, session expiry — and each stops rather than proceeds.
+- [ ] The contractor sees the mapping and the offline run, and agrees it is right,
+      before anything is pointed at live.
+
+**Phase 3 — live, attended, approved per write.**
+
+- [ ] First live runs are against **real jobs**, with a person present and each
+      write **approved by them before it is submitted**. There is no test record in
+      the contractor's live system and none is requested.
+- [ ] Every write is read back and compared before it counts as done.
+- [ ] Per-write approval relaxes only on the contractor's say-so, once they have
+      watched enough of them land correctly. The attended daily sign-in does not
+      relax at all.
 
 ### E3. Screen and field mapping — the asset
 
@@ -138,5 +163,7 @@ the system and recording what is there.
       This is not bypassed — see `docs/AUTH.md`.
 - [ ] Every write is still read back and compared. The verification requirement does
       not relax because the transport changed.
+- [ ] Nothing is written to prove that writing works. Writing is proven offline;
+      live writes exist only to do real work.
 - [ ] No reference, or an ambiguous match, still raises an exception rather than
       guessing.
