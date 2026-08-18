@@ -61,7 +61,9 @@ function useTween(target: number, ms = 1400) {
 
 export function FanOutHub() {
   const [selected, setSelected] = useState<string[]>(['Concerto', 'Elogbooks', 'MRI Evolution']);
-  const [jobs, setJobs] = useState(1200);
+  // Mid-band by default (typical mid-sized contractor is 800–1,200), so the
+  // opening figure is one nobody has to discount before they believe it.
+  const [jobs, setJobs] = useState(1000);
   // Default to TODAY (the mess). `fixed` = the visitor has pressed the button.
   const [fixed, setFixed] = useState(false);
 
@@ -270,6 +272,45 @@ export function FanOutHub() {
               </p>
             </>
           )}
+
+          {/* THE WORKING — showing it is the product, so it sits under the
+              number in readable type, not hidden in grey mono at the bottom. */}
+          <div className="mx-auto mt-5 max-w-sm rounded-xl border border-[#e6e1d6] bg-[#faf9f5] p-4 text-left lg:mx-0">
+            <p className="font-display text-[13px] font-bold text-[#1a1b1f]">
+              Where the £{LOADED_HOURLY}/hr comes from
+            </p>
+            <dl className="mt-2.5 space-y-1.5 text-[13px] leading-snug text-[#5f6068]">
+              <div className="flex items-baseline justify-between gap-4">
+                <dt>Admin salary</dt>
+                <dd className="font-semibold tabular-nums text-[#1a1b1f]">£28,000</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <dt>Employer NI</dt>
+                <dd className="font-semibold tabular-nums text-[#1a1b1f]">£3,450</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <dt>Auto-enrolment pension</dt>
+                <dd className="font-semibold tabular-nums text-[#1a1b1f]">£653</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 border-t border-[#e6e1d6] pt-1.5">
+                <dt className="font-semibold text-[#1a1b1f]">Direct cost</dt>
+                <dd className="font-bold tabular-nums text-[#1a1b1f]">£32,100</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <dt>Kit, software, space, cover</dt>
+                <dd className="font-semibold tabular-nums text-[#1a1b1f]">≈ £37,000</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-4 border-t border-[#e6e1d6] pt-1.5">
+                <dt className="font-semibold text-[#1a1b1f]">÷ 1,950 hours a year</dt>
+                <dd className="font-display font-bold tabular-nums text-[#0e6b3f]">£{LOADED_HOURLY}/hr</dd>
+              </div>
+            </dl>
+            <p className="mt-3 border-t border-[#e6e1d6] pt-2.5 text-[12.5px] leading-relaxed text-[#5f6068]">
+              1,950 hours is 37.5 × 52 with no holiday taken out — deliberately conservative. Real productive hours are
+              nearer 1,700, which would put the rate at{' '}
+              <strong className="font-semibold text-[#1a1b1f]">£22</strong> and every figure above higher.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -329,11 +370,11 @@ export function FanOutHub() {
           <span className="font-semibold text-[#5f6068]">typical mid-sized contractor ≈ 800–1,200</span>
           <span>5,000</span>
         </div>
-        <p className="mt-3 font-mono text-[11px] leading-relaxed text-[#6f6f78]">
-          Basis: ~{MIN_PER_JOB_EACH_END} min in + ~{MIN_PER_JOB_EACH_END} min out per job. Rate ~£{LOADED_HOURLY}/hr,
-          derived: a £28k admin + £3,450 employer NI + £653 auto-enrolment pension = £32,100 direct, ×1.25–1.4 fully
-          loaded (kit, software, space, cover) ≈ £35–39k ÷ 1,950 hrs. Your rate, your call — every figure is yours to
-          change. Connector availability and direction vary by platform and by your client’s authorisation.
+        <p className="mt-3 text-[13px] leading-relaxed text-[#5f6068]">
+          Counts ~{MIN_PER_JOB_EACH_END} minutes in and ~{MIN_PER_JOB_EACH_END} minutes out per job, at £
+          {LOADED_HOURLY}/hr — the full working is set out under the number above. Your rate, your call: every figure
+          here is yours to change. Connector availability and direction vary by platform and by your client’s
+          authorisation.
         </p>
       </div>
     </div>
