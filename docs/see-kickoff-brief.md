@@ -39,9 +39,9 @@ The recording shows the path. Only the form capture gives the field identifiers,
 values and validation messages needed to drive it. Together they are about half the call,
 and they are what turns this from an estimate into a build.
 
-**Time both.** Start when they open the job, stop when the other system is correct. We
-would far rather publish your measured numbers than the industry's ten-to-twenty minutes —
-and since the job is typed twice, the case is the sum of both legs.
+Nobody needs to hold a stopwatch — we take both legs' timings off the recording. Since the
+job is typed twice, the figure that matters is the sum of the two, and it will be yours
+rather than the industry's ten-to-twenty minutes.
 
 ---
 
@@ -200,7 +200,8 @@ operator needs its own account rather than sharing the coordinator's.
 
 1. The **screen and field map** for both systems, both directions — the asset that makes
    the build possible
-2. **Measured** times for both legs, and daily volumes, so the case is yours not ours
+2. **Measured** times for both legs, off the recording, and daily volumes — so the case is
+   yours rather than ours
 3. The **phase plan with dates**: read-only proof → offline build → first attended write
 
 ---
