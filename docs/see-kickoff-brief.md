@@ -162,7 +162,7 @@ operator needs its own account rather than sharing the coordinator's.
 
 ## G. Scope for phase one
 
-- **Which client contract**, and which sites
+- **Which sites** come first
 - **Which leg first** — intake, completion-back, or both
 - **Which job types** are in, and which are deliberately out (reactive vs planned, quoted
   works, out-of-hours)
@@ -215,7 +215,7 @@ operator needs its own account rather than sharing the coordinator's.
 | 20 min | **Watch one job come in** — Concerto → Joblogic, recorded, forms captured |
 | 20 min | **Watch one job go back** — completion + certificates, recorded, forms captured |
 | 10 min | Access: accounts, MFA, authorisation, the two-session test |
-| 10 min | Scope and volumes: contract, job types, which leg first |
+| 10 min | Scope and volumes: sites, job types, which leg first |
 | 10 min | Exceptions and policy — what happens when a job does not fit |
 | 5 min | Phase plan, dates, who does what next |
 
