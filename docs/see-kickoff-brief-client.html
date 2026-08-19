@@ -71,8 +71,6 @@
     gap: 2.75rem;
   }
 
-  /* ---- masthead ---- */
-
   .masthead { display: flex; flex-direction: column; gap: 1.15rem; }
 
   .brand {
@@ -101,7 +99,7 @@
 
   .standfirst { max-width: var(--measure); margin: 0; font-size: 1.06rem; color: var(--ink-soft); }
 
-  /* ---- the loop ---- */
+  /* scope of the work */
 
   .loop { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--rule); }
   .loop li {
@@ -117,25 +115,19 @@
   .loop .what b { font-weight: 620; }
   .loop .tag {
     font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase;
-    color: var(--amber); white-space: nowrap; padding-top: .15rem;
+    color: var(--green); white-space: nowrap; padding-top: .15rem;
   }
   .loop .tag.quiet { color: var(--muted); }
-  .loop small { grid-column: 2 / -1; color: var(--muted); font-size: .88rem; display: block; }
 
-  /* ---- the ask ---- */
-
-  .thesis {
+  .pull {
     border-left: 3px solid var(--green);
     background: var(--green-tint);
     padding: 1.25rem 1.4rem;
     border-radius: 0 .5rem .5rem 0;
     display: flex; flex-direction: column; gap: .7rem;
   }
-  .thesis p { margin: 0; max-width: var(--measure); }
-  .thesis strong { font-weight: 640; }
-  .thesis ul { margin: 0; }
-
-  /* ---- sections ---- */
+  .pull p { margin: 0; max-width: var(--measure); }
+  .pull strong { font-weight: 640; }
 
   section { display: flex; flex-direction: column; gap: 1rem; }
 
@@ -146,7 +138,7 @@
     flex: none; width: 1.4rem;
   }
   h2 { margin: 0; font-size: 1.22rem; font-weight: 620; letter-spacing: -.014em; text-wrap: balance; }
-  h3 { margin: 1.1rem 0 0; font-size: .95rem; font-weight: 640; letter-spacing: -.006em; }
+  h3 { margin: 1.15rem 0 0; font-size: .95rem; font-weight: 640; letter-spacing: -.006em; }
   section > p, section > ul, .body { max-width: var(--measure); margin: 0; }
   p { margin: 0; }
 
@@ -168,8 +160,6 @@
 
   .note { color: var(--muted); font-size: .93rem; max-width: var(--measure); }
 
-  /* ---- tables ---- */
-
   .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: .5rem; background: var(--card); }
   table { border-collapse: collapse; width: 100%; font-size: .93rem; }
   th, td { text-align: left; padding: .62rem .85rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
@@ -181,8 +171,6 @@
   tbody tr:last-child td { border-bottom: none; }
   td.dur { font-family: var(--mono); color: var(--green); white-space: nowrap; width: 5.5rem; }
   td.def { font-family: var(--mono); font-size: .86rem; }
-
-  /* ---- the refusals ---- */
 
   .stops { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--rule); }
   .stops div {
@@ -213,224 +201,86 @@
 
   <header class="masthead">
     <div class="brand">ProofWorks <span>· operators, not consultants</span></div>
-    <h1>Concerto and Joblogic, both ways — what we want out of the kick-off</h1>
+    <h1>Kick-off: joining Concerto and Joblogic</h1>
     <div class="meta">
       <span><b>SEE</b> · ProofSync</span>
-      <span>Kick-off · <b>90 minutes</b></span>
+      <span>90 minutes</span>
+      <span>Date to confirm</span>
       <span>proof-works.co.uk</span>
     </div>
     <p class="standfirst">
-      Both systems will be worked the way your coordinator works them — signed in as a licensed
-      user of yours, through the screens. So what we can build is decided by what is actually on
-      those screens, and none of that is written down anywhere.
+      This session is where the work gets specified. Most of it is spent watching your coordinator
+      move one job each way between the two systems, because everything we build is driven by what
+      is actually on those screens — and none of that exists in any documentation.
     </p>
   </header>
 
-  <ol class="loop">
-    <li>
-      <span class="n">01</span>
-      <span class="what"><b>The client raises a job in Concerto.</b></span>
-      <span class="tag quiet">you notice it</span>
-      <small>However that reaches you — an email, a queue someone opens, a report.</small>
-    </li>
-    <li>
-      <span class="n">02</span>
-      <span class="what"><b>You raise the same job in Joblogic</b> so it can be planned and worked.</span>
-      <span class="tag">typed once</span>
-      <small>And the Concerto reference is written onto it here. This is where the matching key is born.</small>
-    </li>
-    <li>
-      <span class="n">03</span>
-      <span class="what"><b>The engineer does the work and completes it in Joblogic.</b></span>
-      <span class="tag quiet">unchanged</span>
-      <small>Nothing about how your engineers work changes.</small>
-    </li>
-    <li>
-      <span class="n">04</span>
-      <span class="what"><b>The completion goes back into Concerto</b> — with the certificates and job sheets that have to land with it.</span>
-      <span class="tag">typed twice</span>
-      <small>Same job, second re-key, and the documents have to follow it across.</small>
-    </li>
-  </ol>
+  <section>
+    <div class="sec-head"><span class="sec-mark">01</span><h2>What is being joined up</h2></div>
+    <ol class="loop">
+      <li>
+        <span class="n">01</span>
+        <span class="what">A job is raised by your client <b>in Concerto</b>, and your desk picks it up.</span>
+        <span class="tag">in scope</span>
+      </li>
+      <li>
+        <span class="n">02</span>
+        <span class="what">The same job is entered <b>in Joblogic</b> so it can be planned and worked.</span>
+        <span class="tag">in scope</span>
+      </li>
+      <li>
+        <span class="n">03</span>
+        <span class="what">The engineer attends and <b>completes it in Joblogic</b>.</span>
+        <span class="tag quiet">unchanged</span>
+      </li>
+      <li>
+        <span class="n">04</span>
+        <span class="what">The completion goes back <b>into Concerto</b>, with the certificates and job sheets.</span>
+        <span class="tag">in scope</span>
+      </li>
+    </ol>
+    <p class="note">
+      Step three does not change: your engineers carry on exactly as they do now. Steps one, two and
+      four are the ones a person currently does twice over.
+    </p>
+  </section>
 
-  <div class="thesis">
+  <div class="pull">
     <p>
-      <strong>The most valuable thing this session can produce is not a discussion. It is two
-      recordings</strong> — one job coming in, one job going back — made on the call, with both
-      forms captured.
+      <strong>The session is built around two live examples</strong> — one job coming in, and one job
+      going back — worked on screen by whoever does it every day.
     </p>
     <p>
-      The recording shows the path. Only the capture gives us the field identifiers, the dropdown
-      values and the validation messages needed to drive it. Together they are about half the call,
-      and they are what turns this from an estimate into a build.
-    </p>
-    <p>
-      Nobody needs to hold a stopwatch — we take both legs' timings off the recording. Since the job
-      is typed twice, the figure that matters is the sum of the two, and it will be yours rather than
-      the industry's ten-to-twenty minutes.
+      With your agreement we record the screen share and capture the two forms. The recording shows
+      the path; the capture gives the field names, dropdown values and validation messages that make
+      it buildable. Nothing needs preparing beyond having a live example of each to hand.
     </p>
   </div>
 
   <section>
-    <div class="sec-head"><span class="sec-mark">00</span><h2>Before the call — please have ready</h2></div>
+    <div class="sec-head"><span class="sec-mark">02</span><h2>What to have ready</h2></div>
     <ul class="ask">
-      <li>The <strong>coordinator who does this every day</strong>, at their own desk, sharing screen</li>
-      <li><strong>A live example of each</strong>: a Concerto job not yet raised in Joblogic, and a completed Joblogic job not yet written back</li>
-      <li><strong>A completed job with its certificate and job sheet on it</strong> — the documents matter as much as the fields</li>
-      <li>Both logins to hand, and agreement that we may <strong>record</strong></li>
+      <li>The <strong>coordinator who does this every day</strong>, at their own desk and able to share screen</li>
+      <li>A <strong>Concerto job not yet entered into Joblogic</strong></li>
+      <li>A <strong>completed Joblogic job not yet written back</strong>, with its certificate and job sheet attached</li>
+      <li>Both logins to hand, and your agreement that we may record</li>
       <li>Someone who can say <strong>who authorises a user account</strong> on your domain, and who holds MFA</li>
     </ul>
   </section>
 
   <section>
-    <div class="sec-head"><span class="sec-mark">A</span><h2>How you know there is a job at all</h2></div>
-    <p class="body">
-      The part nobody writes down, and the part that decides how much of this can run without
-      somebody watching.
-    </p>
-    <ul>
-      <li><strong>How does a new Concerto job reach you</strong> — an email out of Concerto, a queue or list view someone opens, a report, a phone call?</li>
-      <li><strong>Who watches it, how often, and in what hours?</strong> What happens overnight and at weekends?</li>
-      <li><strong>How do you tell new from updated?</strong> If the client edits a job after raising it — priority, dates, description — does that surface anywhere, or only if someone reopens the record?</li>
-      <li><strong>Is there an accept or acknowledge step</strong>, and is there a clock on it? Acceptance is often a separate SLA from the fix date, and it is the one that gets missed while the fix date still looks healthy.</li>
-      <li><strong>Cancellations and duplicates</strong> — does the client cancel jobs after raising them? Has the same job ever come through twice?</li>
-      <li><strong>How many arrive a day</strong>, and how spiky is it?</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">B</span><h2>Raising it in Joblogic</h2></div>
-    <p class="body">Once at normal speed, then again slowly with questions.</p>
-    <ul>
-      <li><strong>What gets copied across</strong>: site, asset, priority, description, target dates, client reference, PO, access notes, contacts. Which are typed, and which are looked up?</li>
-      <li><strong>Where does the Concerto reference go on the Joblogic job?</strong> A custom field, the customer reference, the PO field, or into the description? This is the key everything matches on for the rest of that job's life — and if it is typed by hand, we want to see what happens when it is typed wrong.</li>
-      <li><strong>Sites and assets</strong>: do Concerto's map cleanly onto Joblogic's, or does the coordinator carry the translation in their head? This is usually harder than the forms.</li>
-      <li><strong>Priority</strong>: how a Concerto priority becomes a Joblogic priority and its SLA dates, and who decides when they disagree.</li>
-      <li><strong>Attachments on the way in</strong> — does the client attach a scope, photographs, an asset list or a permit, and does that need to reach the engineer?</li>
-      <li><strong>Anything the coordinator decides rather than copies.</strong> That is judgement: it either becomes a rule we can write down, or it stays with a person. Both are fine — guessing is not.</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">C</span><h2>What changes after it is raised</h2></div>
-    <ul>
-      <li>Does the client <strong>update</strong> the job in Concerto while you are working it, and does that need to reflect back into Joblogic?</li>
-      <li>Do they chase through Concerto, by email, or both?</li>
-      <li>Does Concerto expect <strong>progress</strong> before completion — an ETA, an attendance, a status — or only the final result?</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">D</span><h2>The completion going back</h2></div>
-    <ul>
-      <li>Which fields are <strong>mandatory</strong>, and what validation fires when they are wrong — we need the exact wording</li>
-      <li><strong>Formats</strong> for dates, durations, time on site and costs</li>
-      <li>Which dropdown values the desk actually uses, day to day</li>
-      <li>Which fields we must <strong>never</strong> touch</li>
-      <li>Does completing in Concerto <strong>change status or close</strong> the job — and who is allowed to do that?</li>
-      <li><strong>The read-back</strong>: what does the coordinator look at to be satisfied it landed? That view is what we compare against. A write is not done until it has been read back.</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">E</span><h2>Certificates and job sheets</h2></div>
-    <p class="body">
-      Documents are where this kind of work usually stalls, so they get their own section rather
-      than a line at the end of the completion.
-    </p>
-    <ul>
-      <li><strong>Which documents have to reach Concerto</strong> — job sheet, service certificate, statutory certificate, photographs, waste transfer notes?</li>
-      <li><strong>Where each one comes from</strong>: generated by Joblogic, produced by the engineer on the app, uploaded by the office, or issued by a third party days later</li>
-      <li><strong>Do any arrive after the completion?</strong> If a certificate lands three days late, does the job get written back twice, or held until it is whole?</li>
-      <li><strong>The upload control in Concerto</strong>: accepted types, size limits, one at a time or several, and whether a document type or category must be chosen</li>
-      <li><strong>Naming conventions</strong> the client expects, and whether anything must be <strong>signed</strong> before it goes</li>
-      <li>Which documents deliberately do <strong>not</strong> go across — internal notes, costs, commercial paperwork</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">F</span><h2>Access, and whose name it is in</h2></div>
-    <p class="body">
-      The operator works as one of your users. It must be visible in your own directory and
-      revocable by you.
-    </p>
-    <ul class="ask">
-      <li>An <strong>email account on SEE's domain</strong> for the ProofSync operator</li>
-      <li>A <strong>named user login to Joblogic</strong>, and a <strong>named user login to Concerto</strong> — the access your coordinator already holds, not a new grant we ask your client for</li>
-      <li><strong>MFA method confirmed</strong> on both, and who holds the second factor</li>
-      <li><strong>Written confirmation from SEE</strong> that using an account this way is authorised, and by whom</li>
-      <li><strong>Read-only to start.</strong> Where a role without write permission exists we use it; where it does not, writes stay switched off in configuration and that is verified before credentials are loaded</li>
-    </ul>
-    <p class="note">
-      Two minutes worth spending on the call: sign the same Concerto login in twice, from two
-      machines. Does the second session evict the first, or lock the record? If it does, the operator
-      needs its own account rather than sharing your coordinator's — better decided now than
-      discovered mid-run.
-    </p>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">G</span><h2>Scope for phase one</h2></div>
-    <ul>
-      <li><strong>Which client contract</strong>, and which sites</li>
-      <li><strong>Which leg first</strong> — jobs in, completions back, or both together</li>
-      <li><strong>Which job types</strong> are in, and which are deliberately out: reactive, planned, quoted works, out-of-hours</li>
-      <li><strong>Volumes</strong>: jobs in per day, completions per day, and the hours they happen in</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">H</span><h2>Decisions we need from you</h2></div>
-    <p class="body">Not necessarily on the call — but before we build. These are the defaults we assume until you say otherwise.</p>
+    <div class="sec-head"><span class="sec-mark">03</span><h2>How the 90 minutes are spent</h2></div>
     <div class="scroll">
       <table>
-        <thead><tr><th>Decision</th><th>What we assume</th></tr></thead>
+        <thead><tr><th>Time</th><th>Session</th></tr></thead>
         <tbody>
-          <tr><td>Fields that must never be overwritten</td><td class="def">Nothing outside the agreed set</td></tr>
-          <tr><td>Do costs transfer?</td><td class="def">No</td></tr>
-          <tr><td>May we change status or close a job?</td><td class="def">No — a person closes</td></tr>
-          <tr><td>Approval before close</td><td class="def">Required</td></tr>
-          <tr><td>Do we raise Joblogic jobs outright, or propose them for a person to accept?</td><td class="def">Propose, until you say otherwise</td></tr>
-          <tr><td>Who owns the exceptions queue</td><td class="def">A named person at SEE</td></tr>
-          <tr><td>Audit retention</td><td class="def">Tell us your requirement</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">I</span><h2>What we will not do</h2></div>
-    <div class="stops">
-      <div><strong>Nothing is written to prove that writing works.</strong> The route is proven offline against the map. Live writes exist only to do real work.</div>
-      <div><strong>No test record is created in your live system</strong>, and we will not ask you for one.</div>
-      <div><strong>MFA is never bypassed.</strong> A person signs in each day and starts the run; the operator rides that session. We never hold a password.</div>
-      <div><strong>No reference, or an ambiguous match, raises an exception.</strong> It never guesses.</div>
-      <div><strong>Every write is read back and compared</strong> before it counts as done.</div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">✓</span><h2>What you leave with</h2></div>
-    <ul>
-      <li>The <strong>screen and field map</strong> for both systems, both directions — the thing that makes the build possible, and yours to keep</li>
-      <li><strong>Measured</strong> times for both legs, taken off the recording, and your daily volumes — so the case is yours rather than ours</li>
-      <li>The <strong>phase plan with dates</strong>: read-only proof, then offline build, then the first attended write</li>
-    </ul>
-  </section>
-
-  <section>
-    <div class="sec-head"><span class="sec-mark">↓</span><h2>Agenda</h2></div>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Time</th><th>What we cover</th></tr></thead>
-        <tbody>
-          <tr><td class="dur">5 min</td><td>What we are building, and where it stops</td></tr>
-          <tr><td class="dur">10 min</td><td><strong>How a job reaches you</strong> — monitoring Concerto</td></tr>
-          <tr><td class="dur">20 min</td><td><strong>Watch one job come in</strong> — Concerto to Joblogic, recorded, form captured</td></tr>
-          <tr><td class="dur">20 min</td><td><strong>Watch one job go back</strong> — completion and documents, recorded, form captured</td></tr>
-          <tr><td class="dur">10 min</td><td>Access: accounts, MFA, authorisation, the two-session test</td></tr>
+          <tr><td class="dur">5 min</td><td>What is being built, and where it stops</td></tr>
+          <tr><td class="dur">10 min</td><td>How a new Concerto job reaches your desk</td></tr>
+          <tr><td class="dur">20 min</td><td><strong>One job coming in</strong> — Concerto to Joblogic, on screen</td></tr>
+          <tr><td class="dur">20 min</td><td><strong>One job going back</strong> — completion and documents, on screen</td></tr>
+          <tr><td class="dur">10 min</td><td>Access: accounts, MFA, authorisation</td></tr>
           <tr><td class="dur">10 min</td><td>Scope and volumes: contract, job types, which leg first</td></tr>
-          <tr><td class="dur">10 min</td><td>Exceptions and policy — what happens when a job does not fit</td></tr>
+          <tr><td class="dur">10 min</td><td>Exceptions: what happens when a job does not fit</td></tr>
           <tr><td class="dur">5 min</td><td>Phase plan, dates, who does what next</td></tr>
         </tbody>
       </table>
@@ -438,17 +288,128 @@
   </section>
 
   <section>
-    <div class="sec-head"><span class="sec-mark">→</span><h2>After the call</h2></div>
+    <div class="sec-head"><span class="sec-mark">04</span><h2>The ground each block covers</h2></div>
+
+    <h3>How a job reaches your desk</h3>
     <p class="body">
-      We build against the map, <strong>not against your systems</strong>. The whole journey runs
-      offline first, both directions, including the paths that fail: no match, an ambiguous match, a
-      site that does not exist in the other system, a validation rejection, a session that expires
-      mid-job. You see that run and agree it is right before anything points at live.
+      Whether it arrives by email out of Concerto, in a queue somebody opens, or another way
+      entirely; who watches it and in what hours; what happens overnight and at weekends. Also
+      whether there is an acknowledge or accept step with a clock on it, how a change made by the
+      client after raising shows up, and whether jobs get cancelled or arrive twice.
+    </p>
+
+    <h3>One job coming in</h3>
+    <p class="body">
+      Watched once at normal speed, then walked through slowly. What is copied and what is looked up;
+      how a Concerto priority becomes a Joblogic priority and its dates; whether Concerto's sites and
+      assets line up with Joblogic's or need translating; whether anything the client attaches has to
+      reach the engineer.
     </p>
     <p class="body">
-      Then the first live runs are on <strong>real jobs, with a person present, and each write
-      approved before it is submitted.</strong> Per-write approval relaxes only once you have watched
-      enough of them land correctly and tell us so. The attended daily sign-in does not relax at all.
+      <strong>Where the Concerto reference is recorded on the Joblogic job</strong> is the single most
+      important detail in the session. It is the key every later step matches on, so we will want to
+      see the field it goes in — and what happens on the rare occasion it is entered wrongly.
+    </p>
+
+    <h3>One job going back</h3>
+    <p class="body">
+      The completion form field by field: what is mandatory, what validation fires and in what words,
+      the formats for dates, durations and time on site, the dropdown values your desk actually uses,
+      and anything that must never be touched. Then whether completing changes status or closes the
+      job, and who is permitted to do that.
+    </p>
+    <p class="body">
+      And the read-back: <strong>what your coordinator looks at to be satisfied it landed.</strong>
+      That view is what every write gets compared against.
+    </p>
+
+    <h3>Certificates and job sheets</h3>
+    <p class="body">
+      Which documents have to reach Concerto and where each comes from — generated by Joblogic,
+      produced by the engineer on site, uploaded by the office, or issued by a third party days later.
+      Late-arriving certificates matter more than they sound: they decide whether a job is written
+      back once or twice. We will also want the upload rules — accepted types, size limits, whether a
+      category has to be chosen, any naming convention your client expects, and anything that must be
+      signed first.
+    </p>
+
+    <h3>Access</h3>
+    <p class="body">
+      The operator signs in as one of your users, so the account is yours: visible in your directory
+      and revocable by you. That means an email account on your domain, a named login to each system —
+      the same access your coordinator already has, not a new grant from your client — the MFA method
+      on both and who holds the second factor, and written confirmation from SEE that this use is
+      authorised. Everything starts read-only.
+    </p>
+    <p class="note">
+      Two minutes we would like to borrow on the call: sign the same Concerto login in twice from two
+      machines. If the second session evicts the first or locks the record, the operator needs its own
+      account rather than sharing your coordinator's — cheaper to know now than mid-run.
+    </p>
+
+    <h3>Scope and exceptions</h3>
+    <p class="body">
+      Which contract and sites come first, which job types are in and which are deliberately out,
+      volumes each way and the hours they land in. Then the cases that do not fit — no reference, an
+      ambiguous match, a site that does not exist in the other system, a rejected form — and who at
+      SEE picks those up.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">05</span><h2>Decisions that are yours</h2></div>
+    <p class="body">
+      Not needed on the call, but needed before anything is built. These are the positions we take by
+      default until you tell us otherwise.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Decision</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td>Fields that may never be overwritten</td><td class="def">Nothing outside the agreed set</td></tr>
+          <tr><td>Do costs transfer?</td><td class="def">No</td></tr>
+          <tr><td>May a job's status be changed or closed?</td><td class="def">No — a person closes</td></tr>
+          <tr><td>Approval before close</td><td class="def">Required</td></tr>
+          <tr><td>Jobs raised in Joblogic outright, or proposed for a person to accept?</td><td class="def">Proposed</td></tr>
+          <tr><td>Who owns the exceptions queue</td><td class="def">A named person at SEE</td></tr>
+          <tr><td>Audit retention</td><td class="def">Yours to set</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">06</span><h2>How we work in your systems</h2></div>
+    <div class="stops">
+      <div><strong>Nothing is written to prove that writing works.</strong> The route is proven offline first. Live writes exist only to do real work.</div>
+      <div><strong>No test record is created in your live system</strong>, and none will be asked for.</div>
+      <div><strong>MFA is satisfied, never bypassed.</strong> A person signs in each day and starts the run; we never hold a password.</div>
+      <div><strong>A missing reference or an ambiguous match becomes an exception.</strong> It is never a guess.</div>
+      <div><strong>Every write is read back and compared</strong> before it counts as done.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">07</span><h2>What you have at the end</h2></div>
+    <ul>
+      <li>A <strong>screen and field map</strong> of both systems in both directions — documentation of your own process that does not currently exist anywhere, and yours to keep</li>
+      <li><strong>Measured</strong> handling times for each leg, taken from the recording, against your daily volumes</li>
+      <li>A <strong>phase plan with dates</strong>: read-only proof, offline build, then the first attended write</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">08</span><h2>What happens next</h2></div>
+    <p class="body">
+      The build runs against the map rather than against your systems. The whole journey is proven
+      offline first, both directions, including the paths that fail: no match, an ambiguous match, a
+      site that does not exist in the other system, a rejected form, a session that expires mid-job.
+      You see that run and agree it is right before anything is pointed at live.
+    </p>
+    <p class="body">
+      The first live runs are on <strong>real jobs, with someone from your team present, and each
+      write approved before it is submitted.</strong> That approval step relaxes only when you have
+      watched enough of them land correctly and say so. The daily sign-in stays attended.
     </p>
   </section>
 
