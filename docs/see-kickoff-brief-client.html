@@ -1,0 +1,408 @@
+<title>ProofSync Kick-off</title>
+<style>
+  :root {
+    --paper:      #f7f5ef;
+    --card:       #fffefa;
+    --ink:        #1a1b1f;
+    --ink-soft:   #4b4c54;
+    --muted:      #7a776e;
+    --rule:       #e6e1d6;
+    --rule-soft:  #efece2;
+    --green:      #0e6b3f;
+    --green-deep: #0b5531;
+    --green-tint: #e7f0ea;
+    --amber:      #8a5a12;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+
+    --measure: 34rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #17181a;
+      --card:       #1e2023;
+      --ink:        #f1eee5;
+      --ink-soft:   #cfcabd;
+      --muted:      #97938a;
+      --rule:       #33353a;
+      --rule-soft:  #2a2c30;
+      --green:      #58ac7f;
+      --green-deep: #7cc39b;
+      --green-tint: #1b3128;
+      --amber:      #d3a558;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #17181a;
+    --card:       #1e2023;
+    --ink:        #f1eee5;
+    --ink-soft:   #cfcabd;
+    --muted:      #97938a;
+    --rule:       #33353a;
+    --rule-soft:  #2a2c30;
+    --green:      #58ac7f;
+    --green-deep: #7cc39b;
+    --green-tint: #1b3128;
+    --amber:      #d3a558;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.15rem, 5vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  /* ---- masthead ---- */
+
+  .masthead { display: flex; flex-direction: column; gap: 1.15rem; }
+
+  .brand {
+    display: flex; align-items: baseline; gap: .6rem;
+    font-family: var(--mono);
+    font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--green);
+  }
+  .brand span { color: var(--muted); letter-spacing: .08em; }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 5.5vw, 2.9rem);
+    line-height: 1.07;
+    letter-spacing: -.028em;
+    font-weight: 640;
+    text-wrap: balance;
+  }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: .45rem .9rem;
+    font-family: var(--mono); font-size: .76rem;
+    color: var(--muted);
+  }
+  .meta b { color: var(--ink-soft); font-weight: 500; }
+
+  .standfirst {
+    max-width: var(--measure);
+    margin: 0;
+    font-size: 1.06rem;
+    color: var(--ink-soft);
+  }
+
+  /* ---- the one outcome ---- */
+
+  .thesis {
+    border-left: 3px solid var(--green);
+    background: var(--green-tint);
+    padding: 1.25rem 1.4rem;
+    border-radius: 0 .5rem .5rem 0;
+    display: flex; flex-direction: column; gap: .7rem;
+  }
+  .thesis p { margin: 0; max-width: var(--measure); }
+  .thesis strong { font-weight: 640; }
+
+  /* ---- sections ---- */
+
+  section { display: flex; flex-direction: column; gap: 1rem; }
+
+  .sec-head { display: flex; gap: .85rem; align-items: baseline; border-bottom: 1px solid var(--rule); padding-bottom: .55rem; }
+  .sec-mark {
+    font-family: var(--mono); font-size: .78rem; font-weight: 600;
+    color: var(--green); letter-spacing: .06em;
+    flex: none; width: 1.4rem;
+  }
+  h2 {
+    margin: 0; font-size: 1.22rem; font-weight: 620; letter-spacing: -.014em;
+    text-wrap: balance;
+  }
+  h3 {
+    margin: 1.1rem 0 0; font-size: .95rem; font-weight: 640; letter-spacing: -.006em;
+  }
+  section > p, section > ul, .body { max-width: var(--measure); margin: 0; }
+  p { margin: 0; }
+
+  ul { padding-left: 1.15rem; display: flex; flex-direction: column; gap: .42rem; }
+  li::marker { color: var(--muted); }
+
+  .field {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--rule-soft); border: 1px solid var(--rule);
+    padding: .05em .34em; border-radius: .25rem;
+    white-space: nowrap;
+  }
+
+  .ask {
+    list-style: none; padding: 0;
+    display: flex; flex-direction: column; gap: 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .ask li {
+    display: flex; gap: .8rem; align-items: flex-start;
+    padding: .62rem .2rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .ask li::before {
+    content: "";
+    flex: none; width: .78rem; height: .78rem; margin-top: .42rem;
+    border: 1.5px solid var(--green); border-radius: .18rem;
+  }
+
+  .note { color: var(--muted); font-size: .93rem; max-width: var(--measure); }
+
+  /* ---- tables ---- */
+
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: .5rem; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  th, td { text-align: left; padding: .62rem .85rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; background: var(--rule-soft);
+    border-bottom: 1px solid var(--rule);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.dur { font-family: var(--mono); color: var(--green); white-space: nowrap; width: 5.5rem; }
+  td.def { font-family: var(--mono); font-size: .86rem; white-space: nowrap; }
+
+  /* ---- the refusals ---- */
+
+  .stops { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--rule); }
+  .stops div {
+    padding: .72rem 0 .72rem 1.6rem;
+    border-bottom: 1px solid var(--rule-soft);
+    max-width: calc(var(--measure) + 1.6rem);
+    position: relative;
+  }
+  .stops div::before {
+    content: "—";
+    position: absolute; left: 0; top: .72rem;
+    color: var(--amber); font-family: var(--mono);
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.4rem;
+    display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: baseline;
+    font-size: .88rem; color: var(--muted);
+  }
+  footer b { color: var(--ink-soft); font-weight: 560; }
+  a { color: var(--green-deep); text-underline-offset: .18em; }
+  a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: .2rem; }
+
+  @media print {
+    body { background: #fff; }
+    .page { padding: 0; gap: 2rem; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="brand">ProofWorks <span>· operators, not consultants</span></div>
+    <h1>Joining Joblogic to Concerto — what we want out of the kick-off</h1>
+    <div class="meta">
+      <span><b>SEE</b> · ProofSync</span>
+      <span>Kick-off · <b>75 minutes</b></span>
+      <span>proof-works.co.uk</span>
+    </div>
+    <p class="standfirst">
+      Both systems will be worked the way your coordinator works them — signed in as a licensed
+      user of yours, through the screens. So what we can build is decided by what is actually on
+      those screens, and none of that is written down anywhere.
+    </p>
+  </header>
+
+  <div class="thesis">
+    <p>
+      <strong>The most valuable thing we can get from this session is not a discussion.</strong>
+      It is a recording of one real completion being re-keyed by hand, end to end, together with a
+      capture of the Concerto completion form.
+    </p>
+    <p>
+      The recording shows us the path. Only the capture gives us the field identifiers, the dropdown
+      values and the validation messages needed to drive it. Between them they take about twenty
+      minutes of the call, and they are what turns this from an estimate into a build.
+    </p>
+  </div>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">00</span><h2>Before the call — please have ready</h2></div>
+    <ul class="ask">
+      <li>The <strong>coordinator who does this every day</strong>, at their own desk, able to share screen</li>
+      <li>One <strong>completed Joblogic job not yet entered into Concerto</strong> — a real one</li>
+      <li>Both logins to hand, and agreement that we may <strong>record the screen share</strong></li>
+      <li>Someone who can say <strong>who authorises a user account</strong> on your domain, and who holds MFA</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">A</span><h2>Watch one job cross</h2></div>
+    <p class="body">
+      Once at normal speed with no commentary, then again slowly with questions. Four things we are
+      watching for, and one we are timing.
+    </p>
+
+    <h3>The matching key</h3>
+    <p class="body">
+      Which Joblogic field carries the <strong>Concerto job reference</strong> — a custom field, the PO
+      number, the customer reference? Where does the coordinator read it on screen? Everything hangs off
+      this one item: no reference means no match, and the job becomes an exception rather than a guess.
+      We also want to know what a job with <em>no</em> reference looks like, how often that happens, and
+      whether a reference has ever matched more than one Concerto job.
+    </p>
+
+    <h3>The completion form, field by field</h3>
+    <ul>
+      <li>Which fields are <strong>mandatory</strong>, and what validation fires when they are wrong — we need the exact wording</li>
+      <li>Formats for dates, durations, time on site and costs</li>
+      <li>Which dropdown values the desk actually uses, day to day</li>
+      <li>Which fields we must <strong>never</strong> touch</li>
+    </ul>
+
+    <h3>Documents</h3>
+    <p class="body">
+      Which certificates and reports go across, where they are fetched from in Joblogic, and what the
+      upload control in Concerto accepts — types, size limits, one at a time or several.
+    </p>
+
+    <h3>The read-back</h3>
+    <p class="body">
+      <strong>What does the coordinator look at to be satisfied it landed?</strong> That view is what we
+      compare against. A write is not done until it has been read back — and that rule does not relax
+      because we are driving a screen rather than an interface built for machines.
+    </p>
+
+    <h3>Time it</h3>
+    <p class="body">
+      Start a timer when they open the completed job, stop it when Concerto is correct. We would much
+      rather publish <strong>your measured number</strong> than the industry's ten-to-twenty minutes.
+      That figure, against completions per day, is the case — in your numbers rather than ours.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">B</span><h2>Access, and whose name it is in</h2></div>
+    <p class="body">
+      The operator works as one of your users. It must be visible in your own directory and revocable
+      by you.
+    </p>
+    <ul class="ask">
+      <li>An <strong>email account on SEE's domain</strong> for the ProofSync operator</li>
+      <li>A <strong>named user login to Joblogic</strong>, and a <strong>named user login to Concerto</strong> — the access your coordinator already holds, not a new grant we ask your client for</li>
+      <li><strong>MFA method confirmed</strong> on both, and who holds the second factor</li>
+      <li><strong>Written confirmation from SEE</strong> that using an account this way is authorised, and by whom</li>
+      <li><strong>Read-only to start.</strong> Where a role without write permission exists, we use it; where it does not, writes stay switched off in configuration and that is verified before credentials are loaded</li>
+    </ul>
+    <p class="note">
+      One test worth two minutes on the call: sign the same Concerto login in twice, from two machines.
+      Does the second session evict the first, or lock the record? If it does, the operator needs its own
+      account rather than sharing your coordinator's — better decided now than discovered mid-run.
+    </p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">C</span><h2>Scope for phase one</h2></div>
+    <ul>
+      <li>Which <strong>client contract</strong>, and which of your sites</li>
+      <li>Which <strong>job types</strong> are in, and which are deliberately out</li>
+      <li>How many <strong>completions a day</strong>, and in what hours</li>
+      <li>Anything seasonal or contractual that moves the volume</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">D</span><h2>Decisions we need from you</h2></div>
+    <p class="body">Not necessarily on the call — but before we build. These are the defaults we will assume until you say otherwise.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Decision</th><th>What we assume</th></tr></thead>
+        <tbody>
+          <tr><td>Fields that must never be overwritten</td><td class="def">Nothing outside the agreed set</td></tr>
+          <tr><td>Do costs transfer?</td><td class="def">No</td></tr>
+          <tr><td>May we change status or close a job?</td><td class="def">No — a person closes</td></tr>
+          <tr><td>Approval before close</td><td class="def">Required</td></tr>
+          <tr><td>Who owns the exceptions queue</td><td class="def">A named person at SEE</td></tr>
+          <tr><td>Audit retention</td><td class="def">Tell us your requirement</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">E</span><h2>What we will not do</h2></div>
+    <div class="stops">
+      <div><strong>Nothing is written to prove that writing works.</strong> The route is proven offline against the map. Live writes exist only to do real work.</div>
+      <div><strong>No test record is created in your live system</strong>, and we will not ask you for one.</div>
+      <div><strong>MFA is never bypassed.</strong> A person signs in each day and starts the run; the operator rides that session. We never hold a password.</div>
+      <div><strong>No reference, or an ambiguous match, raises an exception.</strong> It never guesses.</div>
+      <div><strong>Every write is read back and compared</strong> before it counts as done.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">F</span><h2>What you leave with</h2></div>
+    <ul>
+      <li>The <strong>screen and field map</strong> for both systems — the thing that makes the build possible, and yours to keep</li>
+      <li>A <strong>measured</strong> re-keying time and daily volume, so the case is yours rather than ours</li>
+      <li>The <strong>phase plan with dates</strong>: read-only proof, then offline build, then the first attended write</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">↓</span><h2>Agenda</h2></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Time</th><th>What we cover</th></tr></thead>
+        <tbody>
+          <tr><td class="dur">5 min</td><td>What we are building, and where it stops</td></tr>
+          <tr><td class="dur">20 min</td><td><strong>Watch one job cross</strong> — recorded, with the completion form captured</td></tr>
+          <tr><td class="dur">10 min</td><td>Access: accounts, MFA, authorisation, the two-session test</td></tr>
+          <tr><td class="dur">10 min</td><td>Scope: contract, job types, volumes, hours</td></tr>
+          <tr><td class="dur">15 min</td><td>Exceptions and policy — what happens when a job does not fit</td></tr>
+          <tr><td class="dur">10 min</td><td>Phase plan, dates, who does what next</td></tr>
+          <tr><td class="dur">5 min</td><td>Anything we have not asked about</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="sec-mark">→</span><h2>After the call</h2></div>
+    <p class="body">
+      We build against the map, <strong>not against your systems</strong>. The whole journey runs offline
+      first — finding the job, reading the fields, filling the completion form, handling validation,
+      uploading the documents, reading it back — including the paths that fail: no match, ambiguous
+      match, rejection, session expiry. You see that run and agree it is right before anything points
+      at live.
+    </p>
+    <p class="body">
+      Then the first live runs are on <strong>real jobs, with a person present, and each write approved
+      before it is submitted.</strong> Per-write approval relaxes only once you have watched enough of them
+      land correctly and tell us so. The attended daily sign-in does not relax at all.
+    </p>
+  </section>
+
+  <footer>
+    <span><b>Paul Bryan</b> · ProofWorks Ltd</span>
+    <span>paul.bryan@proof-works.co.uk</span>
+    <span>07736 782400</span>
+    <span>Company No. 16940700</span>
+  </footer>
+
+</div>
