@@ -192,8 +192,19 @@
   a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: .2rem; }
 
   @media print {
-    body { background: #fff; }
-    .page { padding: 0; gap: 2rem; }
+    /* Printed on A4 with the page's own margins, so the ground stays white and the
+       green plate, table headers and rules survive the print pipeline. */
+    @page { size: A4; margin: 16mm 15mm 15mm; }
+    :root { --paper: #fff; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: #fff; font-size: 10.5pt; line-height: 1.5; }
+    .page { padding: 0; gap: 1.6rem; max-width: none; }
+    h1 { font-size: 22pt; }
+    h2 { font-size: 12.5pt; }
+    .pull, .scroll, table, .loop li, .ask li, .stops div { break-inside: avoid; }
+    .sec-head, h3 { break-after: avoid; }
+    section { break-inside: auto; }
+    footer { break-inside: avoid; }
   }
 </style>
 
