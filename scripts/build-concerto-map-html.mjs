@@ -123,11 +123,11 @@ const section = (s, i) => {
 // ── the facts worth stating before any screenshot ─────────────────────────────
 const FACTS = [
   ['Intake', 'Concerto <strong>emails the order</strong> to the SEE helpdesk mailbox and records in the feed that it did, against a helpdesk reference. So intake can be driven from the mailbox or the portal, and the two reconcile.'],
-  ['Acceptance', 'A named, timed event — <code>Accept within SLA</code> — not a status to be inferred. Compare VX, where acceptance had to be reconstructed from Date Assigned.'],
+  ['Acceptance', 'A named, timed event — <code>Accept within SLA</code> — not a status to be inferred. Compare another CAFM, where acceptance had to be reconstructed from an assignment date.'],
   ['The matching key', '<code>Supplier&rsquo;s ref</code> is a column on the grid <em>and</em> a search field. The Joblogic number goes there; the order is found again by searching it. No custom field, nothing to ask Bellrock for.'],
   ['The clocks', 'Response and completion each show <strong>required and actual</strong> side by side. Priority is a phrase, not a code — &ldquo;3 Working Day (excluding weekends)&rdquo; — so any clock we run has to do the client&rsquo;s working-day arithmetic, not count hours.'],
   ['The write path', 'Ten actions. The completion is <strong>two</strong> of them: <code>Add Note/Document/Photo</code> puts the evidence on, <code>Work complete</code> closes it — so &ldquo;completed but the certificate has not arrived&rdquo; is a state the system can express.'],
-  ['Parts On Order', 'A first-class action <em>and</em> a filterable status. VX has no equivalent, which is why a paused job there has to be inferred from a note.'],
+  ['Parts On Order', 'A first-class action <em>and</em> a filterable status. Another CAFM has no equivalent, which is why a paused job there has to be inferred from a note.'],
   ['Scope', `<strong>${clients.length || 19} clients</strong> behind one login, and four SEE trading entities. The connector is written once and its value multiplies — but nothing may assume a single client.`],
 ];
 

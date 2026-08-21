@@ -86,7 +86,7 @@ Cost uplift · **Operative(s)** · **Appointment**.
 Notes on those:
 
 - **Response and completion each show required AND actual**, side by side, coloured when missed.
-  VX makes you work that out; Concerto states it.
+  Another CAFM makes you work that out; Concerto states it.
 - **Mandate** (£250.00 on the sample) is the spend limit — the NTE equivalent.
 - **Operative(s)** names the engineer, so the client can see who attended.
 - **Parent job status** implies a parent/child structure above the order.
@@ -110,8 +110,8 @@ Notes on those:
 | Completion time required | 18 Aug 2026 17:39 |
 | Appointments | Tue 18 Aug 08:00 → 09:00 |
 
-**Date acknowledged is the accept step**, and it is stamped — so unlike VX, acceptance is
-visible as a fact rather than inferred from a status. The asset type is a two-level taxonomy
+**Date acknowledged is the accept step**, and it is stamped — so unlike another CAFM we have
+mapped, acceptance is visible as a fact rather than inferred from a status. The asset type is a two-level taxonomy
 (`Category : Item / Fault`).
 
 ---
@@ -134,8 +134,8 @@ number into `Supplier's ref` on the way in, and finds the order again by searchi
 the way back. No custom integration key, no lookup table of our own, and reconciliation after a
 crash is a search rather than a guess.
 
-`Parts On Order` as a first-class status is worth noting too — VX has no such state, which is
-why a paused job there has to be inferred from a note.
+`Parts On Order` as a first-class status is worth noting too — another CAFM has no such state,
+which is why a paused job there has to be inferred from a note.
 
 ## The other screens
 
@@ -145,7 +145,7 @@ why a paused job there has to be inferred from a note.
 - **Cost referral** — `contractjob.aspx`, columns: Ref · Task order · Title · Raised by ·
   **Currently with** · Cost referral date · Date raised · Date issued · Estimate · Stage
   deadline date. "Currently with" states whose court the ball is in, which is exactly what
-  Terri has to infer on VX. Its own search adds *Helpdesk job reference* and *Record Reference*.
+  a reader has to infer on another CAFM. Its own search adds *Helpdesk job reference* and *Record Reference*.
 - **PPM and activities** — `site_scheduler.aspx`, a scheduler keyed by site, with sites named
   `Aberdeen - Airport Turnaround : ABZ050` — a site code convention we can match on.
 
@@ -188,8 +188,8 @@ That is worth more than it looks:
 
 - **Intake can be driven from the mailbox or from the portal**, and the two can be reconciled,
   because Concerto states that it sent the mail and when.
-- **Acceptance is an event with a name and a clock**, not a status to be inferred. Compare VX,
-  where acceptance had to be reconstructed from `Date Assigned`.
+- **Acceptance is an event with a name and a clock**, not a status to be inferred. Compare another CAFM,
+  where acceptance had to be reconstructed from an assignment date.
 - **`Priority of response` is a phrase, not a code** — "3 Working Day (excluding weekends)" —
   so the working-day arithmetic is the client's, and any clock we run has to match it rather
   than counting calendar hours.
@@ -264,8 +264,9 @@ Three things follow.
 system can express — and section E of the kick-off brief, about documents arriving late, has a
 mechanism to hang on rather than a discussion.
 
-**`Parts On Order` exists as an action.** VX has no equivalent: a paused job there is inferred
-from a note, which is why `PAUSED` had to be reverse-engineered out of `Service Incomplete`.
+**`Parts On Order` exists as an action.** Another CAFM has no equivalent: a paused job there is
+inferred from a note, which is why a paused state had to be reverse-engineered out of a
+“service incomplete” status.
 Here the supplier says it outright, and the client sees it.
 
 **Nothing in the list accepts an order** — because this one was already accepted. Acceptance
@@ -281,7 +282,8 @@ Both built read-only on 21 August 2026, from `scripts/concerto-tour.mjs` and
 | `data/concerto-map/concerto-tour.mp4` | 17 stops, 2m54s, captioned. Every screen, the search box typed into and cleared, the Actions menu opened and closed. |
 | `data/concerto-map/concerto-map.html` | the browsable map — 28 screenshots baked in as data URIs, with columns, element ids and dropdown values beside each |
 
-Playwright could not record this the way it recorded VX: it only records browsers it launched, and
+Playwright could not record this the way it recorded the other system: it only records browsers it
+launched, and
 this account locks after three bad passwords, so a person signs in and the script attaches over CDP.
 The video is therefore taken from Chrome itself with `Page.startScreencast`, and ffmpeg lays the
 frames back down at the pace they arrived — so the recording is what was actually on screen, holds

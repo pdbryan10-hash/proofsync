@@ -316,7 +316,7 @@ const run = async () => {
     ['Quote.aspx', 'Quotes — 103 awaiting', 'A hundred and three quotation requests waiting on a supplier response, each one a job that has not started.'],
     ['PPMSupplierReview.aspx', 'PPM certificate reviews', 'The certificate leg. UPRN is here — a property identifier, and a better join key than a site name.'],
     ['PermitRegisterSupplier.aspx', 'Permit register', 'Permits across the estate rather than on one order.'],
-    ['ContractJobSupplier.aspx', 'Cost referral', '&ldquo;Currently with&rdquo; states whose court the ball is in — which is precisely what Terri has to infer on VX.'],
+    ['ContractJobSupplier.aspx', 'Cost referral', '&ldquo;Currently with&rdquo; states whose court the ball is in — which on another CAFM has to be inferred from the record rather than read off it.'],
     ['site_scheduler_supplier.aspx', 'PPM and activities', 'The planned side: 371 PPMs due inside six weeks with no appointment. A scheduling problem, not a chasing one.'],
     ['SupplierPortalDocs.aspx', 'Documents', 'What Bellrock publishes to its suppliers.'],
   ];
