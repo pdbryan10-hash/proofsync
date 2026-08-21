@@ -9,6 +9,21 @@ portal* — the jobs assigned to them — not the client's whole estate.
 The account covers four supplier entities: **SEE Services Ltd**, plus *South Eastern Services
 (Mechanical)*, *(Building)* and *(Electrical)*. Anything we build has to expect all four.
 
+**And SEE hold more than one client inside Bellrock.** Costa Coffee is the one on the sample
+order; the 12,207 live orders are not all theirs. That cuts two ways and both matter:
+
+- **In our favour.** One Concerto connector reaches every Bellrock client SEE work for. The
+  integration is built once and its value multiplies by the number of those clients, which is
+  the opposite of the usual FM integration story where each client is a fresh build.
+- **Against a naive build.** Nothing may assume a single client. The intake leg has to know
+  which client an order belongs to, because that decides which Joblogic contract it is raised
+  against, which SLA applies, and which of SEE's four entities holds it.
+
+So the first scoping question is not "which client do we start with" but **"how does Concerto
+say which client an order belongs to"** — a column, a filter, or something only implied by the
+site. Nothing in the visible grid names it: the client appears inside the Description text
+(`43041755: Costa Coffee York Eboracum Way DT`), which is not a field.
+
 ---
 
 ## The matching key already exists, and it is theirs to fill
