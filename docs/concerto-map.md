@@ -203,10 +203,43 @@ The grid rows are not links. The markup is:
     onkeypress="PblActions.selectRowOnEnterKey(event,'RenderOrderSummaryConst')">
 ```
 
-**Focus the row and press Enter.** Three separate click attempts did nothing, because nothing
-is bound to a click — and the order then opens in a way that left an earlier version of this
-script watching the wrong page while the record was on screen. Both facts belong in the
-connector, not in a comment in a script somebody deletes.
+**Focus the row and press Enter.** Three separate click attempts did nothing, because nothing is
+bound to a click.
+
+**And the record replaces the grid, in place.** Same tab, same URL — `supplier_portal.aspx` — no
+navigation and no new window. The page text goes from 38,097 characters of list to 1,849 of record,
+which is how a driver can tell it worked. An earlier note here said it opened in a new tab: that was
+wrong, and it was wrong in a way worth remembering — the script was reading the tab *Paul* had an
+order open in, and reported it as its own.
+
+### How to know you are on a record
+
+Neither of the two obvious tests works:
+
+- **The words "order number"** appear on the list as a column header, so the test can never fail.
+- **The Actions control** (`#dropdownMenuButton`) sits on the list as well as on the order.
+
+Both of them in turn reported an order that had never been opened. The record is recognised by
+fields only a record has — **`Priority of response` and `Location of work`** — and that is what the
+connector should assert on before it does anything else.
+
+## The row's own menu, on the list
+
+Read out of the row markup rather than by clicking:
+
+> Select record · Options · **Audit trail / detail** · **Notes and messages** · Print order ·
+> **Permits** · **Attachments**
+
+A second route into a job — history and paperwork — without opening the order at all.
+
+## The tabs on an order
+
+**Notes and Activities** · **Permits** · **Invoices and Applications**, all three captured.
+
+- **Notes and Activities** is the feed: the order added, emailed to the SEE helpdesk mailbox, then
+  `Accept within SLA` twenty-six minutes later, each entry attributed and timed.
+- **Permits** carries a **Request a permit** button and, on this order, *No permits for this order*.
+- **Invoices and Applications** is the money leg, on the same record as the work.
 
 ## The Actions menu — the whole write path
 
@@ -238,10 +271,24 @@ Here the supplier says it outright, and the client sees it.
 **Nothing in the list accepts an order** — because this one was already accepted. Acceptance
 appears on a pending order, which matches the *Awaiting Acceptance* tile on the dashboard.
 
+## The recorded tour and the map
+
+Both built read-only on 21 August 2026, from `scripts/concerto-tour.mjs` and
+`scripts/build-concerto-map-html.mjs`:
+
+| | |
+|---|---|
+| `data/concerto-map/concerto-tour.mp4` | 17 stops, 2m54s, captioned. Every screen, the search box typed into and cleared, the Actions menu opened and closed. |
+| `data/concerto-map/concerto-map.html` | the browsable map — 28 screenshots baked in as data URIs, with columns, element ids and dropdown values beside each |
+
+Playwright could not record this the way it recorded VX: it only records browsers it launched, and
+this account locks after three bad passwords, so a person signs in and the script attaches over CDP.
+The video is therefore taken from Chrome itself with `Page.startScreencast`, and ffmpeg lays the
+frames back down at the pace they arrived — so the recording is what was actually on screen, holds
+and all.
+
 ## Still to capture
 
-1. The **row ⋮ menu** on the order list, and what an order **Awaiting Acceptance** offers —
-   the accept action is not on an already-accepted order.
-3. What sits under **Permits** and **Invoices and Applications**, and where a job sheet or
-   certificate is attached.
-4. Whether `Supplier's ref` is populated today.
+1. What an order **Awaiting Acceptance** offers — the accept action is not on an already-accepted
+   order, so it has to be read off a pending one.
+2. Whether `Supplier's ref` is populated today.
