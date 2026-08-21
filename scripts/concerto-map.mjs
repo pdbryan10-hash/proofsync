@@ -27,6 +27,13 @@ import path from 'node:path';
 try { process.loadEnvFile(path.resolve(process.cwd(), '.env')); } catch { /* manual sign-in still works */ }
 
 const BASE = process.env.CONCERTO_BASE_URL || 'https://concerto.bellrock.fm/';
+/**
+ * Somewhere to start other than the login page. The dashboard URL carries a
+ * hash that may or may not be a session — if it is, we are already in; if it is
+ * only an anti-forgery token, Concerto bounces us to sign-in and the attended
+ * wait takes over. Either way it costs one GET and no login attempt.
+ */
+const START = process.env.CONCERTO_START_URL || BASE;
 const MAX = Number(process.env.CONCERTO_MAX_SCREENS || 25);
 const OUT = path.resolve(process.cwd(), 'data', 'concerto-map');
 fs.mkdirSync(OUT, { recursive: true });
@@ -72,9 +79,16 @@ const LINKS_FN = () =>
 const TEXT_FN = () => (document.body ? document.body.innerText.replace(/\n{3,}/g, '\n\n') : '');
 
 const run = async () => {
-  const browser = await chromium.launch({ headless: false });
-  const ctx = await browser.newContext({ viewport: { width: 1600, height: 950 } });
-  const page = await ctx.newPage();
+  // A persistent profile: sign in once and the session survives between runs,
+  // which matters on an account that locks after three wrong passwords.
+  const profile = path.resolve(process.cwd(), 'data', '.concerto-profile');
+  fs.mkdirSync(profile, { recursive: true });
+  const ctx = await chromium.launchPersistentContext(profile, {
+    headless: false,
+    viewport: { width: 1600, height: 950 },
+  });
+  const browser = ctx.browser() ?? { close: async () => ctx.close() };
+  const page = ctx.pages()[0] ?? (await ctx.newPage());
   const requests = [];
   const map = { base: BASE, capturedAt: null, screens: [], notes: [] };
 
@@ -117,8 +131,8 @@ const run = async () => {
     return data;
   };
 
-  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2000);
+  await page.goto(START, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2500);
   await dismiss();
   await page.screenshot({ path: path.join(OUT, '00-login.png'), fullPage: true }).catch(() => {});
 

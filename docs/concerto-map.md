@@ -19,10 +19,17 @@ order; the 12,207 live orders are not all theirs. That cuts two ways and both ma
   which client an order belongs to, because that decides which Joblogic contract it is raised
   against, which SLA applies, and which of SEE's four entities holds it.
 
-So the first scoping question is not "which client do we start with" but **"how does Concerto
-say which client an order belongs to"** — a column, a filter, or something only implied by the
-site. Nothing in the visible grid names it: the client appears inside the Description text
-(`43041755: Costa Coffee York Eboracum Way DT`), which is not a field.
+**Answered, by reading the portal's own filters.** The client is not a column — it is a
+**Client workspace** selector on the search panel (`pbl_form_dba_portfolioid`), and it holds
+**nineteen real clients**:
+
+> ADI Global · Arriva UK Bus · Bidfood · Boparan · Capco · Coaching Inn Group · **Costa Coffee**
+> · Dulux Decorating Centre · Hertz UK · Lakeland · Pizza Express · RedCat Pub Company ·
+> St John Ambulance · The Big Table Group · The Restaurant Group · Volvo UK · wagamama · YODEL
+> (plus a Bellrock Test workspace)
+
+That is the whole commercial argument for this integration in one dropdown. Costa Coffee is not
+the job — it is one nineteenth of it, and the connector is written once.
 
 ---
 
@@ -108,6 +115,39 @@ visible as a fact rather than inferred from a status. The asset type is a two-le
 (`Category : Item / Fault`).
 
 ---
+
+## The search panel — what a driver can actually query
+
+From the supplier portal, read off the live page:
+
+| Filter | Field id | Values |
+|---|---|---|
+| Search field | — | Order number · Order description · **Supplier reference** · **Client reference** · Job reference · Site |
+| Type of works order | `pbl_form_dba_type` | All · Planned · Reactive · Remedial |
+| Status of work order | `pbl_form_dba_status` | Attended · In progress · **Parts On Order** · Work complete |
+| Client workspace | `pbl_form_dba_portfolioid` | the nineteen clients above |
+| Appointment | `pbl_form_dba_appoint` | All · Without appointment · With appointment |
+| PPM Tag | `pbl_form_dba_ppm_tagid` | 32 disciplines — Fire, Gas, F Gas, Water, LOLER, Asbestos, Catering Equipment, Air Conditioning / Fridges / Freezers … |
+
+**`Supplier reference` is searchable.** That closes the loop: ProofSync writes the Joblogic
+number into `Supplier's ref` on the way in, and finds the order again by searching that field on
+the way back. No custom integration key, no lookup table of our own, and reconciliation after a
+crash is a search rather than a guess.
+
+`Parts On Order` as a first-class status is worth noting too — VX has no such state, which is
+why a paused job there has to be inferred from a note.
+
+## The other screens
+
+- **PPM certificate reviews** — `PPMSupplierReview.aspx`, columns: PPM · UPRN · Site · Status ·
+  Order number · Date required · Date complete. **UPRN** is the property identifier, which is a
+  better join key than a site name. This is the certificate leg of the loop.
+- **Cost referral** — `contractjob.aspx`, columns: Ref · Task order · Title · Raised by ·
+  **Currently with** · Cost referral date · Date raised · Date issued · Estimate · Stage
+  deadline date. "Currently with" states whose court the ball is in, which is exactly what
+  Terri has to infer on VX. Its own search adds *Helpdesk job reference* and *Record Reference*.
+- **PPM and activities** — `site_scheduler.aspx`, a scheduler keyed by site, with sites named
+  `Aberdeen - Airport Turnaround : ABZ050` — a site code convention we can match on.
 
 ## Still to capture
 
