@@ -149,13 +149,70 @@ why a paused job there has to be inferred from a note.
 - **PPM and activities** — `site_scheduler.aspx`, a scheduler keyed by site, with sites named
   `Aberdeen - Airport Turnaround : ABZ050` — a site code convention we can match on.
 
+## An order, read in full
+
+`RCST0305401/1`, Costa Coffee Barnard Castle, read from the live portal:
+
+| Field | Value |
+|---|---|
+| Order date | 21 Aug 2026 |
+| Current status | In progress |
+| Location of work | full site name and address |
+| Originator | `43025715@costacoffee.co.uk`, mobile 01833 600096 |
+| Asset type | `Electrical & Lighting : Circuit Board / Fault` |
+| Priority of response | **3 Working Day (excluding weekends)** |
+| Date acknowledged | 21 Aug 2026 13:13 |
+| Response time required | 26 Aug 2026 12:47 |
+| Completion time required | 28 Aug 2026 12:47 |
+| Initial request | the caller's own words, verbatim |
+| **Access details** | opening hours and address, as its own field |
+
+Tabs: **Notes and Activities · Permits · Invoices and Applications**. Controls: *Back to order
+list*, *Actions* (`#dropdownMenuButton`), *More detail*.
+
+### How a job actually arrives — from the activity feed
+
+The feed on that order, in order, is the answer to "how do you know there is a job":
+
+```
+21 Aug 12:47:51  Order RCST0305401/1 added against helpdesk reference RCST0305401
+21 Aug 12:47:56  Order RCST0305401/1 emailed to helpdesk@see-services.com
+21 Aug 13:13:32  Order RCST0305401/1 : Accept within SLA
+```
+
+**Concerto emails the order to SEE's helpdesk mailbox, and records that it did.** So the intake
+trigger is an email, the portal is the system of record for it, and the acceptance twenty-six
+minutes later is itself a logged action — "Accept within SLA", attributed to the mailbox.
+
+That is worth more than it looks:
+
+- **Intake can be driven from the mailbox or from the portal**, and the two can be reconciled,
+  because Concerto states that it sent the mail and when.
+- **Acceptance is an event with a name and a clock**, not a status to be inferred. Compare VX,
+  where acceptance had to be reconstructed from `Date Assigned`.
+- **`Priority of response` is a phrase, not a code** — "3 Working Day (excluding weekends)" —
+  so the working-day arithmetic is the client's, and any clock we run has to match it rather
+  than counting calendar hours.
+
+## How a Concerto row opens — for the connector, not just for us
+
+The grid rows are not links. The markup is:
+
+```html
+<tr role="link" tabindex="0"
+    onkeypress="PblActions.selectRowOnEnterKey(event,'RenderOrderSummaryConst')">
+```
+
+**Focus the row and press Enter.** Three separate click attempts did nothing, because nothing
+is bound to a click — and the order then opens in a way that left an earlier version of this
+script watching the wrong page while the record was on screen. Both facts belong in the
+connector, not in a comment in a script somebody deletes.
+
 ## Still to capture
 
-1. The **ACTIONS** menu on an order — Concerto's equivalent of VX's Select an Action, and the
-   list of what a supplier may do.
+1. The **Actions** menu contents (`#dropdownMenuButton`) — the list of what a supplier may do,
+   which is the write path. Four attempts to open it from script failed; it is a screenshot.
 2. The **row ⋮ menu** on the order list.
-3. **The rest of the order screen** below the fold — where notes, job sheets and documents live.
-4. The **Search** panel on the Orders tab: what can be filtered, which is what a driver would
-   query.
-5. **PPM certificate reviews** — the certificate leg.
-6. Whether `Supplier's ref` is populated today.
+3. What sits under **Permits** and **Invoices and Applications**, and where a job sheet or
+   certificate is attached.
+4. Whether `Supplier's ref` is populated today.

@@ -56,7 +56,12 @@ const run = async () => {
   });
   const inEvery = async (fn) => {
     const out = [];
-    for (const f of page.frames()) { try { out.push(...(await f.evaluate(fn))); } catch { /* detached */ } }
+    for (const f of page.frames()) {
+      try {
+        const r = await f.evaluate(fn);
+        if (typeof r === 'string') out.push(r); else out.push(...r);
+      } catch { /* detached */ }
+    }
     return out;
   };
   const shot = async (n) => { await page.screenshot({ path: path.join(OUT, n + '.png'), fullPage: true }).catch(() => {}); };
@@ -67,44 +72,76 @@ const run = async () => {
   // The rows are not anchors — the same lesson VX taught. An href sweep here
   // followed a nav link called Cost referral, because its URL happens to
   // contain "job". So the order number is clicked as text instead.
+  // HOW A CONCERTO ROW OPENS.
+  //
+  // Not by clicking. The markup is
+  //   <tr role="link" tabindex="0"
+  //       onkeypress="PblActions.selectRowOnEnterKey(event,'RenderOrderSummaryConst')">
+  // so the row is focusable and responds to ENTER. Three click attempts did
+  // nothing because there was nothing bound to a click — which is worth knowing
+  // for the connector as much as for this script.
   const REF = /^[A-Z]{2,6}\d{5,}\/\d+$/;
   let opened = false;
+  let ref = '';
+  let orderPage = page;
+  /** Read across the frames of whichever tab the order actually opened in. */
+  const inOrder = async (fn) => {
+    const out = [];
+    for (const f of orderPage.frames()) { try { out.push(...(await f.evaluate(fn))); } catch { /* detached */ } }
+    return out;
+  };
   for (const f of page.frames()) {
-    const cells = f.getByText(REF);
-    const n = await cells.count().catch(() => 0);
-    if (!n) continue;
-    const ref = ((await cells.first().textContent().catch(() => '')) || '').trim();
-    await cells.first().click({ timeout: 8000 }).catch(() => {});
-    await page.waitForTimeout(5000);
-    // Prove it opened rather than assume: an order screen names the field.
-    const onOrder = (await inEvery(TEXT_FN)).join('\n');
-    if (!/order number/i.test(onOrder)) { log('clicked ' + ref + ' but did not land on an order'); break; }
-    log('opened order ' + ref);
-    opened = true;
-    break;
+    const rows = f.locator('tr[role="link"]');
+    const n = await rows.count().catch(() => 0);
+    for (let i = 0; i < Math.min(n, 5) && !opened; i++) {
+      const row = rows.nth(i);
+      const txt = ((await row.textContent().catch(() => '')) || '').trim();
+      const m = txt.match(/[A-Z]{2,6}\d{5,}\/\d+/);
+      if (!m) continue;
+      ref = m[0];
+      await row.scrollIntoViewIfNeeded().catch(() => {});
+      await row.focus().catch(() => {});
+      await row.press('Enter').catch(() => {});
+      // The order opens in a NEW TAB. Polling the list page is why this kept
+      // reporting "did not open" while the order was on screen the whole time,
+      // in a window the script was not looking at.
+      for (let w = 0; w < 10 && !opened; w++) {
+        await page.waitForTimeout(2000);
+        for (const p2 of ctx.pages()) {
+          const t = await p2.evaluate(() => (document.body ? document.body.innerText : '')).catch(() => '');
+          if (/order number/i.test(t)) { orderPage = p2; opened = true; break; }
+        }
+      }
+      log(opened ? 'opened order ' + ref : 'pressed Enter on ' + ref + ' — did not open');
+    }
+    if (opened) break;
   }
+
   const target = opened ? { text: 'first order in the list' } : null;
   if (target) {
     const controls = await inEvery(DEEP_FN);
     const text = (await inEvery(TEXT_FN)).join('\n');
-    write('order-detail.json', { url: page.url(), reference: target.text, controls, text: text.slice(0, 20000) });
-    await shot('order-detail');
+    write('order-detail.json', { url: orderPage.url(), reference: ref, controls, text: text.slice(0, 20000) });
+    await orderPage.screenshot({ path: path.join(OUT, 'order-detail.png'), fullPage: true }).catch(() => {});
     log(`order ${target.text}: ${controls.length} controls, ${text.length} chars`);
 
     // The ACTIONS menu: opened, photographed, closed. Nothing chosen.
-    for (const f of page.frames()) {
-      const btn = f.getByText(/^\s*ACTIONS\s*$/i).first();
+    for (const f of orderPage.frames()) {
+      // By id, because the label rendered as "Actions" with an icon inside and
+      // a text match kept missing it.
+      const btn = f.locator('#dropdownMenuButton').first();
       if (!(await btn.count().catch(() => 0))) continue;
       await btn.click({ timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(1500);
-      const menu = (await inEvery(() =>
-        Array.from(document.querySelectorAll('[role=menu] a, [role=menu] li, .dropdown-menu a, .dropdown-menu li'))
-          .map((e) => (e.textContent || '').trim()).filter(Boolean),
-      ));
+      await orderPage.waitForTimeout(1500);
+      // Find the menu by what APPEARED, rather than by guessing its class. The
+      // first attempt matched the page's accessibility skip-links.
+      const after = (await inOrder(TEXT_FN)).join('\n');
+      const before = text;
+      const menu = after.split('\n').map((l) => l.trim()).filter((l) => l && !before.includes(l));
       write('order-actions-menu.json', menu);
-      await shot('order-actions-menu');
+      await orderPage.screenshot({ path: path.join(OUT, 'order-actions-menu.png'), fullPage: true }).catch(() => {});
       log(`ACTIONS menu: ${menu.length} items — ${menu.slice(0, 12).join(' | ')}`);
-      await page.keyboard.press('Escape').catch(() => {});
+      await orderPage.keyboard.press('Escape').catch(() => {});
       break;
     }
   } else {
