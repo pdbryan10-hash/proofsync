@@ -208,11 +208,40 @@ is bound to a click — and the order then opens in a way that left an earlier v
 script watching the wrong page while the record was on screen. Both facts belong in the
 connector, not in a comment in a script somebody deletes.
 
+## The Actions menu — the whole write path
+
+Captured by watching while Paul opened it, rather than by clicking it ourselves. Ten items,
+under `#dropdownMenuButton`:
+
+| Action | Where it sits in the loop |
+|---|---|
+| **Add Appointment** | scheduling — the answer to 371 PPMs due with no appointment |
+| **Assign Operative** · **Assign operative (with appointment)** | who is going, and when |
+| **Mark job as attended** | attendance |
+| **Parts On Order** | the pause, as an action rather than a note |
+| **Add Note** | a note |
+| **Add Note/Document/Photo** | **certificates, job sheets and photographs** |
+| **Work complete** | the completion |
+| **Quote required** · **Cost uplift required** | the quote and the spend-limit path |
+
+Three things follow.
+
+**The completion leg is two actions, not one.** `Add Note/Document/Photo` puts the evidence on,
+`Work complete` closes it. So a completion that is missing its certificate is a state the
+system can express — and section E of the kick-off brief, about documents arriving late, has a
+mechanism to hang on rather than a discussion.
+
+**`Parts On Order` exists as an action.** VX has no equivalent: a paused job there is inferred
+from a note, which is why `PAUSED` had to be reverse-engineered out of `Service Incomplete`.
+Here the supplier says it outright, and the client sees it.
+
+**Nothing in the list accepts an order** — because this one was already accepted. Acceptance
+appears on a pending order, which matches the *Awaiting Acceptance* tile on the dashboard.
+
 ## Still to capture
 
-1. The **Actions** menu contents (`#dropdownMenuButton`) — the list of what a supplier may do,
-   which is the write path. Four attempts to open it from script failed; it is a screenshot.
-2. The **row ⋮ menu** on the order list.
+1. The **row ⋮ menu** on the order list, and what an order **Awaiting Acceptance** offers —
+   the accept action is not on an already-accepted order.
 3. What sits under **Permits** and **Invoices and Applications**, and where a job sheet or
    certificate is attached.
 4. Whether `Supplier's ref` is populated today.
