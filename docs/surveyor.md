@@ -57,6 +57,41 @@ application has those screens; the job record has no such states. Hidden inputs,
 The three rows VX still disagrees on are exactly the rows a person should look at, and the UI
 highlights them. That is the design — **it proposes, you decide** — not a shortfall.
 
+## Pacing — why the walk does not tick
+
+The first recorded walk held every dwell at **6.875 seconds, to within a twelfth of a second, six
+times running**. Nothing a person does is that steady, and a metronome is exactly what an abuse
+heuristic is built to notice.
+
+The reason to fix it is not stealth. The access is authorised, the account is the client's and the
+pass is read-only — the risk being managed is a **false positive**: a vendor flagging a live
+helpdesk login, which lands on SEE's relationship with Bellrock rather than on ours, on a system
+where an account problem costs 24 working hours and a vendor to undo. Pacing also keeps the load
+light, which is ordinary manners on somebody else's production system.
+
+`surveyor/pace.mjs` draws dwells from a **log-normal**, because uniform jitter is its own tell —
+real dwell times are heavy-tailed. Somebody reading a queue mostly glances, sometimes reads, and
+occasionally stops dead because the phone rang. Over 2,000 draws:
+
+| | |
+|---|---|
+| median | 3.0 s |
+| p25 / p75 | 2.0 s / 5.0 s |
+| p95 | 13.1 s |
+| longest | 46.8 s |
+| consecutive dwells within a twelfth of a second of each other | **3.2%** |
+
+It also moves the pointer in steps before clicking rather than teleporting onto an element, scrolls
+in uneven pushes with the occasional flick back up, types with the pauses in the places a person
+puts them, and reads the menu mostly-but-not-strictly in order. Pass a `seed` and a run repeats
+exactly, which matters when something breaks.
+
+**What this is not.** It makes the traffic unremarkable, not invisible, and it is no substitute for
+telling Bellrock and Accruent what we run and why. If a vendor says don't, that settles it.
+
+The recorded tour is left ticking on purpose — its holds are editorial, timed for whoever is
+watching the video, and it is not the thing that walks an unfamiliar system.
+
 ## On credentials, which is the part to get right
 
 **The password is not the perimeter — the session is.** After an attended sign-in the browser

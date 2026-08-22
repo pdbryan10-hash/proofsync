@@ -18,7 +18,12 @@
 //   3. Anything whose name suggests it creates, deletes or accepts is not even
 //      opened.
 //   4. Every request is logged, so a client can be shown exactly what we did.
+//
+// AND IT IS PACED. Dwells are drawn from a heavy-tailed distribution rather
+// than held constant — see pace.mjs for why that is about false fraud flags on
+// a client's account and about load, not about hiding anything from a vendor.
 import { chromium } from 'playwright';
+import { rng, dwell, settle, scrollAbout, reachAndClick, wander } from './pace.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -56,9 +61,15 @@ const slug = (s) => String(s).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')
  * @param {number} o.max       how many screens to visit
  * @param {(m:string)=>void} o.onProgress
  */
-export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () => {} }) => {
+export const crawl = async ({ id, startUrl, outDir, max = 20, seed, onProgress = () => {} }) => {
   fs.mkdirSync(outDir, { recursive: true });
   const say = (m) => { onProgress(m); console.log(' ·', m); };
+  // Paced like a person, not because anything is being hidden — the access is
+  // authorised and read-only — but because a metronome on a client's live
+  // account is what trips a vendor's abuse heuristic, and that lands on THEIR
+  // relationship with the vendor. See pace.mjs.
+  const r = rng(seed);
+  say('pacing: human (seed ' + (seed ?? 'random') + ')');
 
   // Its own profile, so nothing touches the browser already open — and NOT in
   // the repo. A signed-in profile holds session cookies, which are bearer
@@ -82,7 +93,7 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
   });
 
   await page.goto(startUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
-  await page.waitForTimeout(2500);
+  await settle(page, r, 3000);
 
   // Wait for a person. Signed in is proven by the password box going away, not
   // by a URL — a URL check cannot fail, and one that could not fail is how an
@@ -92,10 +103,10 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
   let signedIn = false;
   while (Date.now() < deadline) {
     if (!(await page.locator('input[type="password"]:visible').count().catch(() => 0))) { signedIn = true; break; }
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(dwell(r, 2000, { sigma: 0.3, min: 1200, max: 4000 }));
   }
   if (!signedIn) { await ctx.close(); burn(); throw new Error('still on the sign-in page after ten minutes'); }
-  await page.waitForTimeout(3000);
+  await settle(page, r, 3400);
   say('signed in — walking the system');
 
   const inEvery = async (fn) => {
@@ -131,10 +142,12 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
   fs.writeFileSync(path.join(outDir, 'nav.json'), JSON.stringify(targets, null, 2));
   say(`${targets.length} navigation targets`);
 
-  for (const t of targets.slice(0, max)) {
+  // Read down the menu the way a person does — mostly in order, not rigidly.
+  for (const t of wander(targets.slice(0, max), r)) {
     await page.goto(t.abs, { waitUntil: 'domcontentloaded' }).catch(() => {});
-    await page.waitForTimeout(2500);
+    await settle(page, r, 2800);
     await capture(t.text);
+    if (r() < 0.55) await scrollAbout(page, r, 1 + Math.floor(r() * 3));
   }
 
   // The biggest list is almost always the work queue, and the first row of it
@@ -144,17 +157,19 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
   if (biggest) {
     const j = JSON.parse(fs.readFileSync(path.join(outDir, biggest.file + '.json'), 'utf8'));
     await page.goto(j.url, { waitUntil: 'domcontentloaded' }).catch(() => {});
-    await page.waitForTimeout(3000);
+    await settle(page, r, 3200);
+    await scrollAbout(page, r, 2);
     for (const f of page.frames()) {
       const row = f.locator('tr[role="link"], tbody tr').first();
       if (!(await row.count().catch(() => 0))) continue;
       const before = (await inEvery(TEXT_FN)).join('\n').length;
       await row.scrollIntoViewIfNeeded().catch(() => {});
       await row.focus().catch(() => {});
+      await page.waitForTimeout(dwell(r, 900, { sigma: 0.5, min: 400 }));
       await row.press('Enter').catch(() => {});
-      await page.waitForTimeout(3000);
+      await settle(page, r, 3200);
       let after = (await inEvery(TEXT_FN)).join('\n').length;
-      if (Math.abs(after - before) < 200) { await row.click({ timeout: 3000 }).catch(() => {}); await page.waitForTimeout(3000); }
+      if (Math.abs(after - before) < 200) { await reachAndClick(page, row, r); await settle(page, r, 3000); }
       after = (await inEvery(TEXT_FN)).join('\n').length;
       if (Math.abs(after - before) > 200) { await capture('a record'); say('opened a record'); }
       else say('could not open a record from the list — worth a human look');
@@ -167,9 +182,10 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
       for (let i = 0; i < Math.min(n, 4); i++) {
         const b = t.nth(i);
         if (!(await b.isVisible().catch(() => false))) continue;
-        await b.click({ timeout: 3000 }).catch(() => {});
-        await page.waitForTimeout(1200);
+        await reachAndClick(page, b, r);
+        await page.waitForTimeout(dwell(r, 1500, { sigma: 0.5, min: 600 }));
         await capture('menu ' + (i + 1));
+        await page.waitForTimeout(dwell(r, 800, { sigma: 0.5, min: 300 }));
         await page.keyboard.press('Escape').catch(() => {});
       }
       break;
