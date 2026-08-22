@@ -44,7 +44,9 @@
 
   /* rail */
   aside { background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:20px }
-  .brand { display:flex; align-items:baseline; gap:9px; margin-bottom:6px }
+  .brand { display:flex; align-items:baseline; gap:9px; margin-bottom:6px; background:none; border:0;
+           padding:0; cursor:pointer; font:inherit; color:inherit; text-align:left; width:100% }
+  .brand:hover h1 { text-decoration:underline }
   .brand h1 { margin:0; font-size:22px; letter-spacing:-.4px; font-weight:800; color:var(--navy) }
   .brand span { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-3); font-weight:700 }
   .rail-sub { margin:0 0 20px; font-size:14px; color:var(--ink-2); line-height:1.5 }
@@ -193,7 +195,7 @@
 </style>
 
 <aside>
-  <div class="brand"><h1>ProofMap</h1><span>survey</span></div>
+  <button class="brand" onclick="home()" title="Back to the overview"><h1>ProofMap</h1><span>survey</span></button>
   <p class="rail-sub">Learns an unfamiliar FM system, read-only, and says what it can and cannot express.</p>
 
   <div class="rail-h">Systems surveyed</div>
@@ -388,6 +390,12 @@ const stopSurvey = async () => {
 };
 
 /* ── two systems, and what crossing between them costs ────────────────────── */
+const home = () => {
+  document.querySelectorAll('.sys').forEach((e) => e.setAttribute('aria-current', 'false'));
+  landing();
+  document.querySelector('main').scrollTop = 0;
+};
+
 const linkage = async (aId, bId) => {
   document.querySelectorAll('.sys').forEach((e) => e.setAttribute('aria-current', 'false'));
   const list = await api.systems();

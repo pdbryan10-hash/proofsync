@@ -106,7 +106,8 @@ swap("src=\"/file?p=${encodeURIComponent(d.captures + '\\\\\\\\' + s)}\"", "src=
 swap("src=\"/file?p=${encodeURIComponent(d.captures + '\\\\\\\\' + d.video)}\"", "src=\"shots/${d.id}/${d.video}\"");
 // No engine, so no surveying, and no local paths worth publishing.
 swap('<button class="act" onclick="newSurvey.showModal()">Survey a new system</button>',
-  '<div class="railnote">Surveying runs on the desktop, where a browser can be opened and signed into. This is the report it produced.</div>');
+  '<button class="act" disabled title="Surveying runs on the desktop" style="opacity:.5;cursor:default">Survey a new system</button>'
+  + '<div class="railnote">Surveying runs on the desktop app, where a browser can be opened and signed into. This is the report it produced.</div>');
 swap('    <p class="path">${esc(d.captures)}</p>', '');
 swap('</style>', `  .railnote { font-size:13px; color:var(--ink-3); line-height:1.55; background:var(--sunk);
        border:1px solid var(--line); border-radius:8px; padding:12px 14px }
