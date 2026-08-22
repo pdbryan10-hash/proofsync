@@ -74,12 +74,28 @@
   .step b { display:block; margin:3px 0 4px; font-size:13px; letter-spacing:-.1px }
   .step p { margin:0; font-size:11.5px; color:var(--ink-3); line-height:1.5 }
 
+  /* Multi-column rather than grid: five cards of unequal height balance
+     themselves instead of leaving a hole where the fifth wrapped. */
+  .groups { columns:262px 4; column-gap:10px }
+  .grp { background:var(--panel); border:1px solid var(--line); border-radius:7px; overflow:hidden;
+         break-inside:avoid; margin:0 0 10px; display:inline-block; width:100% }
+  .grp header { padding:9px 12px; border-bottom:1px solid var(--line); background:var(--sunk) }
+  .grp header b { font-size:12.5px; letter-spacing:-.1px; display:block }
+  .grp header span { font-size:10.5px; color:var(--ink-3) }
+  .qrow { padding:8px 12px; border-bottom:1px solid var(--line); border-left:3px solid transparent; cursor:help }
+  .qrow:last-child { border-bottom:0 }
+  .qrow.blocking { border-left-color:var(--accent) }
+  .qrow:hover { background:var(--sunk) }
+  .qid { display:block; font-size:12px; font-weight:650; letter-spacing:-.1px }
+  .qq { display:block; font-size:11.5px; color:var(--ink-3); line-height:1.45; margin-top:1px }
   .qs { display:flex; flex-wrap:wrap; gap:5px }
   .q { background:var(--panel); border:1px solid var(--line); border-radius:4px;
        padding:5px 10px; font-size:12px; font-weight:600; cursor:help;
        border-left:3px solid var(--line) }
   .q.blocking { border-left-color:var(--accent) }
   .hint { font-size:11.5px; color:var(--ink-3); margin:8px 0 0 }
+  .err { font-size:12px; color:var(--stop); background:var(--warn-soft); border:1px solid var(--stop);
+         border-radius:5px; padding:8px 10px; margin:10px 0 0 }
   .more { margin-top:18px; border-top:1px solid var(--line); padding-top:10px }
   .more > summary { cursor:pointer; font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase;
                     color:var(--ink-3); font-weight:700; list-style:none }
@@ -185,7 +201,8 @@
   <label for="nid">Short name — becomes the folder and the id</label><input id="nid" placeholder="joblogic">
   <label for="nname">Display name</label><input id="nname" placeholder="Joblogic">
   <label for="nurl">Sign-in URL</label><input id="nurl" placeholder="https://…">
-  <label for="nmax">Screens to visit</label><input id="nmax" value="20">
+  <p class="hint" style="margin-top:10px">It works out how many screens there are and tells you as it goes.</p>
+  <p id="nerr" class="err" hidden></p>
   <div style="margin-top:16px;display:flex;gap:6px;justify-content:flex-end">
     <button class="act ghost" style="width:auto" onclick="newSurvey.close()">Cancel</button>
     <button class="act" style="width:auto" onclick="startSurvey()">Open the browser</button>
@@ -199,6 +216,13 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const mark = (g) => `<span class="mark ${g}"><span class="dot"></span>${g === 'direct' ? 'stated' : g}</span>`;
 let DOMAIN = [];
+const GROUPS = [
+  ['identity', 'Identity', 'what the thing is, and whose'],
+  ['clock', 'Clocks', 'when it arrived, and what it owes'],
+  ['state', 'States', 'where it has got to'],
+  ['evidence', 'Evidence', 'what proves it happened'],
+  ['act', 'Acting', 'what may be done to it'],
+];
 
 const loadSystems = async () => {
   const list = await (await fetch('/api/systems')).json();
@@ -224,10 +248,17 @@ const landing = async () => {
       for nothing.</p>
     </div>
 
-    <h3>What it asks</h3>
-    <div class="qs">${DOMAIN.map((c) => `<span class="q ${c.weight === 'blocking' ? 'blocking' : ''}"
-      title="${esc(c.question)}">${esc(c.id)}</span>`).join('')}</div>
-    <p class="hint">Hover any of them for the question. A green edge means an operator cannot work without it.</p>
+    <h3>What it asks of every system</h3>
+    <div class="groups">${GROUPS.map(([g, title, blurb]) => {
+      const list = DOMAIN.filter((c) => c.group === g);
+      return `<section class="grp">
+        <header><b>${title}</b><span>${blurb}</span></header>
+        ${list.map((c) => `<div class="qrow ${c.weight === 'blocking' ? 'blocking' : ''}" title="${esc(c.why)}">
+          <span class="qid">${esc(c.id)}</span>
+          <span class="qq">${esc(c.question)}</span></div>`).join('')}
+      </section>`;
+    }).join('')}</div>
+    <p class="hint">A green edge marks the ones an operator cannot work without. Hover for why it matters.</p>
 
     <details class="more">
       <summary>What it touches</summary>
@@ -319,19 +350,37 @@ const open_ = async (id) => {
   document.querySelector('main').scrollTop = 0;
 };
 
+const stopSurvey = async () => {
+  await fetch('/api/cancel', { method: 'POST' }).catch(() => {});
+  loadSystems();
+};
+
 const zoom = (src) => { $('#fullimg').src = src; $('#full').style.display = 'block'; };
 addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#full').style.display = 'none'; });
 
+const fail = (msg) => { const e = $('#nerr'); e.hidden = false; e.textContent = msg; };
+
 const startSurvey = async () => {
   const id = $('#nid').value.trim(), startUrl = $('#nurl').value.trim();
-  if (!id || !startUrl) return;
-  await fetch('/api/survey', { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ id, startUrl, max: Number($('#nmax').value) || 20 }) });
+  $('#nerr').hidden = true;
+  if (!id) return fail('Give it a short name — it becomes the folder.');
+  if (!/^https?:\/\//i.test(startUrl)) return fail('Needs a sign-in URL starting http:// or https://');
+  let res;
+  try {
+    res = await fetch('/api/survey', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id, startUrl }) });
+  } catch (e) { return fail('The engine is not answering. Close this window and run ProofMap again.'); }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    return fail(body.error || ('The engine refused that (' + res.status + ').'));
+  }
   newSurvey.close();
   $('#main').innerHTML = `<div class="lede"><h2>Surveying ${esc($('#nname').value || id)}</h2>
     <p>A browser has opened and is waiting. Sign in there — nothing here sees your password —
     and the walk starts by itself once you are through.</p></div>
-    <h3>Live</h3><div class="log" id="log" role="status" aria-live="polite"></div>`;
+    <h3>Live</h3><div class="log" id="log" role="status" aria-live="polite"></div>
+    <button class="act ghost" id="stopbtn" style="width:auto;margin-top:10px"
+      onclick="stopSurvey()">Stop and close the browser</button>`;
   const tick = async () => {
     const p = await (await fetch('/api/progress')).json();
     const log = $('#log'); if (!log) return;

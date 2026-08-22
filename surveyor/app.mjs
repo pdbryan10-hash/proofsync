@@ -81,6 +81,7 @@ const sendFile = (res, file) => {
 
 const progress = [];
 let running = false;
+let stopper = null;
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -111,20 +112,30 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === '/api/progress') return send(res, 200, { running, lines: progress.slice(-200) });
 
+    if (url.pathname === '/api/cancel' && req.method === 'POST') {
+      if (!running) return send(res, 200, { stopped: false, note: 'nothing running' });
+      progress.push('stopping…');
+      await stopper?.stop?.();
+      running = false; stopper = null;
+      progress.push('stopped. The browser is closed and the session profile is gone.');
+      return send(res, 200, { stopped: true });
+    }
+
     if (url.pathname === '/api/survey' && req.method === 'POST') {
       const body = await new Promise((r) => { let b = ''; req.on('data', (c) => { b += c; }); req.on('end', () => r(b)); });
       const { id, startUrl, max } = JSON.parse(body || '{}');
-      if (!id || !startUrl) return send(res, 400, { error: 'id and startUrl please' });
-      if (running) return send(res, 409, { error: 'a survey is already running' });
+      if (!id || !startUrl) return send(res, 400, { error: 'a short name and a sign-in URL, please' });
+      if (running) return send(res, 409, { error: 'a survey is already running — stop it first' });
       running = true; progress.length = 0;
       const outDir = path.join(ROOT, 'data', id + '-map');
       // Deliberately not awaited: the browser opens, a person signs in, and the
       // page polls /api/progress while that happens.
       import('./crawl.mjs').then(({ crawl }) => crawl({
-        id, startUrl, outDir, max: max || 20, onProgress: (m) => progress.push(m),
+        id, startUrl, outDir, max: max || 0, onProgress: (m) => progress.push(m),
+        onStart: (h) => { stopper = h; },
       })).then((r) => {
         progress.push(`captured ${r.screens.length} screens. Now draft kernel/systems/${id}.mjs from the proposals.`);
-      }).catch((e) => progress.push('FAILED: ' + e.message)).finally(() => { running = false; });
+      }).catch((e) => progress.push('FAILED: ' + e.message)).finally(() => { running = false; stopper = null; });
       return send(res, 200, { started: true, outDir });
     }
 

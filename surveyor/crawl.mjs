@@ -71,7 +71,7 @@ const slug = (s) => String(s).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')
  * @param {number} o.max       how many screens to visit
  * @param {(m:string)=>void} o.onProgress
  */
-export const crawl = async ({ id, startUrl, outDir, max = 20, seed, onProgress = () => {} }) => {
+export const crawl = async ({ id, startUrl, outDir, max = 0, seed, onProgress = () => {}, onStart = () => {} }) => {
   fs.mkdirSync(outDir, { recursive: true });
   const say = (m) => { onProgress(m); console.log(' ·', m); };
   // Paced like a person, not because anything is being hidden — the access is
@@ -90,6 +90,10 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, seed, onProgress =
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'surveyor-'));
   const ctx = await chromium.launchPersistentContext(profile, { headless: false, viewport: { width: 1600, height: 950 } });
   const page = ctx.pages()[0] ?? (await ctx.newPage());
+  // A handle back to whoever started this, so a walk waiting ten minutes for a
+  // sign-in that is never coming can be called off rather than sat out.
+  let stopped = false;
+  onStart({ stop: async () => { stopped = true; await ctx.close().catch(() => {}); } });
   /** The signed-in profile, gone. Called on every exit path including failure. */
   const burn = () => { try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* locked; nothing else to do */ } };
   process.once('exit', burn);
@@ -111,10 +115,11 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, seed, onProgress =
   say('waiting for you to sign in (10 minutes)…');
   const deadline = Date.now() + 600_000;
   let signedIn = false;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && !stopped) {
     if (!(await page.locator('input[type="password"]:visible').count().catch(() => 0))) { signedIn = true; break; }
     await page.waitForTimeout(dwell(r, 2000, { sigma: 0.3, min: 1200, max: 4000 }));
   }
+  if (stopped) { burn(); throw new Error('stopped before sign-in'); }
   if (!signedIn) { await ctx.close(); burn(); throw new Error('still on the sign-in page after ten minutes'); }
   await settle(page, r, 3400);
   say('signed in — walking the system');
@@ -150,10 +155,14 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, seed, onProgress =
     .filter((l) => !AVOID.test(l.text) && !AVOID.test(l.abs))
     .filter((l, i, a) => a.findIndex((x) => x.abs === l.abs) === i);
   fs.writeFileSync(path.join(outDir, 'nav.json'), JSON.stringify(targets, null, 2));
-  say(`${targets.length} navigation targets`);
+  // It works out how much there is to look at rather than being told. A cap is
+  // only applied if somebody explicitly asks for one.
+  const visiting = max > 0 ? Math.min(max, targets.length) : targets.length;
+  say(`found ${targets.length} screen${targets.length === 1 ? '' : 's'} — visiting ${visiting}`);
 
   // Read down the menu the way a person does — mostly in order, not rigidly.
-  for (const t of wander(targets.slice(0, max), r)) {
+  for (const t of wander(targets.slice(0, visiting), r)) {
+    if (stopped) break;
     await page.goto(t.abs, { waitUntil: 'domcontentloaded' }).catch(() => {});
     await settle(page, r, 2800);
     await capture(t.text);
