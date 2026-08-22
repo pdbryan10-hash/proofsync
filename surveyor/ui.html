@@ -3,176 +3,173 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ProofMap</title>
 <style>
-  /* Data-dense dashboard on a Swiss grid: one accent, no decoration, every
-     pixel spent on information. Dense but never cramped — 36px rows, sticky
-     heads, 13px body, and contrast held above 4.5:1 in both themes. */
+  /* Palette: the design database's E-signature / Document Workflow set — navy,
+     blue and green on near-white. The right family for a tool whose whole job
+     is evidence, and it holds 4.5:1 everywhere text sits.
+
+     Type is deliberately NOT dense. The first cut followed a data-dashboard
+     spec at 12-13px and was unreadable on a real screen. 16px base with 44px
+     rows costs a little scrolling and buys a document you can read across a
+     desk. */
   :root {
-    --bg:#fbfaf7; --panel:#ffffff; --sunk:#f5f4f0;
-    --ink:#14161a; --ink-2:#4b5563; --ink-3:#6b7280;
-    --line:#e3e1dc; --line-2:#d3d0c9;
-    --accent:#0e6b3f; --accent-soft:#e8f2ec;
-    --warn:#9a5b06; --warn-soft:#fdf5e6;
-    --stop:#a3341f;
-    --row:36px; --rail:264px; --pad:12px; --gap:8px;
+    --bg:#f8fafc; --panel:#ffffff; --sunk:#eef2f7;
+    --ink:#0f172a; --ink-2:#334155; --ink-3:#64748b;
+    --line:#cbd5e1; --line-2:#94a3b8;
+    --navy:#1e3a5f; --blue:#2563eb; --btn:#1e3a5f; --on-btn:#ffffff;
+    --accent:#15803d; --accent-soft:#e7f6ec;
+    --warn:#b45309; --warn-soft:#fef6e7;
+    --stop:#dc2626;
+    --row:44px; --rail:290px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg:#101215; --panel:#171a1e; --sunk:#1d2126;
-      --ink:#eceef1; --ink-2:#b3b9c2; --ink-3:#8b929c;
-      --line:#282d33; --line-2:#353b43;
-      --accent:#4fbe8b; --accent-soft:#14281f;
-      --warn:#e0a253; --warn-soft:#2a2114;
-      --stop:#e07a63;
+      --bg:#0b1220; --panel:#131a29; --sunk:#1a2334;
+      --ink:#eaf0f9; --ink-2:#c2cddd; --ink-3:#94a3b8;
+      --line:#2b3852; --line-2:#3f4f6e;
+      --navy:#cfe0f5; --blue:#7dabff; --btn:#2f5891; --on-btn:#ffffff;
+      --accent:#4ade80; --accent-soft:#12241a;
+      --warn:#fbbf24; --warn-soft:#2a2113;
+      --stop:#f87171;
     }
   }
   * { box-sizing:border-box }
   html,body { height:100% }
   body {
     margin:0; background:var(--bg); color:var(--ink);
-    font:13.5px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    font:16px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
     display:grid; grid-template-columns:var(--rail) 1fr; height:100vh; overflow:hidden;
     -webkit-font-smoothing:antialiased;
   }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:3px }
+  :focus-visible { outline:3px solid var(--blue); outline-offset:2px; border-radius:4px }
 
-  /* ── rail ─────────────────────────────────────────────────────────────── */
-  aside { background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:14px }
-  .brand { display:flex; align-items:baseline; gap:7px; margin-bottom:2px }
-  .brand h1 { margin:0; font-size:15px; letter-spacing:-.2px; font-weight:700 }
-  .brand span { font-size:10px; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-3) }
-  .rail-sub { margin:0 0 14px; font-size:11.5px; color:var(--ink-3); line-height:1.45 }
-  .rail-h { font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-3);
-            margin:16px 0 7px; font-weight:600 }
+  /* rail */
+  aside { background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:20px }
+  .brand { display:flex; align-items:baseline; gap:9px; margin-bottom:6px }
+  .brand h1 { margin:0; font-size:22px; letter-spacing:-.4px; font-weight:800; color:var(--navy) }
+  .brand span { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-3); font-weight:700 }
+  .rail-sub { margin:0 0 20px; font-size:14px; color:var(--ink-2); line-height:1.5 }
+  .rail-h { font-size:12px; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-3);
+            margin:22px 0 10px; font-weight:700 }
   .sys { width:100%; text-align:left; display:block; background:var(--panel); cursor:pointer;
-         border:1px solid var(--line); border-left:3px solid transparent; border-radius:5px;
-         padding:9px 10px; margin-bottom:6px; color:inherit; font:inherit; transition:border-color .18s, background .18s }
-  .sys:hover { border-color:var(--line-2); background:var(--sunk) }
-  .sys[aria-current="true"] { border-left-color:var(--accent); background:var(--accent-soft); border-color:var(--line-2) }
-  .sys b { display:block; font-size:12.5px; font-weight:650; letter-spacing:-.1px }
-  .sys small { color:var(--ink-3); font-size:10.5px }
-  .sys .pct { float:right; font-weight:700; font-size:13px; color:var(--accent); font-variant-numeric:tabular-nums }
-  button.act { font:inherit; font-size:12px; font-weight:600; width:100%; cursor:pointer;
-               background:var(--accent); color:#fff; border:1px solid var(--accent);
-               border-radius:5px; padding:9px 12px; min-height:36px; transition:filter .18s }
-  button.act:hover { filter:brightness(1.08) }
+         border:1px solid var(--line); border-left:5px solid transparent; border-radius:8px;
+         padding:14px 15px; margin-bottom:9px; color:inherit; font:inherit;
+         transition:background .18s, border-color .18s }
+  .sys:hover { background:var(--sunk) }
+  .sys[aria-current="true"] { border-left-color:var(--accent); background:var(--accent-soft) }
+  .sys b { display:block; font-size:16px; font-weight:700; letter-spacing:-.2px; line-height:1.35 }
+  .sys small { color:var(--ink-3); font-size:13px }
+  .sys .pct { float:right; font-weight:800; font-size:20px; color:var(--accent); font-variant-numeric:tabular-nums }
+  button.act { font:inherit; font-size:15px; font-weight:700; width:100%; cursor:pointer;
+               background:var(--btn); color:var(--on-btn); border:1px solid var(--btn);
+               border-radius:8px; padding:13px 16px; min-height:48px; transition:filter .18s }
+  button.act:hover { filter:brightness(1.15) }
   button.ghost { background:var(--panel); color:var(--ink); border:1px solid var(--line-2) }
-  .rail-foot { margin-top:16px; padding-top:12px; border-top:1px solid var(--line);
-               font-size:10.5px; color:var(--ink-3); line-height:1.5 }
+  .rail-foot { margin-top:22px; padding-top:16px; border-top:1px solid var(--line);
+               font-size:13px; color:var(--ink-3); line-height:1.55 }
 
-  /* ── main ─────────────────────────────────────────────────────────────── */
-  main { overflow:auto; padding:20px 24px 60px }
-  .lede { max-width:70ch }
-  .lede h2 { margin:0 0 12px; font-size:27px; line-height:1.18; letter-spacing:-.5px; font-weight:700 }
-  .lede p { margin:0 0 14px; font-size:15px; line-height:1.65; color:var(--ink-2) }
-  .lede strong { color:var(--ink); font-weight:650 }
-  h3 { font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-3);
-       margin:28px 0 10px; font-weight:700 }
+  /* main */
+  main { overflow:auto; padding:32px 36px 80px }
+  .lede { max-width:62ch }
+  .lede h2 { margin:0 0 16px; font-size:38px; line-height:1.14; letter-spacing:-1px; font-weight:800; color:var(--navy) }
+  .lede p { margin:0 0 16px; font-size:18px; line-height:1.6; color:var(--ink-2) }
+  .lede strong { color:var(--ink); font-weight:700 }
+  h3 { font-size:13px; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-3);
+       margin:40px 0 14px; font-weight:800 }
 
-  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:var(--gap) }
-  .step { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:var(--pad) }
-  .step .n { font-size:10px; font-weight:700; color:var(--accent); letter-spacing:1px }
-  .step b { display:block; margin:3px 0 4px; font-size:13px; letter-spacing:-.1px }
-  .step p { margin:0; font-size:11.5px; color:var(--ink-3); line-height:1.5 }
-
-  /* Multi-column rather than grid: five cards of unequal height balance
-     themselves instead of leaving a hole where the fifth wrapped. */
-  .groups { columns:262px 4; column-gap:10px }
-  .grp { background:var(--panel); border:1px solid var(--line); border-radius:7px; overflow:hidden;
-         break-inside:avoid; margin:0 0 10px; display:inline-block; width:100% }
-  .grp header { padding:9px 12px; border-bottom:1px solid var(--line); background:var(--sunk) }
-  .grp header b { font-size:12.5px; letter-spacing:-.1px; display:block }
-  .grp header span { font-size:10.5px; color:var(--ink-3) }
-  .qrow { padding:8px 12px; border-bottom:1px solid var(--line); border-left:3px solid transparent; cursor:help }
+  .groups { columns:330px 3; column-gap:16px }
+  .grp { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden;
+         break-inside:avoid; margin:0 0 16px; display:inline-block; width:100% }
+  .grp header { padding:14px 18px; border-bottom:1px solid var(--line); background:var(--sunk) }
+  .grp header b { font-size:17px; letter-spacing:-.2px; display:block; color:var(--navy) }
+  .grp header span { font-size:13px; color:var(--ink-3) }
+  .qrow { padding:13px 18px; border-bottom:1px solid var(--line); border-left:5px solid transparent; cursor:help }
   .qrow:last-child { border-bottom:0 }
   .qrow.blocking { border-left-color:var(--accent) }
   .qrow:hover { background:var(--sunk) }
-  .qid { display:block; font-size:12px; font-weight:650; letter-spacing:-.1px }
-  .qq { display:block; font-size:11.5px; color:var(--ink-3); line-height:1.45; margin-top:1px }
-  .qs { display:flex; flex-wrap:wrap; gap:5px }
-  .q { background:var(--panel); border:1px solid var(--line); border-radius:4px;
-       padding:5px 10px; font-size:12px; font-weight:600; cursor:help;
-       border-left:3px solid var(--line) }
-  .q.blocking { border-left-color:var(--accent) }
-  .hint { font-size:11.5px; color:var(--ink-3); margin:8px 0 0 }
-  .err { font-size:12px; color:var(--stop); background:var(--warn-soft); border:1px solid var(--stop);
-         border-radius:5px; padding:8px 10px; margin:10px 0 0 }
-  .more { margin-top:18px; border-top:1px solid var(--line); padding-top:10px }
-  .more > summary { cursor:pointer; font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase;
-                    color:var(--ink-3); font-weight:700; list-style:none }
+  .qid { display:block; font-size:16px; font-weight:700; letter-spacing:-.2px }
+  .qq { display:block; font-size:14.5px; color:var(--ink-2); line-height:1.5; margin-top:2px }
+  .hint { font-size:14px; color:var(--ink-3); margin:12px 0 0 }
+  .err { font-size:15px; color:var(--stop); background:var(--warn-soft); border:2px solid var(--stop);
+         border-radius:8px; padding:12px 14px; margin:14px 0 0; font-weight:600 }
+  .more { margin-top:26px; border-top:1px solid var(--line); padding-top:14px }
+  .more > summary { cursor:pointer; font-size:13px; letter-spacing:1.4px; text-transform:uppercase;
+                    color:var(--ink-3); font-weight:800; list-style:none; padding:6px 0 }
   .more > summary::-webkit-details-marker { display:none }
   .more > summary::before { content:"+ "; color:var(--accent) }
-  .more[open] > summary::before { content:"– " }
-  .more > * { margin-top:10px }
-  .runs { margin:10px 0 0; padding-left:20px; font-size:12.5px; line-height:1.7; color:var(--ink-2); max-width:80ch }
+  .more[open] > summary::before { content:"- " }
+  .more > * { margin-top:14px }
+  .runs { margin:14px 0 0; padding-left:22px; font-size:16px; line-height:1.8; color:var(--ink-2); max-width:80ch }
   .runs b { color:var(--ink) }
 
-  .contract { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap) }
-  @media (max-width:900px) { .contract { grid-template-columns:1fr } body { grid-template-columns:1fr } }
-  .does, .never { border:1px solid var(--line); border-radius:6px; padding:var(--pad) 14px; background:var(--panel) }
-  .does { border-left:3px solid var(--accent) }
-  .never { border-left:3px solid var(--stop) }
-  .does h4, .never h4 { margin:0 0 7px; font-size:11px; letter-spacing:.6px; text-transform:uppercase }
+  .contract { display:grid; grid-template-columns:1fr 1fr; gap:16px }
+  @media (max-width:1000px) { .contract { grid-template-columns:1fr } body { grid-template-columns:1fr } }
+  .does, .never { border:1px solid var(--line); border-radius:10px; padding:16px 20px; background:var(--panel) }
+  .does { border-left:5px solid var(--accent) }
+  .never { border-left:5px solid var(--stop) }
+  .does h4, .never h4 { margin:0 0 10px; font-size:14px; letter-spacing:.8px; text-transform:uppercase }
   .does h4 { color:var(--accent) } .never h4 { color:var(--stop) }
-  .does ul, .never ul { margin:0; padding-left:16px; font-size:12px; line-height:1.65; color:var(--ink-2) }
+  .does ul, .never ul { margin:0; padding-left:20px; font-size:15px; line-height:1.75; color:var(--ink-2) }
 
-  /* ── system view ──────────────────────────────────────────────────────── */
-  .head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap }
-  .head h2 { margin:0; font-size:20px; letter-spacing:-.3px }
-  .head .meta { font-size:12px; color:var(--ink-3) }
-  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:var(--gap); margin:14px 0 4px }
-  .kpi { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px var(--pad) }
-  .kpi .v { font-size:22px; font-weight:700; letter-spacing:-.6px; font-variant-numeric:tabular-nums; line-height:1.1 }
-  .kpi .k { font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:var(--ink-3); margin-top:3px }
+  /* system view */
+  .head { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap }
+  .head h2 { margin:0; font-size:30px; letter-spacing:-.6px; color:var(--navy) }
+  .head .meta { font-size:15px; color:var(--ink-3) }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(142px,1fr)); gap:10px; margin:22px 0 6px }
+  .kpi { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px }
+  .kpi .v { font-size:34px; font-weight:800; letter-spacing:-1px; font-variant-numeric:tabular-nums; line-height:1.05 }
+  .kpi .k { font-size:12.5px; letter-spacing:.9px; text-transform:uppercase; color:var(--ink-3);
+            margin-top:6px; font-weight:700 }
   .kpi.good .v { color:var(--accent) } .kpi.warn .v { color:var(--warn) }
-  .path { font:11px ui-monospace,Consolas,monospace; color:var(--ink-3); margin:10px 0 0; word-break:break-all }
+  .path { font:13px ui-monospace,Consolas,monospace; color:var(--ink-3); margin:14px 0 0; word-break:break-all }
 
-  .flag { border:1px solid var(--line-2); border-left:3px solid var(--warn); background:var(--warn-soft);
-          border-radius:5px; padding:9px 12px; margin:12px 0; font-size:12.5px }
-  .flag b { font-weight:650 }
+  .flag { border:1px solid var(--line); border-left:5px solid var(--warn); background:var(--warn-soft);
+          border-radius:8px; padding:14px 18px; margin:16px 0; font-size:15.5px; line-height:1.55 }
+  .flag b { font-weight:700 }
 
-  .tw { overflow:auto; border:1px solid var(--line); border-radius:6px; background:var(--panel) }
-  table { border-collapse:separate; border-spacing:0; width:100%; font-size:12px }
+  .tw { overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--panel) }
+  table { border-collapse:separate; border-spacing:0; width:100%; font-size:15px }
   thead th { position:sticky; top:0; z-index:2; background:var(--sunk); text-align:left;
-             font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-3);
-             padding:8px 10px; border-bottom:1px solid var(--line-2); font-weight:700; white-space:nowrap }
-  tbody td { padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; height:var(--row) }
+             font-size:12px; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-3);
+             padding:13px 16px; border-bottom:2px solid var(--line); font-weight:800; white-space:nowrap }
+  tbody td { padding:14px 16px; border-bottom:1px solid var(--line); vertical-align:top; height:var(--row) }
   tbody tr:last-child td { border-bottom:0 }
   tbody tr:hover td { background:var(--sunk) }
   tbody tr.dis td { background:var(--warn-soft) }
-  tbody tr.dis:hover td { filter:brightness(.98) }
-  .cid { font-weight:650 } .cw { font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px }
-  .qtext { color:var(--ink-2) }
-  .mark { display:inline-flex; align-items:center; gap:5px; font-weight:650; white-space:nowrap }
-  .dot { width:8px; height:8px; border-radius:50%; flex:none }
+  .cid { font-weight:700; font-size:16px; letter-spacing:-.2px }
+  .cw { font-size:12px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.8px; font-weight:700 }
+  .qtext { color:var(--ink-2); font-size:15px }
+  .mark { display:inline-flex; align-items:center; gap:8px; font-weight:700; white-space:nowrap; font-size:15px }
+  .dot { width:11px; height:11px; border-radius:50%; flex:none }
   .direct .dot { background:var(--accent) } .direct { color:var(--accent) }
-  .inferred .dot { background:transparent; box-shadow:inset 0 0 0 2px var(--warn); } .inferred { color:var(--warn) }
-  .absent .dot { background:transparent; box-shadow:inset 0 0 0 1px var(--ink-3) } .absent { color:var(--ink-3) }
-  .basis { font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px }
-  .src { display:block; font:10.5px ui-monospace,Consolas,monospace; color:var(--ink-3);
-         margin-top:3px; word-break:break-all }
-  .samp { display:block; font:10.5px/1.45 ui-monospace,Consolas,monospace; color:var(--ink-3);
-          margin-top:4px; max-height:2.9em; overflow:hidden }
-  select { font:inherit; font-size:11.5px; padding:4px 6px; min-height:30px; color:inherit;
-           background:var(--panel); border:1px solid var(--line-2); border-radius:4px }
+  .inferred .dot { background:transparent; box-shadow:inset 0 0 0 3px var(--warn) } .inferred { color:var(--warn) }
+  .absent .dot { background:transparent; box-shadow:inset 0 0 0 2px var(--ink-3) } .absent { color:var(--ink-3) }
+  .basis { font-size:12px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.6px; font-weight:700 }
+  /* Filenames get an ellipsis rather than breaking mid-word: exports/action-
+     list.cs / v across two lines reads as damage. */
+  .src { display:block; font:12.5px ui-monospace,Consolas,monospace; color:var(--ink-3);
+         margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; direction:rtl; text-align:left }
+  select { font:inherit; font-size:15px; padding:8px 10px; min-height:42px; color:inherit;
+           background:var(--panel); border:1px solid var(--line-2); border-radius:6px }
 
-  .shots { display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:var(--gap) }
-  .shots button { padding:0; border:1px solid var(--line); border-radius:5px; overflow:hidden;
+  .shots { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px }
+  .shots button { padding:0; border:1px solid var(--line); border-radius:8px; overflow:hidden;
                   background:var(--panel); cursor:zoom-in; display:block; line-height:0 }
   .shots img { width:100%; display:block }
-  video { width:100%; max-width:940px; border:1px solid var(--line); border-radius:6px; background:#000 }
+  video { width:100%; max-width:1000px; border:1px solid var(--line); border-radius:10px; background:#000 }
 
-  dialog { border:1px solid var(--line-2); border-radius:8px; padding:18px; max-width:540px;
-           background:var(--panel); color:var(--ink) }
-  dialog::backdrop { background:rgba(0,0,0,.5) }
-  dialog h3 { margin:0 0 6px; font-size:15px; letter-spacing:-.2px; text-transform:none; color:var(--ink) }
-  label { display:block; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase;
-          color:var(--ink-3); margin:12px 0 4px; font-weight:600 }
-  input { font:inherit; width:100%; min-height:36px; padding:7px 9px; color:inherit;
-          background:var(--bg); border:1px solid var(--line-2); border-radius:5px }
-  .log { font:11.5px/1.6 ui-monospace,Consolas,monospace; background:#0c0e11; color:#8fe3b4;
-         border:1px solid var(--line-2); border-radius:6px; padding:12px; height:300px;
+  dialog { border:1px solid var(--line); border-radius:12px; padding:26px; max-width:620px;
+           background:var(--panel); color:var(--ink); box-shadow:0 24px 70px rgba(15,23,42,.28) }
+  dialog::backdrop { background:rgba(15,23,42,.55) }
+  dialog h3 { margin:0 0 8px; font-size:24px; letter-spacing:-.5px; text-transform:none;
+              color:var(--navy); font-weight:800 }
+  label { display:block; font-size:12.5px; letter-spacing:.8px; text-transform:uppercase;
+          color:var(--ink-3); margin:18px 0 6px; font-weight:800 }
+  input { font:inherit; font-size:16px; width:100%; min-height:48px; padding:11px 13px; color:inherit;
+          background:var(--bg); border:1px solid var(--line-2); border-radius:8px }
+  .log { font:14px/1.7 ui-monospace,Consolas,monospace; background:#0b1220; color:#6ee7a8;
+         border:1px solid var(--line); border-radius:10px; padding:18px; height:340px;
          overflow:auto; white-space:pre-wrap }
-  .full { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; z-index:20; overflow:auto; padding:24px }
+  .full { position:fixed; inset:0; background:rgba(2,6,23,.94); display:none; z-index:20; overflow:auto; padding:28px }
   .full img { width:100%; max-width:1600px; margin:0 auto; display:block }
   @media (prefers-reduced-motion:reduce) { * { transition:none !important } }
 </style>
@@ -316,8 +313,8 @@ const open_ = async (id) => {
       A concept an operator cannot work without, and this system does not state it. Not a fault —
       a question for the vendor, and a cost line in any quote.</div>` : ''}
     ${d.freeText.length ? `<div class="flag"><b>Seen only in free text: ${d.freeText.join(', ')}.</b>
-      Somebody typing “engineer attended” into a description is a person describing a concept, not
-      software expressing one.</div>` : ''}
+      Found only in a description or a note — somebody writing about the concept,
+      rather than the software having a field, a state or an action for it.</div>` : ''}
     ${dis.length ? `<div class="flag"><b>${dis.length} row${dis.length > 1 ? 's' : ''} to confirm.</b>
       The machine read these differently from the record. They are highlighted below and they are
       the ones worth your minute.</div>` : ''}
