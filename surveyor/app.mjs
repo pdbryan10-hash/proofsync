@@ -55,6 +55,10 @@ const survey = (system) => {
     captures: run.captures, score: run.score, counts: run.counts,
     blockingGaps: run.blockingGaps.map((g) => g.id),
     agreement: Math.round((rows.filter((r) => r.agree).length / rows.length) * 100),
+    // Surfaced rather than buried in a grade: a concept the machine could only
+    // find in free text is a person describing it, not the software having it.
+    freeText: rows.filter((r) => r.machine.basis === 'free text').map((r) => r.id),
+    unobserved: rows.filter((r) => r.human.grade === 'absent').map((r) => r.id),
     rows, shots, video,
   };
 };

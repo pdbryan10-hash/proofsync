@@ -21,15 +21,24 @@ export const discover = (system, { root = process.cwd() } = {}) => {
         proof: { found: false, reason: 'no claim made' }, proven: false, unmapped: true };
     }
     const proof = claim.where ? resolve(captures, claim.where.glob, claim.where.find) : { found: false, reason: 'no evidence pointer' };
-    // A claim of ABSENCE is proven by NOT finding the thing. Searching for it
-    // and coming back empty is the evidence; finding it CONTRADICTS the claim
-    // and wants a human. Graded claims are the other way round.
-    // ...but only if the search actually looked at something. With no captures
-    // at all, "we did not find it" is not evidence of absence, it is evidence
-    // of not having looked — and that pass would have been free.
-    const proven = claim.grade === 'absent' ? (!proof.found && (proof.searched ?? 0) > 0) : proof.found;
+    // ABSENCE IS NEVER PROVEN.
+    //
+    // The first cut of this treated "searched and found nothing" as evidence of
+    // absence, which is the one thing a partial crawl cannot establish: a
+    // concept we never navigated to is indistinguishable from one that is not
+    // there. So a searched-and-empty absence is UNOBSERVED — we looked at N
+    // files and did not see it — and it scores nothing, exactly as before. What
+    // changes is that the report stops calling it confirmed.
+    //
+    // Finding the thing still CONTRADICTS the claim and wants a human.
     const contradicted = claim.grade === 'absent' && proof.found;
-    return { ...c, grade: claim.grade, how: claim.how, states: claim.states, where: claim.where, proof, proven, contradicted };
+    const looked = (proof.searched ?? 0) > 0;
+    const proven = claim.grade === 'absent' ? false : proof.found;
+    const status = claim.grade === 'absent'
+      ? (contradicted ? 'contradicted' : looked ? 'unobserved' : 'not looked')
+      : (proof.found ? claim.grade === 'direct' ? 'stated' : 'inferred' : 'unproven');
+    return { ...c, grade: claim.grade, how: claim.how, states: claim.states, where: claim.where,
+      proof, proven, contradicted, status, looked };
   });
 
   // Scoring: a concept earns its weight × grade rank, but only if the claim is
@@ -38,15 +47,15 @@ export const discover = (system, { root = process.cwd() } = {}) => {
   const max = CONCEPTS.reduce((n, c) => n + WEIGHTS[c.weight] * GRADES.direct.rank, 0);
   const got = findings.reduce((n, f) => n + (f.proven ? WEIGHTS[f.weight] * (GRADES[f.grade]?.rank ?? 0) : 0), 0);
 
-  const blockingGaps = findings.filter((f) => f.weight === 'blocking' && (f.grade === 'absent' || !f.proven));
+  const blockingGaps = findings.filter((f) => f.weight === 'blocking' && f.status !== 'stated' && f.status !== 'inferred');
   return {
     system, captures, findings,
     score: { got, max, pct: Math.round((got / max) * 100) },
     counts: {
-      stated: findings.filter((f) => f.grade === 'direct' && f.proven).length,
-      inferred: findings.filter((f) => f.grade === 'inferred' && f.proven).length,
-      absent: findings.filter((f) => f.grade === 'absent').length,
-      unproven: findings.filter((f) => !f.proven).length,
+      stated: findings.filter((f) => f.status === 'stated').length,
+      inferred: findings.filter((f) => f.status === 'inferred').length,
+      unobserved: findings.filter((f) => f.status === 'unobserved').length,
+      unproven: findings.filter((f) => f.status === 'unproven' || f.status === 'not looked').length,
       contradicted: findings.filter((f) => f.contradicted).length,
     },
     blockingGaps,

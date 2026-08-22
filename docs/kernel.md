@@ -17,7 +17,7 @@ Run it and you get `docs/kernel-report.md`.
 
 ## What it says today
 
-| System | Stated | Inferred | Absent | Unproven | Coverage |
+| System | Stated | Inferred | Unobserved | Unproven | Coverage |
 |---|---|---|---|---|---|
 | Concerto — Bellrock supplier portal | 20 | 2 | 0 | 0 | **98%** |
 | VX Suite — Accruent / Verisae | 16 | 4 | 2 | 0 | **86%** |
@@ -48,9 +48,17 @@ Two judgements are kept apart, deliberately:
 - **Grade** — how well the system expresses the concept.
 - **Proof** — whether the claim resolves in captures we actually hold.
 
-A `direct` claim whose evidence does not resolve scores **nothing** and prints `UNPROVEN`. And a
-claim of *absence* is inverted: it is proven by searching and finding nothing, and **contradicted**
-if the thing turns up.
+A `direct` claim whose evidence does not resolve scores **nothing** and prints `UNPROVEN`.
+
+**Absence is never proven.** An earlier cut treated "searched and found nothing" as evidence that a
+system lacks a concept. It is not: a concept we never navigated to looks identical to one that is
+not there, and a partial crawl cannot tell them apart. Those rows now read **unobserved** — we
+looked at N files and did not see it — score nothing, and stay open. Finding the thing anyway still
+**contradicts** the claim and wants a human.
+
+So VX's two gaps, attendance and evidence, are *unobserved*, not disproven. On what we captured
+there is no attachment action and no attendance state; that is a good enough basis to ask about it,
+and not a good enough basis to tell a client their software cannot do it.
 
 That has already earned its keep. Concerto's `recall` was graded **absent** on my say-so; the
 checker found this in a live job description:

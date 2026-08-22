@@ -101,10 +101,13 @@ const open_ = async (id) => {
       <span style="color:var(--muted)">${esc(d.vendor || '')} · ${esc(d.access || '')}</span></div>
     <div class="stats">
       <b style="color:var(--accent)">${d.score.pct}%</b> of the domain stated outright ·
-      ${d.counts.stated} stated, ${d.counts.inferred} inferred, ${d.counts.absent} absent ·
+      ${d.counts.stated} stated, ${d.counts.inferred} inferred ·
+      ${d.counts.unobserved} unobserved <small>(looked, did not see — not proof of absence)</small> ·
       ${d.counts.unproven} unproven ·
       machine agreed with the human map on <b>${d.agreement}%</b>
       ${d.blockingGaps.length ? ' · <b style="color:var(--warn)">blocking gaps: ' + d.blockingGaps.join(', ') + '</b>' : ''}
+      ${d.freeText.length ? '<br><b style="color:var(--warn)">seen only in free text:</b> ' + d.freeText.join(', ') +
+        ' <small>— somebody describing the concept, not the system expressing it</small>' : ''}
       <br><code>${esc(d.captures)}</code>
     </div>
     ${dis ? `<div class="note"><b>${dis} row${dis > 1 ? 's' : ''} to confirm.</b> The machine and the human map

@@ -24,11 +24,13 @@ const pad = (s, n) => String(s).padEnd(n).slice(0, n);
 for (const r of runs) {
   console.log(`\n\n  ${r.system.name}  —  ${r.score.pct}%  (${r.system.vendor})`);
   console.log(`  captures: ${r.captures}`);
-  console.log(`  ${r.counts.stated} stated · ${r.counts.inferred} inferred · ${r.counts.absent} absent · ${r.counts.unproven} UNPROVEN\n`);
+  console.log(`  ${r.counts.stated} stated · ${r.counts.inferred} inferred · ${r.counts.unobserved} UNOBSERVED · ${r.counts.unproven} UNPROVEN · ${r.counts.contradicted} CONTRADICTED
+`);
   for (const f of r.findings) {
     const flag = f.contradicted ? `   ⚠ CONTRADICTED — "${f.where.find}" appears in ${f.proof.file}`
-      : f.proven ? '' : `   ⚠ UNPROVEN (${f.proof.reason})`;
-    const src = f.grade === 'absent' ? `searched ${f.proof.searched ?? 0} file(s), not found` : (f.proof.file || '');
+      : f.status === 'unobserved' ? '   — unobserved: absence is not proven'
+      : f.status === 'stated' || f.status === 'inferred' ? '' : `   ⚠ UNPROVEN (${f.proof.reason})`;
+    const src = f.grade === 'absent' ? `searched ${f.proof.searched ?? 0} file(s)` : (f.proof.file || '');
     console.log(`   ${MARK[f.grade]} ${pad(f.id, 12)} ${pad(f.weight, 9)} ${src}${flag}`);
   }
   if (r.blockingGaps.length) {
@@ -50,10 +52,10 @@ if (WRITE) {
   md.push('`●` stated · `◐` inferred · `○` absent\n');
 
   md.push('## Scores\n');
-  md.push('| System | Vendor | Stated | Inferred | Absent | Unproven | Coverage |');
+  md.push('| System | Vendor | Stated | Inferred | Unobserved | Unproven | Coverage |');
   md.push('|---|---|---|---|---|---|---|');
   for (const r of runs) {
-    md.push(`| ${r.system.name} | ${r.system.vendor} | ${r.counts.stated} | ${r.counts.inferred} | ${r.counts.absent} | ${r.counts.unproven} | **${r.score.pct}%** |`);
+    md.push(`| ${r.system.name} | ${r.system.vendor} | ${r.counts.stated} | ${r.counts.inferred} | ${r.counts.unobserved} | ${r.counts.unproven} | **${r.score.pct}%** |`);
   }
   md.push('\nCoverage is not a quality score for the software. It is how much of the domain the system');
   md.push('states outright rather than leaving to be inferred — which is exactly the work an operating');
@@ -82,7 +84,7 @@ if (WRITE) {
     md.push('|---|---|---|---|');
     for (const f of r.findings) {
       const cell = f.contradicted ? '**contradicted** — found in `' + f.proof.file + '`'
-        : f.grade === 'absent' ? 'absence confirmed — searched ' + (f.proof.searched ?? 0) + ' file(s)'
+        : f.status === 'unobserved' ? '**unobserved** — searched ' + (f.proof.searched ?? 0) + ' file(s) and did not see it, which is not proof it is absent'
         : f.proven ? '`' + f.proof.file + '`' : '**unproven** — ' + f.proof.reason;
       md.push(`| ${f.id} | ${f.grade} | ${cell} | ${(f.proof.sample || '').slice(0, 110).replace(/\|/g, '\\|')} |`);
     }

@@ -20,6 +20,7 @@
 //   4. Every request is logged, so a client can be shown exactly what we did.
 import { chromium } from 'playwright';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const PERSISTS = /(save|submit|commit|confirm|delete|remove|insert|update|accept|complete|reject|approve)/i;
@@ -59,11 +60,18 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
   fs.mkdirSync(outDir, { recursive: true });
   const say = (m) => { onProgress(m); console.log(' ·', m); };
 
-  // Its own profile, so nothing touches the browser he already has open.
-  const profile = path.join(outDir, '.profile');
-  fs.mkdirSync(profile, { recursive: true });
+  // Its own profile, so nothing touches the browser already open — and NOT in
+  // the repo. A signed-in profile holds session cookies, which are bearer
+  // credentials: "we never store your password" is true and beside the point if
+  // the cookie that stands in for it is sitting in a working tree. One of those
+  // reached a git remote this week. It goes to the OS temp directory and is
+  // destroyed when the walk ends, however the walk ends.
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'surveyor-'));
   const ctx = await chromium.launchPersistentContext(profile, { headless: false, viewport: { width: 1600, height: 950 } });
   const page = ctx.pages()[0] ?? (await ctx.newPage());
+  /** The signed-in profile, gone. Called on every exit path including failure. */
+  const burn = () => { try { fs.rmSync(profile, { recursive: true, force: true }); } catch { /* locked; nothing else to do */ } };
+  process.once('exit', burn);
   const requests = [];
   await page.route('**', (route) => {
     const r = route.request();
@@ -86,7 +94,7 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
     if (!(await page.locator('input[type="password"]:visible').count().catch(() => 0))) { signedIn = true; break; }
     await page.waitForTimeout(2000);
   }
-  if (!signedIn) { await ctx.close(); throw new Error('still on the sign-in page after ten minutes'); }
+  if (!signedIn) { await ctx.close(); burn(); throw new Error('still on the sign-in page after ten minutes'); }
   await page.waitForTimeout(3000);
   say('signed in — walking the system');
 
@@ -176,5 +184,7 @@ export const crawl = async ({ id, startUrl, outDir, max = 20, onProgress = () =>
   }, null, 2));
   say(`done — ${screens.length} screens, ${requests.filter((r) => r.blocked).length} requests blocked`);
   await ctx.close();
+  burn();
+  say('session profile destroyed');
   return { screens, requests: requests.length, blocked: requests.filter((r) => r.blocked).length };
 };

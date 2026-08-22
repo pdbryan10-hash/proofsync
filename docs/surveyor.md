@@ -59,6 +59,12 @@ highlights them. That is the design — **it proposes, you decide** — not a sh
 
 ## On credentials, which is the part to get right
 
+**The password is not the perimeter — the session is.** After an attended sign-in the browser
+profile holds session cookies, and those are bearer credentials: "we never store your password" is
+true and beside the point if the cookie that stands in for it is sitting in a working tree. One of
+those reached a git remote this week. So the profile is created in the OS temp directory, never in
+the repo, and destroyed when the walk ends — including when it ends badly.
+
 The app never sees a password. A browser opens, **you** sign in, and the walk starts once you are
 through. That is not squeamishness: Concerto locks an account after three wrong attempts and only
 Bellrock can undo it, inside 24 working hours, and it is a client's live helpdesk account. More
@@ -74,6 +80,12 @@ every request we made* — which the guard already writes to `requests.log`.
 
 **Proven.** The scoring, the proposer and the app all run against captures on disk — 33 Concerto
 screens and the VX exports — with no network and no login.
+
+**Also not established.** Whether an automated read-only pass has side effects inside a vendor's
+own state machine — a viewed timestamp, an audit entry, anything that could touch an SLA clock —
+has not been checked with either vendor. The request log shows we sent nothing but GETs; it does
+not show what the server did with them. Worth asking Bellrock and Accruent outright before this is
+sold as a service.
 
 **Not proven.** `crawl.mjs` has never been run against a real system. It was generalised out of
 the two passes that worked, but the first time it meets an unfamiliar CAFM it will find something
