@@ -122,6 +122,23 @@
   .kpi.good .v { color:var(--accent) } .kpi.warn .v { color:var(--warn) }
   .path { font:13px ui-monospace,Consolas,monospace; color:var(--ink-3); margin:14px 0 0; word-break:break-all }
 
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:12px; margin:20px 0 6px }
+  .card { border:1px solid var(--line); border-left:5px solid var(--line-2); border-radius:10px;
+          padding:16px 18px; background:var(--panel) }
+  .card.good { border-left-color:var(--accent) } .card.warn { border-left-color:var(--warn) }
+  .card.bad { border-left-color:var(--stop) }
+  .card b { display:block; font-size:16px; margin-bottom:5px; letter-spacing:-.2px }
+  .card p { margin:0; font-size:14.5px; color:var(--ink-2); line-height:1.55 }
+  .picker { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:14px 0 4px }
+  .picker select { min-width:270px; font-size:16px; min-height:46px }
+  .picker span { font-size:20px; color:var(--ink-3) }
+  .v { display:inline-block; font-weight:800; font-size:13px; letter-spacing:.4px; text-transform:uppercase;
+       padding:4px 9px; border-radius:5px; white-space:nowrap }
+  .v.linked { background:var(--accent-soft); color:var(--accent) }
+  .v.bridged { background:var(--warn-soft); color:var(--warn) }
+  .v.one-sided { background:var(--warn-soft); color:var(--stop) }
+  .v.missing { background:var(--sunk); color:var(--ink-3) }
+  .fld { font:13.5px ui-monospace,Consolas,monospace; color:var(--ink) }
   .flag { border:1px solid var(--line); border-left:5px solid var(--warn); background:var(--warn-soft);
           border-radius:8px; padding:14px 18px; margin:16px 0; font-size:15.5px; line-height:1.55 }
   .flag b { font-weight:700 }
@@ -152,8 +169,9 @@
            background:var(--panel); border:1px solid var(--line-2); border-radius:6px }
 
   .shots { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px }
-  .shots button { padding:0; border:1px solid var(--line); border-radius:8px; overflow:hidden;
-                  background:var(--panel); cursor:zoom-in; display:block; line-height:0 }
+  .shots a { border:1px solid var(--line); border-radius:8px; overflow:hidden;
+            background:var(--panel); display:block; line-height:0; transition:border-color .18s }
+  .shots a:hover { border-color:var(--blue) }
   .shots img { width:100%; display:block }
   video { width:100%; max-width:1000px; border:1px solid var(--line); border-radius:10px; background:#000 }
 
@@ -180,6 +198,7 @@
 
   <div class="rail-h">Systems surveyed</div>
   <div id="systems"></div>
+  <button class="act ghost" id="pairbtn" style="margin-bottom:9px" onclick="linkage()">Link two systems</button>
   <button class="act" onclick="newSurvey.showModal()">Survey a new system</button>
 
   <div class="rail-foot">
@@ -210,6 +229,16 @@
 
 <script>
 const $ = (s) => document.querySelector(s);
+/* One seam. Locally this talks to the engine; published there is no engine, so
+   the same shapes are read from files written at export time. */
+const STATIC = !!window.PROOFMAP_STATIC;
+const api = {
+  domain: () => fetch(STATIC ? 'data/domain.json' : '/api/domain').then((r) => r.json()),
+  systems: () => fetch(STATIC ? 'data/systems.json' : '/api/systems').then((r) => r.json()),
+  system: (id) => fetch(STATIC ? 'data/system-' + id + '.json' : '/api/system?id=' + encodeURIComponent(id)).then((r) => r.json()),
+  pair: (a, b) => fetch(STATIC ? 'data/pair-' + a + '-' + b + '.json'
+    : '/api/pair?a=' + encodeURIComponent(a) + '&b=' + encodeURIComponent(b)).then((r) => r.json()),
+};
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const mark = (g) => `<span class="mark ${g}"><span class="dot"></span>${g === 'direct' ? 'stated' : g}</span>`;
 let DOMAIN = [];
@@ -222,7 +251,7 @@ const GROUPS = [
 ];
 
 const loadSystems = async () => {
-  const list = await (await fetch('/api/systems')).json();
+  const list = await api.systems();
   $('#systems').innerHTML = list.map((s) => `
     <button class="sys" id="sys-${s.id}" onclick="open_('${s.id}')" aria-current="false">
       <span class="pct">${s.missing ? '—' : s.score + '%'}</span>
@@ -234,7 +263,7 @@ const loadSystems = async () => {
 
 /* ── the landing state: what this thing actually does ────────────────────── */
 const landing = async () => {
-  DOMAIN = await (await fetch('/api/domain')).json();
+  DOMAIN = await api.domain();
   $('#main').innerHTML = `
     <div class="lede">
       <h2>It learns other people's software.</h2>
@@ -293,7 +322,7 @@ const landing = async () => {
 const open_ = async (id) => {
   document.querySelectorAll('.sys').forEach((e) => e.setAttribute('aria-current', 'false'));
   $('#sys-' + id)?.setAttribute('aria-current', 'true');
-  const d = await (await fetch('/api/system?id=' + encodeURIComponent(id))).json();
+  const d = await api.system(id);
   const dis = d.rows.filter((r) => !r.agree);
   const kpi = (v, k, cls = '') => `<div class="kpi ${cls}"><div class="v">${v}</div><div class="k">${k}</div></div>`;
   $('#main').innerHTML = `
@@ -341,9 +370,10 @@ const open_ = async (id) => {
       src="/file?p=${encodeURIComponent(d.captures + '\\\\' + d.video)}"></video>` : ''}
 
     <h3>Screens captured — ${d.shots.length}</h3>
-    <div class="shots">${d.shots.map((s) => `<button onclick="zoom(this.querySelector('img').src)"
-      aria-label="Enlarge ${esc(s)}"><img loading="lazy" alt="${esc(s)}"
-      src="/file?p=${encodeURIComponent(d.captures + '\\\\' + s)}"></button>`).join('')}</div>`;
+    <div class="shots">${d.shots.map((s) => `<a target="_blank" rel="noopener"
+      title="${esc(s)} — opens in a new tab"
+      href="/file?p=${encodeURIComponent(d.captures + '\\\\' + s)}"><img loading="lazy" alt="${esc(s)}"
+      src="/file?p=${encodeURIComponent(d.captures + '\\\\' + s)}"></a>`).join('')}</div>`;
   document.querySelector('main').scrollTop = 0;
 };
 
@@ -355,6 +385,58 @@ const imIn = async (btn) => {
 const stopSurvey = async () => {
   await fetch('/api/cancel', { method: 'POST' }).catch(() => {});
   loadSystems();
+};
+
+/* ── two systems, and what crossing between them costs ────────────────────── */
+const linkage = async (aId, bId) => {
+  document.querySelectorAll('.sys').forEach((e) => e.setAttribute('aria-current', 'false'));
+  const list = await api.systems();
+  if (list.length < 2) { $('#main').innerHTML = '<div class="lede"><h2>Two systems needed</h2><p>A linkage map compares a pair. Survey another system first.</p></div>'; return; }
+  const a = aId || list[0].id, b = bId || list.find((x) => x.id !== a).id;
+  const d = await api.pair(a, b);
+  const opts = (sel) => list.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+  const cw = d.rows.find((r) => r.id === 'states')?.states;
+  const canon = cw && cw.a && cw.b ? [...new Set([...Object.keys(cw.a), ...Object.keys(cw.b)])] : [];
+  $('#main').innerHTML = `
+    <div class="head"><h2>Linkage map</h2>
+      <span class="meta">what happens to a fact when it has to cross</span></div>
+    <div class="picker">
+      <select id="pa" onchange="linkage(this.value, $('#pb').value)">${opts(a)}</select>
+      <span>&#8644;</span>
+      <select id="pb" onchange="linkage($('#pa').value, this.value)">${opts(b)}</select>
+    </div>
+    <div class="kpis">
+      <div class="kpi good"><div class="v" style="all:unset;font-size:34px;font-weight:800;color:var(--accent)">${d.carried}%</div><div class="k">carried across</div></div>
+      <div class="kpi"><div class="v" style="all:unset;font-size:34px;font-weight:800">${d.counts.linked}</div><div class="k">linked</div></div>
+      <div class="kpi warn"><div class="v" style="all:unset;font-size:34px;font-weight:800;color:var(--warn)">${d.counts.bridged}</div><div class="k">bridged</div></div>
+      <div class="kpi warn"><div class="v" style="all:unset;font-size:34px;font-weight:800;color:var(--warn)">${d.counts['one-sided']}</div><div class="k">one-sided</div></div>
+      <div class="kpi"><div class="v" style="all:unset;font-size:34px;font-weight:800">${d.counts.missing}</div><div class="k">missing both</div></div>
+    </div>
+    ${d.blocking.length ? `<div class="flag"><b>Blocking concepts that do not link cleanly: ${d.blocking.join(', ')}.</b>
+      Those are the cost in any quote — everything else is plumbing.</div>` : ''}
+
+    <h3>What this pairing means</h3>
+    <div class="cards">${d.headline.map((h) => `<div class="card ${h.tone}"><b>${esc(h.title)}</b><p>${h.body}</p></div>`).join('')}</div>
+
+    <h3>Field by field</h3>
+    <div class="tw"><table>
+      <thead><tr><th style="width:130px">Concept</th><th style="width:26%">${esc(d.a.name)}</th>
+        <th style="width:26%">${esc(d.b.name)}</th><th style="width:130px">Crossing</th><th>What that costs</th></tr></thead>
+      <tbody>${d.rows.map((r) => `<tr>
+        <td><div class="cid">${r.id}</div><div class="cw">${r.weight}</div></td>
+        <td><span class="fld">${esc(r.a.field)}</span></td>
+        <td><span class="fld">${esc(r.b.field)}</span></td>
+        <td><span class="v ${r.verdict.key}">${r.verdict.label}</span></td>
+        <td class="qtext">${esc(r.verdict.note)}</td></tr>`).join('')}</tbody>
+    </table></div>
+
+    ${canon.length ? `<h3>State crosswalk — one vocabulary over two</h3>
+    <div class="tw"><table>
+      <thead><tr><th style="width:230px">Canonical</th><th>${esc(d.a.name)}</th><th>${esc(d.b.name)}</th></tr></thead>
+      <tbody>${canon.map((k) => `<tr><td class="cid">${k}</td>
+        <td class="fld">${esc(cw.a[k] || '—')}</td><td class="fld">${esc(cw.b[k] || '—')}</td></tr>`).join('')}</tbody>
+    </table></div>` : ''}`;
+  document.querySelector('main').scrollTop = 0;
 };
 
 const zoom = (src) => { $('#fullimg').src = src; $('#full').style.display = 'block'; };

@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { CONCEPTS } from '../kernel/domain.mjs';
 import { discover } from '../kernel/discover.mjs';
 import { propose } from './propose.mjs';
+import { pair } from '../kernel/pair.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -107,6 +108,16 @@ const server = http.createServer(async (req, res) => {
       const s = systems.find((x) => x.id === url.searchParams.get('id'));
       if (!s) return send(res, 404, { error: 'no such system' });
       return send(res, 200, survey(s));
+    }
+
+    // Two systems, and what happens to a fact when it has to cross between them.
+    if (url.pathname === '/api/pair') {
+      const all = await loadSystems();
+      const A = all.find((x) => x.id === url.searchParams.get('a'));
+      const B = all.find((x) => x.id === url.searchParams.get('b'));
+      if (!A || !B) return send(res, 404, { error: 'pick two systems that exist' });
+      if (A.id === B.id) return send(res, 400, { error: 'pick two different systems' });
+      return send(res, 200, pair(A, B, { root: ROOT }));
     }
 
     if (url.pathname === '/file') return sendFile(res, url.searchParams.get('p'));
