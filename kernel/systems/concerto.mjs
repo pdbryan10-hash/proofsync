@@ -13,6 +13,32 @@ export default {
   // Only what the survey captured — not the map or the report we generated.
   only: ['tour-*.json', 'screen-*.json', 'order-*.json', 'nav.json'],
 
+  // ── what a driver has to know to actually touch this system ───────────────
+  // Names are not enough to build from; these are the things that were learned
+  // the hard way and are not written down anywhere else.
+  driver: {
+    entry: 'https://concerto.bellrock.fm/content/supplier_portal.aspx',
+    auth: 'attended. Three wrong passwords locks the account, six locks it permanently, and only Bellrock can undo it inside 24 working hours.',
+    openRecord: 'rows are <tr role="link"> and open on ENTER, not on click. The record REPLACES the grid at the same URL.',
+    onRecord: 'a record is proven by the fields "Priority of response" and "Location of work". Neither the words "order number" nor #dropdownMenuButton prove it — the LIST has both.',
+    search: { field: '#pbl_form_dba_search', selector: 'Search field dropdown set to "Supplier reference"' },
+    actionControl: '#dropdownMenuButton (take the VISIBLE one — the id is duplicated)',
+    history: 'Notes and Activities tab — entries are attributed and timed to the second',
+  },
+  // The write path, as ordered recipes rather than a list of buttons.
+  recipes: {
+    accept: ['(only on an order Awaiting Acceptance — not yet captured)'],
+    appointment: ['Add Appointment'],
+    assign: ['Assign Operative', 'Assign operative (with appointment)'],
+    attend: ['Mark job as attended'],
+    pause: ['Parts On Order'],
+    note: ['Add Note'],
+    evidence: ['Add Note/Document/Photo'],
+    complete: ['Add Note/Document/Photo', 'Work complete'],
+    quote: ['Quote required'],
+    uplift: ['Cost uplift required'],
+  },
+
   map: {
     job: { grade: 'direct', field: 'Order number', how: '`Order number`, e.g. RDDC0024267/2 — order/revision. Rows are `tr[role="link"]`, opened with Enter; the record replaces the grid at the same URL.',
       where: { glob: 'tour-*-an-order.json', find: 'Order number' } },

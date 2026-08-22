@@ -18,6 +18,27 @@ export default {
   only: ['exports/*.csv', 'vx-map/*.json', 'vx-capture/**', 'vx-contractors/*.json',
     'vx-field-map.json', 'vx-screens-survey.json', 'vx-reports-survey.json', 'vx-cognos-*.json'],
 
+  // ── what a driver has to know to actually touch this system ───────────────
+  driver: {
+    entry: 'https://eam.verisae.co.uk/',
+    auth: 'attended, and a cookie wall sits in front of the form — an early pass filled the fields behind the modal and reported success.',
+    openRecord: 'the work order reference is a JS click target. It does not open by URL.',
+    onRecord: 'a record is proven by finding Log_Note in the action control. The list does not have it.',
+    actionControl: 'the action select on the work order — actions reveal HIDDEN PANELS in the page, they do not navigate.',
+    history: 'notes on the record, timed and attributed',
+    exports: 'CSV and Cognos exports carry the whole queue, which is cheaper to poll than the UI.',
+  },
+  recipes: {
+    note: ['Log_Note'],
+    eta: ['Update_ETA'],
+    tag: ['Tags'],
+    escalate: ['1st Level Escalation', '2nd Level Escalation'],
+    nte: ['Update_NTE_Values'],
+    reference: ['Set_Provider_Reference_Number'],
+    complete: ['Job_Complete'],
+    pause: ['Service_Incomplete'],
+  },
+
   map: {
     job: { grade: 'direct', field: 'WO #', how: '`WO #` — the work order number, on every export and every screen.',
       where: { glob: 'exports/*.csv', find: 'WO #' } },

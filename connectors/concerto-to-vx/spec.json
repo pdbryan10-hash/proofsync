@@ -1,0 +1,366 @@
+{
+  "generated": "kernel/spec.mjs — do not edit by hand; re-run it",
+  "a": {
+    "id": "concerto",
+    "name": "Concerto — Bellrock supplier portal",
+    "driver": {
+      "entry": "https://concerto.bellrock.fm/content/supplier_portal.aspx",
+      "auth": "attended. Three wrong passwords locks the account, six locks it permanently, and only Bellrock can undo it inside 24 working hours.",
+      "openRecord": "rows are <tr role=\"link\"> and open on ENTER, not on click. The record REPLACES the grid at the same URL.",
+      "onRecord": "a record is proven by the fields \"Priority of response\" and \"Location of work\". Neither the words \"order number\" nor #dropdownMenuButton prove it — the LIST has both.",
+      "search": {
+        "field": "#pbl_form_dba_search",
+        "selector": "Search field dropdown set to \"Supplier reference\""
+      },
+      "actionControl": "#dropdownMenuButton (take the VISIBLE one — the id is duplicated)",
+      "history": "Notes and Activities tab — entries are attributed and timed to the second"
+    }
+  },
+  "b": {
+    "id": "vx",
+    "name": "VX Suite",
+    "driver": {
+      "entry": "https://eam.verisae.co.uk/",
+      "auth": "attended, and a cookie wall sits in front of the form — an early pass filled the fields behind the modal and reported success.",
+      "openRecord": "the work order reference is a JS click target. It does not open by URL.",
+      "onRecord": "a record is proven by finding Log_Note in the action control. The list does not have it.",
+      "actionControl": "the action select on the work order — actions reveal HIDDEN PANELS in the page, they do not navigate.",
+      "history": "notes on the record, timed and attributed",
+      "exports": "CSV and Cognos exports carry the whole queue, which is cheaper to poll than the UI."
+    }
+  },
+  "carried": 80,
+  "key": {
+    "concerto": "Supplier's ref",
+    "vx": "Contractor Reference No. · action: Set Provider Reference Number",
+    "rule": "write each reference into the other system before any other write, then find records by searching it"
+  },
+  "states": {
+    "ATTENDED": {
+      "concerto": "Attended",
+      "vx": null
+    },
+    "IN_PROGRESS": {
+      "concerto": "In progress",
+      "vx": "In Progress"
+    },
+    "PAUSED": {
+      "concerto": "Parts On Order",
+      "vx": "Service Incomplete (by inference)"
+    },
+    "COMPLETED": {
+      "concerto": "Work complete",
+      "vx": "Service Complete / invoiced"
+    },
+    "AWAITING_EVIDENCE": {
+      "concerto": "Awaiting Certificate (tile)",
+      "vx": null
+    },
+    "AWAITING_CONTRACTOR": {
+      "concerto": "Awaiting Acceptance (tile)",
+      "vx": "Assigned / Pend. Accept"
+    },
+    "AWAITING_TRIAGE": {
+      "concerto": null,
+      "vx": "Pend."
+    },
+    "CANCELLED": {
+      "concerto": null,
+      "vx": "Cancelled / EOL"
+    }
+  },
+  "transforms": [
+    {
+      "id": "priority",
+      "from": "Priority of response (a phrase: 3 Working Day)",
+      "to": "Priority (P2 - 4 hours)",
+      "rule": "one side is a phrase in working days, the other a band in calendar hours. Convert through a working-day calendar with the client’s own hours — do not count hours against a working-day target."
+    },
+    {
+      "id": "reference",
+      "rule": "references are opaque strings; never parse them for meaning, only match them."
+    }
+  ],
+  "legs": [
+    {
+      "id": "intake",
+      "title": "A job arrives",
+      "detail": "Notice the new job on the source, and raise its twin on the target.",
+      "direction": "a->b",
+      "status": "needs a rule",
+      "why": "intake only crosses by inference (order emailed to the helpdesk mailbox, logged in the feed against Date/Time Created — found by polling, nothing announces it). Write the rule down, and test it against real jobs before trusting it.",
+      "into": "VX Suite",
+      "fields": [
+        {
+          "concept": "job",
+          "concerto": "Order number",
+          "vx": "WO #",
+          "crossing": "linked"
+        },
+        {
+          "concept": "client",
+          "concerto": "Client workspace (pbl_form_dba_portfolioid)",
+          "vx": "Client · Parent Organisation",
+          "crossing": "linked"
+        },
+        {
+          "concept": "site",
+          "concerto": "Location of work · UPRN (PPM review)",
+          "vx": "Site No. · Site Name · Site Type",
+          "crossing": "linked"
+        },
+        {
+          "concept": "intake",
+          "concerto": "order emailed to the helpdesk mailbox, logged in the feed",
+          "vx": "Date/Time Created — found by polling, nothing announces it",
+          "crossing": "bridged"
+        },
+        {
+          "concept": "priority",
+          "concerto": "Priority of response (a phrase: 3 Working Day)",
+          "vx": "Priority (P2 - 4 hours)",
+          "crossing": "linked"
+        },
+        {
+          "concept": "sla",
+          "concerto": "Response time required · Completion time required (+ actual)",
+          "vx": "Accept/Response/Fix SLA (Hours) · Fix Due Date/Time",
+          "crossing": "linked"
+        }
+      ],
+      "actions": null,
+      "verify": "re-read the note on the record"
+    },
+    {
+      "id": "key",
+      "title": "Tie the two records together",
+      "detail": "Write each system’s number into the other. Do this BEFORE anything else — it is what makes every later step idempotent.",
+      "direction": "both",
+      "status": "buildable",
+      "why": "Every concept it depends on crosses cleanly.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "cross_key",
+          "concerto": "Supplier's ref",
+          "vx": "Contractor Reference No. · action: Set Provider Reference Number",
+          "crossing": "linked"
+        }
+      ],
+      "actions": null,
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "accept",
+      "title": "Acceptance",
+      "detail": "When the target accepts, stamp the source so its clock stops.",
+      "direction": "b->a",
+      "status": "needs a rule",
+      "why": "acceptance only crosses by inference (Date acknowledged · feed: Accept within SLA against status Pend. Accept + Date Assigned). Write the rule down, and test it against real jobs before trusting it. The action itself has not been seen yet — it is on a record in a state we have not opened.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "acceptance",
+          "concerto": "Date acknowledged · feed: Accept within SLA",
+          "vx": "status Pend. Accept + Date Assigned",
+          "crossing": "bridged"
+        }
+      ],
+      "actions": [
+        "(only on an order Awaiting Acceptance — not yet captured)"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "appointment",
+      "title": "A date is promised",
+      "detail": "Carry the promised date across, and compare it with the target date before anyone is late.",
+      "direction": "b->a",
+      "status": "buildable",
+      "why": "Every concept it depends on crosses cleanly.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "eta",
+          "concerto": "Appointments · action: Add Appointment",
+          "vx": "ETA · action: Update ETA",
+          "crossing": "linked"
+        }
+      ],
+      "actions": [
+        "Add Appointment"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "attend",
+      "title": "Somebody turned up",
+      "detail": "Attendance is not completion. Two clocks.",
+      "direction": "b->a",
+      "status": "blocked",
+      "why": "attendance cannot be expressed on one side. Nothing to write to, so this leg has to live outside both systems — a mailbox, a store, or a person — until that changes.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "attendance",
+          "concerto": "action: Mark job as attended · status: Attended",
+          "vx": "nothing found",
+          "crossing": "one-sided"
+        }
+      ],
+      "actions": [
+        "Mark job as attended"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "pause",
+      "title": "The job stops",
+      "detail": "Parts, access, a second visit. A pause read as progress is how a job hides for three weeks.",
+      "direction": "b->a",
+      "status": "needs a rule",
+      "why": "pause only crosses by inference (status + action: Parts On Order against status: Service Incomplete). Write the rule down, and test it against real jobs before trusting it.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "pause",
+          "concerto": "status + action: Parts On Order",
+          "vx": "status: Service Incomplete",
+          "crossing": "bridged"
+        }
+      ],
+      "actions": [
+        "Parts On Order"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "evidence",
+      "title": "The paperwork",
+      "detail": "Certificates, job sheets, photographs. The completion nobody can prove is the one that does not get paid.",
+      "direction": "b->a",
+      "status": "blocked",
+      "why": "evidence cannot be expressed on one side. Nothing to write to, so this leg has to live outside both systems — a mailbox, a store, or a person — until that changes.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "evidence",
+          "concerto": "action: Add Note/Document/Photo · Permits tab",
+          "vx": "nothing found — photographs requested by email in the call script",
+          "crossing": "one-sided"
+        }
+      ],
+      "actions": [
+        "Add Note/Document/Photo"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "complete",
+      "title": "The job closes",
+      "detail": "Close it on the source, and prove the close by reading it back.",
+      "direction": "b->a",
+      "status": "buildable",
+      "why": "Every concept it depends on crosses cleanly.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "completion",
+          "concerto": "action: Work complete",
+          "vx": "action: Job Complete",
+          "crossing": "linked"
+        },
+        {
+          "concept": "history",
+          "concerto": "Notes and Activities feed",
+          "vx": "action: Log Note",
+          "crossing": "linked"
+        }
+      ],
+      "actions": [
+        "Add Note/Document/Photo",
+        "Work complete"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "exception",
+      "title": "Somebody has to be chased",
+      "detail": "Whose court the ball is in, and what happens when it stays there.",
+      "direction": "both",
+      "status": "needs a rule",
+      "why": "exception only crosses by inference (Currently with (cost referral only) against 1st/2nd Level Escalated By · Escalation Type · Escalation Comment). Write the rule down, and test it against real jobs before trusting it.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "exception",
+          "concerto": "Currently with (cost referral only)",
+          "vx": "1st/2nd Level Escalated By · Escalation Type · Escalation Comment",
+          "crossing": "bridged"
+        }
+      ],
+      "actions": [
+        "Add Note"
+      ],
+      "verify": "re-read the feed entry"
+    },
+    {
+      "id": "money",
+      "title": "Quotes and spend",
+      "detail": "The commonest reason a job stops is money, and it is a different workflow from the work.",
+      "direction": "both",
+      "status": "buildable",
+      "why": "Every concept it depends on crosses cleanly.",
+      "into": "Concerto — Bellrock supplier portal",
+      "fields": [
+        {
+          "concept": "money",
+          "concerto": "Mandate (NTE) · Quote required · Cost uplift required",
+          "vx": "NTE · action: Update NTE Values",
+          "crossing": "linked"
+        }
+      ],
+      "actions": [
+        "Quote required"
+      ],
+      "verify": "re-read the feed entry"
+    }
+  ],
+  "open": [
+    {
+      "concept": "intake",
+      "crossing": "bridged",
+      "ask": "One side only implies it, so the connector has to work it out and can be wrong. Worth a rule, and worth testing."
+    },
+    {
+      "concept": "acceptance",
+      "crossing": "bridged",
+      "ask": "One side only implies it, so the connector has to work it out and can be wrong. Worth a rule, and worth testing."
+    },
+    {
+      "concept": "attendance",
+      "crossing": "one-sided",
+      "ask": "Only one side can express this at all. Anything the other side needs to know has to be carried some other way — a note, an email, or a field we borrow."
+    },
+    {
+      "concept": "pause",
+      "crossing": "bridged",
+      "ask": "One side only implies it, so the connector has to work it out and can be wrong. Worth a rule, and worth testing."
+    },
+    {
+      "concept": "recall",
+      "crossing": "bridged",
+      "ask": "One side only implies it, so the connector has to work it out and can be wrong. Worth a rule, and worth testing."
+    },
+    {
+      "concept": "evidence",
+      "crossing": "one-sided",
+      "ask": "Only one side can express this at all. Anything the other side needs to know has to be carried some other way — a note, an email, or a field we borrow."
+    },
+    {
+      "concept": "exception",
+      "crossing": "bridged",
+      "ask": "One side only implies it, so the connector has to work it out and can be wrong. Worth a rule, and worth testing."
+    }
+  ]
+}

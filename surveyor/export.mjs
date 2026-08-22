@@ -16,6 +16,7 @@ import { CONCEPTS } from '../kernel/domain.mjs';
 import { discover } from '../kernel/discover.mjs';
 import { propose } from './propose.mjs';
 import { pair } from '../kernel/pair.mjs';
+import { spec } from '../kernel/spec.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -89,6 +90,8 @@ for (const A of systems) {
     if (A.id === B.id) continue;
     fs.writeFileSync(path.join(OUT, 'data', 'pair-' + A.id + '-' + B.id + '.json'),
       JSON.stringify(pair(A, B, { root: ROOT })));
+    fs.writeFileSync(path.join(OUT, 'data', 'spec-' + A.id + '-' + B.id + '.json'),
+      JSON.stringify(spec(A, B, { root: ROOT })));
     pairs += 1;
   }
 }

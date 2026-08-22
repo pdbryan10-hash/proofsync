@@ -240,6 +240,8 @@ const api = {
   system: (id) => fetch(STATIC ? 'data/system-' + id + '.json' : '/api/system?id=' + encodeURIComponent(id)).then((r) => r.json()),
   pair: (a, b) => fetch(STATIC ? 'data/pair-' + a + '-' + b + '.json'
     : '/api/pair?a=' + encodeURIComponent(a) + '&b=' + encodeURIComponent(b)).then((r) => r.json()),
+  spec: (a, b) => fetch(STATIC ? 'data/spec-' + a + '-' + b + '.json'
+    : '/api/spec?a=' + encodeURIComponent(a) + '&b=' + encodeURIComponent(b)).then((r) => r.json()),
 };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const mark = (g) => `<span class="mark ${g}"><span class="dot"></span>${g === 'direct' ? 'stated' : g}</span>`;
@@ -401,7 +403,7 @@ const linkage = async (aId, bId) => {
   const list = await api.systems();
   if (list.length < 2) { $('#main').innerHTML = '<div class="lede"><h2>Two systems needed</h2><p>A linkage map compares a pair. Survey another system first.</p></div>'; return; }
   const a = aId || list[0].id, b = bId || list.find((x) => x.id !== a).id;
-  const d = await api.pair(a, b);
+  const [d, sp] = await Promise.all([api.pair(a, b), api.spec(a, b)]);
   const opts = (sel) => list.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
   const cw = d.rows.find((r) => r.id === 'states')?.states;
   const canon = cw && cw.a && cw.b ? [...new Set([...Object.keys(cw.a), ...Object.keys(cw.b)])] : [];
@@ -425,6 +427,22 @@ const linkage = async (aId, bId) => {
 
     <h3>What this pairing means</h3>
     <div class="cards">${d.headline.map((h) => `<div class="card ${h.tone}"><b>${esc(h.title)}</b><p>${h.body}</p></div>`).join('')}</div>
+
+    <h3>The build, leg by leg</h3>
+    <p class="hint" style="margin:0 0 12px">Generated from the two surveys — which parts of the loop can be built
+    against these systems, in which direction, using which actions, and which cannot be built at all.</p>
+    <div class="tw"><table>
+      <thead><tr><th style="width:150px">Leg</th><th style="width:130px">Status</th>
+        <th style="width:24%">Actions, in order</th><th>What it means</th></tr></thead>
+      <tbody>${sp.legs.map((l) => `<tr class="${l.status === 'blocked' ? 'dis' : ''}">
+        <td><div class="cid">${l.title}</div><div class="cw">into ${esc(l.into)}</div></td>
+        <td><span class="v ${l.status === 'buildable' ? 'linked' : l.status === 'blocked' ? 'one-sided' : 'bridged'}">${l.status}</span></td>
+        <td>${l.actions ? l.actions.map((x) => `<span class="fld">${esc(x)}</span>`).join('<br>') : '<span class="cw">no write</span>'}</td>
+        <td class="qtext">${esc(l.why)}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <p class="hint">Run <span class="fld">node kernel/spec.mjs ${d.a.id} ${d.b.id} --write</span> and this becomes
+    <span class="fld">connectors/${d.a.id}-to-${d.b.id}/</span> — a spec.json and an adapter with the key, the state map
+    and these recipes already filled in. What is left blank is what no survey can give you: the selectors.</p>
 
     <h3>Field by field</h3>
     <div class="tw"><table>
