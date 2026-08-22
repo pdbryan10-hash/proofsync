@@ -29,7 +29,7 @@
   html,body { height:100% }
   body {
     margin:0; background:var(--bg); color:var(--ink);
-    font:13px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    font:13.5px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
     display:grid; grid-template-columns:var(--rail) 1fr; height:100vh; overflow:hidden;
     -webkit-font-smoothing:antialiased;
   }
@@ -62,8 +62,8 @@
   /* ── main ─────────────────────────────────────────────────────────────── */
   main { overflow:auto; padding:20px 24px 60px }
   .lede { max-width:70ch }
-  .lede h2 { margin:0 0 10px; font-size:26px; line-height:1.18; letter-spacing:-.5px; font-weight:700 }
-  .lede p { margin:0 0 12px; font-size:14.5px; line-height:1.6; color:var(--ink-2) }
+  .lede h2 { margin:0 0 12px; font-size:27px; line-height:1.18; letter-spacing:-.5px; font-weight:700 }
+  .lede p { margin:0 0 14px; font-size:15px; line-height:1.65; color:var(--ink-2) }
   .lede strong { color:var(--ink); font-weight:650 }
   h3 { font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-3);
        margin:28px 0 10px; font-weight:700 }
@@ -76,10 +76,19 @@
 
   .qs { display:flex; flex-wrap:wrap; gap:5px }
   .q { background:var(--panel); border:1px solid var(--line); border-radius:4px;
-       padding:5px 9px; font-size:11.5px; cursor:default }
-  .q b { font-weight:650 }
-  .q span { color:var(--ink-3) }
-  .q.blocking { border-left:3px solid var(--accent) }
+       padding:5px 10px; font-size:12px; font-weight:600; cursor:help;
+       border-left:3px solid var(--line) }
+  .q.blocking { border-left-color:var(--accent) }
+  .hint { font-size:11.5px; color:var(--ink-3); margin:8px 0 0 }
+  .more { margin-top:18px; border-top:1px solid var(--line); padding-top:10px }
+  .more > summary { cursor:pointer; font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase;
+                    color:var(--ink-3); font-weight:700; list-style:none }
+  .more > summary::-webkit-details-marker { display:none }
+  .more > summary::before { content:"+ "; color:var(--accent) }
+  .more[open] > summary::before { content:"– " }
+  .more > * { margin-top:10px }
+  .runs { margin:10px 0 0; padding-left:20px; font-size:12.5px; line-height:1.7; color:var(--ink-2); max-width:80ch }
+  .runs b { color:var(--ink) }
 
   .contract { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap) }
   @media (max-width:900px) { .contract { grid-template-columns:1fr } body { grid-template-columns:1fr } }
@@ -209,61 +218,47 @@ const landing = async () => {
     <div class="lede">
       <h2>It learns other people's software.</h2>
       <p>Give it a login to a system it has never seen — no documentation, no API, nobody to ask —
-      and it comes back knowing how that business runs. <strong>Where the jobs are. What “urgent”
-      means here. Who is waiting on whom. What a person is allowed to do to a record, and whether
-      anyone can prove they did it.</strong></p>
-      <p>It asks the same <strong>${DOMAIN.length} questions</strong> of every system, because underneath the
-      badge every CAFM is answering the same ones — in different words, and half of them by omission.
-      One says <em>Parts On Order</em>. Another says <em>Service Incomplete</em> and lets a dead job
-      look alive for nineteen days.</p>
-      <p>Every answer has to point at a screen it captured. If it cannot, it is marked
-      <strong>unproven</strong> and counts for nothing. Where it looked and saw nothing it says
-      <strong>unobserved</strong> — never “your system cannot do that”.</p>
+      and it comes back knowing how that business runs.</p>
+      <p>It asks the same <strong>${DOMAIN.length} questions</strong> of every system, and every answer has to
+      point at a screen it captured. If it cannot, the answer is marked <strong>unproven</strong> and counts
+      for nothing.</p>
     </div>
 
-    <h3>How a survey runs</h3>
-    <div class="steps">
-      <div class="step"><div class="n">01</div><b>You sign in</b>
-        <p>A browser opens and waits. The password is yours; this never sees it. Ten minutes, then it gives up.</p></div>
-      <div class="step"><div class="n">02</div><b>It walks the system</b>
-        <p>Follows the menu, opens every screen, at human pace rather than machine pace.</p></div>
-      <div class="step"><div class="n">03</div><b>It captures twice</b>
-        <p>Once as a picture, once as structure — column headings, dropdown values, field names, action names.</p></div>
-      <div class="step"><div class="n">04</div><b>It opens a real job</b>
-        <p>Finds the queue, opens one record, reveals the action menu without choosing anything from it.</p></div>
-      <div class="step"><div class="n">05</div><b>It answers the ${DOMAIN.length}</b>
-        <p>Proposes a grade for each, pinned to the file it came from, and flags what a person should check.</p></div>
-    </div>
-
-    <h3>The ${DOMAIN.length} questions — bordered ones are blocking</h3>
+    <h3>What it asks</h3>
     <div class="qs">${DOMAIN.map((c) => `<span class="q ${c.weight === 'blocking' ? 'blocking' : ''}"
-      title="${esc(c.why)}"><b>${esc(c.id)}</b> <span>${esc(c.question)}</span></span>`).join('')}</div>
+      title="${esc(c.question)}">${esc(c.id)}</span>`).join('')}</div>
+    <p class="hint">Hover any of them for the question. A green edge means an operator cannot work without it.</p>
 
-    <h3>What it touches</h3>
-    <div class="contract">
-      <div class="does"><h4>It does press things</h4>
-        <ul>
-          <li>Clicks links, tabs and rows — to <b>move</b></li>
-          <li>Clicks menu toggles — to <b>reveal</b> what is inside</li>
-          <li>Presses Enter to open a record, Escape to close a menu</li>
-          <li>Scrolls, and moves the pointer to an element before clicking it</li>
-        </ul></div>
-      <div class="never"><h4>It never</h4>
-        <ul>
-          <li>Chooses an item <b>inside</b> an action menu</li>
-          <li>Presses anything that saves, submits, accepts, completes or approves</li>
-          <li>Opens a link whose name suggests creating, deleting or accepting</li>
-          <li>Sends a non-GET request that looks like a change — those are aborted in the browser</li>
-        </ul></div>
-    </div>
-    <p style="font-size:12px;color:var(--ink-3);margin-top:10px;max-width:70ch">
-      Every request is logged with its method, so a client can be <em>shown</em> what we did rather than
-      told. The line is between navigation and commitment: a system that only responds to clicks
-      cannot be read without clicking.</p>
+    <details class="more">
+      <summary>What it touches</summary>
+      <div class="contract">
+        <div class="does"><h4>It does press things</h4>
+          <ul>
+            <li>Clicks links, tabs and rows — to <b>move</b></li>
+            <li>Clicks menu toggles — to <b>reveal</b></li>
+            <li>Enter to open a record, Escape to close a menu</li>
+          </ul></div>
+        <div class="never"><h4>It never</h4>
+          <ul>
+            <li>Chooses an item <b>inside</b> an action menu</li>
+            <li>Presses save, submit, accept, complete or approve</li>
+            <li>Sends a non-GET that looks like a change — aborted in the browser</li>
+          </ul></div>
+      </div>
+    </details>
 
-    <h3>Pick a system on the left</h3>
-    <p style="font-size:12.5px;color:var(--ink-3);max-width:70ch;margin-top:0">
-      Two are surveyed. A third is the real test of whether any of this generalises.</p>`;
+    <details class="more">
+      <summary>How a survey runs</summary>
+      <ol class="runs">
+        <li><b>You sign in.</b> A browser opens and waits. The password is yours; this never sees it.</li>
+        <li><b>It walks the system.</b> Follows the menu, opens every screen, at human pace.</li>
+        <li><b>It captures twice.</b> Once as a picture, once as structure — headings, dropdown values, field and action names.</li>
+        <li><b>It opens a real job</b> and reveals the action menu without choosing from it.</li>
+        <li><b>It answers the ${DOMAIN.length}</b>, pins each to a file, and flags what a person should check.</li>
+      </ol>
+    </details>
+
+    <p class="hint" style="margin-top:22px">Pick a system on the left.</p>`;
 };
 
 /* ── one system ──────────────────────────────────────────────────────────── */
@@ -303,8 +298,7 @@ const open_ = async (id) => {
         <th style="width:96px">Confirm</th></tr></thead>
       <tbody>${d.rows.map((r) => `<tr class="${r.agree ? '' : 'dis'}">
         <td><div class="cid">${r.id}</div><div class="cw">${r.weight}</div></td>
-        <td><div class="qtext">${esc(r.question)}</div>
-            <span class="samp">${esc((r.machine.sample || '').slice(0, 160))}</span></td>
+        <td class="qtext">${esc(r.question)}</td>
         <td>${mark(r.machine.grade)} <span class="basis">${esc(r.machine.basis || '')}</span>
             <span class="src">${esc(r.machine.file || '—')}</span></td>
         <td>${mark(r.human.grade)}${r.human.contradicted ? ' <b style="color:var(--warn)">contradicted</b>' : ''}
