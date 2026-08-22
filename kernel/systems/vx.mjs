@@ -12,6 +12,12 @@ export default {
   role: 'the managing agent’s CAFM, seen as the agent',
   access: 'browser (server-rendered Struts) plus CSV/Cognos exports. No usable API seen.',
 
+  // WHAT COUNTS AS EVIDENCE. Only files that came out of VX. The rest of that
+  // folder is ours — normalised job data, review pages, replay state — and
+  // letting it vote made the surveyor grade VX on our own vocabulary.
+  only: ['exports/*.csv', 'vx-map/*.json', 'vx-capture/**', 'vx-contractors/*.json',
+    'vx-field-map.json', 'vx-screens-survey.json', 'vx-reports-survey.json', 'vx-cognos-*.json'],
+
   map: {
     job: { grade: 'direct', how: '`WO #` — the work order number, on every export and every screen.',
       where: { glob: 'exports/*.csv', find: 'WO #' } },

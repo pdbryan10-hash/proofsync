@@ -10,6 +10,9 @@ export default {
   role: 'the client’s CAFM, seen through a supplier login',
   access: 'browser only. No API seen from the supplier side.',
 
+  // Only what the survey captured — not the map or the report we generated.
+  only: ['tour-*.json', 'screen-*.json', 'order-*.json', 'nav.json'],
+
   map: {
     job: { grade: 'direct', how: '`Order number`, e.g. RDDC0024267/2 — order/revision. Rows are `tr[role="link"]`, opened with Enter; the record replaces the grid at the same URL.',
       where: { glob: 'tour-*-an-order.json', find: 'Order number' } },
