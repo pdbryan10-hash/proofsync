@@ -82,6 +82,7 @@ const sendFile = (res, file) => {
 const progress = [];
 let running = false;
 let stopper = null;
+let ready = false;
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -112,6 +113,10 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === '/api/progress') return send(res, 200, { running, lines: progress.slice(-200) });
 
+    // "I am in." The person is the authority on whether a sign-in happened;
+    // no amount of DOM inspection beats being told.
+    if (url.pathname === '/api/ready' && req.method === 'POST') { ready = true; return send(res, 200, { ready: true }); }
+
     if (url.pathname === '/api/cancel' && req.method === 'POST') {
       if (!running) return send(res, 200, { stopped: false, note: 'nothing running' });
       progress.push('stopping…');
@@ -126,13 +131,13 @@ const server = http.createServer(async (req, res) => {
       const { id, startUrl, max } = JSON.parse(body || '{}');
       if (!id || !startUrl) return send(res, 400, { error: 'a short name and a sign-in URL, please' });
       if (running) return send(res, 409, { error: 'a survey is already running — stop it first' });
-      running = true; progress.length = 0;
+      running = true; ready = false; progress.length = 0;
       const outDir = path.join(ROOT, 'data', id + '-map');
       // Deliberately not awaited: the browser opens, a person signs in, and the
       // page polls /api/progress while that happens.
       import('./crawl.mjs').then(({ crawl }) => crawl({
         id, startUrl, outDir, max: max || 0, onProgress: (m) => progress.push(m),
-        onStart: (h) => { stopper = h; },
+        onStart: (h) => { stopper = h; }, isReady: () => ready,
       })).then((r) => {
         progress.push(`captured ${r.screens.length} screens. Now draft kernel/systems/${id}.mjs from the proposals.`);
       }).catch((e) => progress.push('FAILED: ' + e.message)).finally(() => { running = false; stopper = null; });

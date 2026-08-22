@@ -71,7 +71,7 @@ const slug = (s) => String(s).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')
  * @param {number} o.max       how many screens to visit
  * @param {(m:string)=>void} o.onProgress
  */
-export const crawl = async ({ id, startUrl, outDir, max = 0, seed, onProgress = () => {}, onStart = () => {} }) => {
+export const crawl = async ({ id, startUrl, outDir, max = 0, seed, onProgress = () => {}, onStart = () => {}, isReady = () => false }) => {
   fs.mkdirSync(outDir, { recursive: true });
   const say = (m) => { onProgress(m); console.log(' ·', m); };
   // Paced like a person, not because anything is being hidden — the access is
@@ -109,18 +109,53 @@ export const crawl = async ({ id, startUrl, outDir, max = 0, seed, onProgress = 
   await page.goto(startUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
   await settle(page, r, 3000);
 
-  // Wait for a person. Signed in is proven by the password box going away, not
-  // by a URL — a URL check cannot fail, and one that could not fail is how an
-  // earlier pass reported a sign-in that never happened.
-  say('waiting for you to sign in (10 minutes)…');
-  const deadline = Date.now() + 600_000;
-  let signedIn = false;
+  // GETTING TO THE SIGN-IN PAGE.
+  //
+  // The old test for "signed in" was "there is no password box", which is
+  // instantly true on any public page. Pointed at a marketing site it declared
+  // itself signed in and crawled the brochure. So: if there is no password box,
+  // go and look for the way in, and then wait to be TOLD.
+  const hasPw = async () => (await page.locator('input[type="password"]:visible').count().catch(() => 0)) > 0;
+  const LOGIN = /(log ?in|sign ?in|login|signin|my account|portal)/i;
+  if (!(await hasPw())) {
+    let found = null, label = '';
+    for (const f of page.frames()) {
+      const links = f.locator('a[href], button');
+      const n = Math.min(await links.count().catch(() => 0), 60);
+      for (let i = 0; i < n && !found; i++) {
+        const t = ((await links.nth(i).textContent().catch(() => '')) || '').trim();
+        const href = (await links.nth(i).getAttribute('href').catch(() => '')) || '';
+        if (!LOGIN.test(t) && !LOGIN.test(href)) continue;
+        if (!(await links.nth(i).isVisible().catch(() => false))) continue;
+        found = links.nth(i); label = t || href;
+      }
+      if (found) break;
+    }
+    if (found) {
+      say('no sign-in box on that page - following "' + label.slice(0, 40) + '"');
+      await reachAndClick(page, found, r);
+      await settle(page, r, 2600);
+    }
+  }
+
+  // WAIT TO BE TOLD, not to be guessed at. Either the password box appears and
+  // then goes - a real sign-in, which is what happens on a CAFM - or the person
+  // presses "I am in" in ProofMap. Both are explicit, and neither can fire on a
+  // page that simply has no password field.
+  say(await hasPw()
+    ? 'sign in in the browser window - I will start when you are through'
+    : 'no sign-in box found. Get signed in over there, then press "I am signed in" here.');
+  const deadline = Date.now() + 900_000;
+  let signedIn = false, sawPw = await hasPw();
   while (Date.now() < deadline && !stopped) {
-    if (!(await page.locator('input[type="password"]:visible').count().catch(() => 0))) { signedIn = true; break; }
+    if (isReady()) { signedIn = true; say('you say you are in - starting'); break; }
+    const pw = await hasPw();
+    if (pw) sawPw = true;
+    else if (sawPw) { signedIn = true; say('the sign-in page is gone - starting'); break; }
     await page.waitForTimeout(dwell(r, 2000, { sigma: 0.3, min: 1200, max: 4000 }));
   }
   if (stopped) { burn(); throw new Error('stopped before sign-in'); }
-  if (!signedIn) { await ctx.close(); burn(); throw new Error('still on the sign-in page after ten minutes'); }
+  if (!signedIn) { await ctx.close(); burn(); throw new Error('nobody signed in after fifteen minutes'); }
   await settle(page, r, 3400);
   say('signed in — walking the system');
 

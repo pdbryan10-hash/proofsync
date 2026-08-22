@@ -347,6 +347,11 @@ const open_ = async (id) => {
   document.querySelector('main').scrollTop = 0;
 };
 
+const imIn = async (btn) => {
+  btn.disabled = true; btn.textContent = 'starting...';
+  await fetch('/api/ready', { method: 'POST' }).catch(() => {});
+};
+
 const stopSurvey = async () => {
   await fetch('/api/cancel', { method: 'POST' }).catch(() => {});
   loadSystems();
@@ -376,8 +381,10 @@ const startSurvey = async () => {
     <p>A browser has opened and is waiting. Sign in there — nothing here sees your password —
     and the walk starts by itself once you are through.</p></div>
     <h3>Live</h3><div class="log" id="log" role="status" aria-live="polite"></div>
-    <button class="act ghost" id="stopbtn" style="width:auto;margin-top:10px"
-      onclick="stopSurvey()">Stop and close the browser</button>`;
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="act" style="width:auto" onclick="imIn(this)">I am signed in - start the walk</button>
+      <button class="act ghost" style="width:auto" onclick="stopSurvey()">Stop and close the browser</button>
+    </div>`;
   const tick = async () => {
     const p = await (await fetch('/api/progress')).json();
     const log = $('#log'); if (!log) return;
