@@ -87,6 +87,10 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === '/') return send(res, 200, fs.readFileSync(path.join(HERE, 'ui.html')), 'text/html; charset=utf-8');
 
+    // The domain itself, so the page can describe what it asks without a copy
+    // of the questions drifting out of sync with the ones that get asked.
+    if (url.pathname === '/api/domain') return send(res, 200, CONCEPTS);
+
     if (url.pathname === '/api/systems') {
       const systems = await loadSystems();
       return send(res, 200, systems.map((s) => {

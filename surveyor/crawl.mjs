@@ -11,13 +11,23 @@
 // afternoon to gamble. Where a system genuinely permits stored credentials they
 // belong in Windows Credential Manager, and still not in here.
 //
-// HOW IT REFUSES TO WRITE
-//   1. Non-GET requests that look like mutations are ABORTED in the browser.
-//   2. It follows links and opens menus. It never chooses from a menu and never
-//      presses a button.
-//   3. Anything whose name suggests it creates, deletes or accepts is not even
-//      opened.
-//   4. Every request is logged, so a client can be shown exactly what we did.
+// WHAT IT TOUCHES, PRECISELY.
+//
+// It is not true that this presses nothing — an earlier version of this comment
+// said so and it was wrong. It clicks rows to open a record, clicks dropdown
+// toggles to reveal what is inside them, and presses Enter and Escape. A system
+// that only responds to clicks cannot be read without clicking.
+//
+// The line is between NAVIGATION and COMMITMENT:
+//   1. It clicks to MOVE and to REVEAL — links, tabs, rows, menu toggles.
+//   2. It never chooses an item INSIDE an action menu, and never presses
+//      anything that saves, submits, accepts, completes, approves or cancels.
+//   3. Links whose name suggests creating, deleting or accepting are not opened
+//      at all, so a stray GET cannot start a workflow.
+//   4. Non-GET requests that look like mutations are ABORTED in the browser,
+//      which is the backstop for everything above being wrong.
+//   5. Every request is logged with its method, so a client can be shown
+//      exactly what we did rather than told.
 //
 // AND IT IS PACED. Dwells are drawn from a heavy-tailed distribution rather
 // than held constant — see pace.mjs for why that is about false fraud flags on

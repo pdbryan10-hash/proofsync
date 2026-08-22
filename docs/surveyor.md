@@ -13,7 +13,7 @@ confirm control on every row.
 
 | | |
 |---|---|
-| `surveyor/crawl.mjs` | the read-only walk. Attended sign-in, follows navigation, opens a record, opens menus. Presses nothing. |
+| `surveyor/crawl.mjs` | the read-only walk. Attended sign-in, follows navigation, opens a record, opens menus. Clicks to move and to reveal — never to commit. |
 | `surveyor/propose.mjs` | reads the captures and **answers the 22 questions itself** |
 | `surveyor/app.mjs` | local server — systems, surveys, screenshots, video, confirmations |
 | `surveyor/ui.html` | one page. Machine's answer beside the human's, disagreements highlighted |

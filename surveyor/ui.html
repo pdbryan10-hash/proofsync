@@ -1,139 +1,332 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>The Surveyor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProofMap</title>
 <style>
-  :root { --ink:#16181d; --muted:#6b7280; --line:#e5e7eb; --accent:#0e6b3f; --bg:#fbfaf7; --warn:#b45309; }
+  /* Data-dense dashboard on a Swiss grid: one accent, no decoration, every
+     pixel spent on information. Dense but never cramped — 36px rows, sticky
+     heads, 13px body, and contrast held above 4.5:1 in both themes. */
+  :root {
+    --bg:#fbfaf7; --panel:#ffffff; --sunk:#f5f4f0;
+    --ink:#14161a; --ink-2:#4b5563; --ink-3:#6b7280;
+    --line:#e3e1dc; --line-2:#d3d0c9;
+    --accent:#0e6b3f; --accent-soft:#e8f2ec;
+    --warn:#9a5b06; --warn-soft:#fdf5e6;
+    --stop:#a3341f;
+    --row:36px; --rail:264px; --pad:12px; --gap:8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#101215; --panel:#171a1e; --sunk:#1d2126;
+      --ink:#eceef1; --ink-2:#b3b9c2; --ink-3:#8b929c;
+      --line:#282d33; --line-2:#353b43;
+      --accent:#4fbe8b; --accent-soft:#14281f;
+      --warn:#e0a253; --warn-soft:#2a2114;
+      --stop:#e07a63;
+    }
+  }
   * { box-sizing:border-box }
-  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",sans-serif;
-         display:grid; grid-template-columns:280px 1fr; height:100vh; overflow:hidden }
-  aside { border-right:1px solid var(--line); padding:1.1rem; overflow:auto; background:#fff }
-  main { overflow:auto; padding:1.4rem 1.8rem 4rem }
-  h1 { margin:0 0 .1rem; font-size:1.05rem; letter-spacing:-.01em }
-  h1 + p { margin:0 0 1.2rem; color:var(--muted); font-size:.82rem }
-  .sys { border:1px solid var(--line); border-radius:.5rem; padding:.6rem .7rem; margin-bottom:.5rem; cursor:pointer; background:#fff }
-  .sys:hover { border-color:var(--accent) }
-  .sys.on { border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent) }
-  .sys b { display:block; font-size:.9rem }
-  .sys small { color:var(--muted) }
-  .pct { float:right; font-weight:700; color:var(--accent) }
-  button { font:inherit; border:1px solid var(--line); background:#fff; border-radius:.4rem; padding:.35rem .7rem; cursor:pointer }
-  button.p { background:var(--accent); color:#fff; border-color:var(--accent) }
-  button:disabled { opacity:.5; cursor:default }
-  input { font:inherit; border:1px solid var(--line); border-radius:.4rem; padding:.4rem .55rem; width:100% }
-  .head { display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; margin-bottom:.2rem }
-  .head h2 { margin:0; font-size:1.3rem }
-  .stats { color:var(--muted); font-size:.85rem; margin-bottom:1.1rem }
-  table { border-collapse:collapse; width:100%; background:#fff; border:1px solid var(--line); border-radius:.5rem; font-size:.87rem }
-  th,td { text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--line); vertical-align:top }
-  th { background:#f9fafb; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted) }
-  tr.dis td { background:#fffbeb }
-  .g { font-weight:600 }
-  .g.direct { color:var(--accent) } .g.inferred { color:var(--warn) } .g.absent { color:#9ca3af }
-  code, .samp { font:11.5px ui-monospace,Consolas,monospace; color:var(--muted); word-break:break-word }
-  .samp { display:block; margin-top:.2rem; max-height:3.2rem; overflow:hidden }
-  select { font:inherit; font-size:.85rem; padding:.2rem .3rem; border:1px solid var(--line); border-radius:.3rem }
-  .shots { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:.6rem; margin:.6rem 0 1.4rem }
-  .shots img { width:100%; border:1px solid var(--line); border-radius:.4rem; cursor:zoom-in; background:#fff }
-  video { width:100%; max-width:900px; border:1px solid var(--line); border-radius:.5rem; background:#000 }
-  .log { font:12px ui-monospace,Consolas,monospace; background:#111; color:#c7f9d9; padding:.8rem; border-radius:.5rem;
-         height:230px; overflow:auto; white-space:pre-wrap }
-  dialog { border:none; border-radius:.6rem; padding:1.2rem; max-width:520px; box-shadow:0 20px 60px rgba(0,0,0,.3) }
-  dialog::backdrop { background:rgba(0,0,0,.45) }
-  label { display:block; font-size:.8rem; color:var(--muted); margin:.7rem 0 .2rem }
-  .note { background:#fff8e6; border:1px solid #f0d9a0; border-radius:.5rem; padding:.6rem .8rem; font-size:.85rem; margin:.8rem 0 }
-  .full { position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; z-index:9; overflow:auto; padding:2rem }
-  .full img { width:100%; max-width:1500px; margin:0 auto; display:block }
+  html,body { height:100% }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:13px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    display:grid; grid-template-columns:var(--rail) 1fr; height:100vh; overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:3px }
+
+  /* ── rail ─────────────────────────────────────────────────────────────── */
+  aside { background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:14px }
+  .brand { display:flex; align-items:baseline; gap:7px; margin-bottom:2px }
+  .brand h1 { margin:0; font-size:15px; letter-spacing:-.2px; font-weight:700 }
+  .brand span { font-size:10px; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-3) }
+  .rail-sub { margin:0 0 14px; font-size:11.5px; color:var(--ink-3); line-height:1.45 }
+  .rail-h { font-size:9.5px; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink-3);
+            margin:16px 0 7px; font-weight:600 }
+  .sys { width:100%; text-align:left; display:block; background:var(--panel); cursor:pointer;
+         border:1px solid var(--line); border-left:3px solid transparent; border-radius:5px;
+         padding:9px 10px; margin-bottom:6px; color:inherit; font:inherit; transition:border-color .18s, background .18s }
+  .sys:hover { border-color:var(--line-2); background:var(--sunk) }
+  .sys[aria-current="true"] { border-left-color:var(--accent); background:var(--accent-soft); border-color:var(--line-2) }
+  .sys b { display:block; font-size:12.5px; font-weight:650; letter-spacing:-.1px }
+  .sys small { color:var(--ink-3); font-size:10.5px }
+  .sys .pct { float:right; font-weight:700; font-size:13px; color:var(--accent); font-variant-numeric:tabular-nums }
+  button.act { font:inherit; font-size:12px; font-weight:600; width:100%; cursor:pointer;
+               background:var(--accent); color:#fff; border:1px solid var(--accent);
+               border-radius:5px; padding:9px 12px; min-height:36px; transition:filter .18s }
+  button.act:hover { filter:brightness(1.08) }
+  button.ghost { background:var(--panel); color:var(--ink); border:1px solid var(--line-2) }
+  .rail-foot { margin-top:16px; padding-top:12px; border-top:1px solid var(--line);
+               font-size:10.5px; color:var(--ink-3); line-height:1.5 }
+
+  /* ── main ─────────────────────────────────────────────────────────────── */
+  main { overflow:auto; padding:20px 24px 60px }
+  .lede { max-width:70ch }
+  .lede h2 { margin:0 0 10px; font-size:26px; line-height:1.18; letter-spacing:-.5px; font-weight:700 }
+  .lede p { margin:0 0 12px; font-size:14.5px; line-height:1.6; color:var(--ink-2) }
+  .lede strong { color:var(--ink); font-weight:650 }
+  h3 { font-size:10.5px; letter-spacing:1.3px; text-transform:uppercase; color:var(--ink-3);
+       margin:28px 0 10px; font-weight:700 }
+
+  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:var(--gap) }
+  .step { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:var(--pad) }
+  .step .n { font-size:10px; font-weight:700; color:var(--accent); letter-spacing:1px }
+  .step b { display:block; margin:3px 0 4px; font-size:13px; letter-spacing:-.1px }
+  .step p { margin:0; font-size:11.5px; color:var(--ink-3); line-height:1.5 }
+
+  .qs { display:flex; flex-wrap:wrap; gap:5px }
+  .q { background:var(--panel); border:1px solid var(--line); border-radius:4px;
+       padding:5px 9px; font-size:11.5px; cursor:default }
+  .q b { font-weight:650 }
+  .q span { color:var(--ink-3) }
+  .q.blocking { border-left:3px solid var(--accent) }
+
+  .contract { display:grid; grid-template-columns:1fr 1fr; gap:var(--gap) }
+  @media (max-width:900px) { .contract { grid-template-columns:1fr } body { grid-template-columns:1fr } }
+  .does, .never { border:1px solid var(--line); border-radius:6px; padding:var(--pad) 14px; background:var(--panel) }
+  .does { border-left:3px solid var(--accent) }
+  .never { border-left:3px solid var(--stop) }
+  .does h4, .never h4 { margin:0 0 7px; font-size:11px; letter-spacing:.6px; text-transform:uppercase }
+  .does h4 { color:var(--accent) } .never h4 { color:var(--stop) }
+  .does ul, .never ul { margin:0; padding-left:16px; font-size:12px; line-height:1.65; color:var(--ink-2) }
+
+  /* ── system view ──────────────────────────────────────────────────────── */
+  .head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap }
+  .head h2 { margin:0; font-size:20px; letter-spacing:-.3px }
+  .head .meta { font-size:12px; color:var(--ink-3) }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:var(--gap); margin:14px 0 4px }
+  .kpi { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px var(--pad) }
+  .kpi .v { font-size:22px; font-weight:700; letter-spacing:-.6px; font-variant-numeric:tabular-nums; line-height:1.1 }
+  .kpi .k { font-size:10px; letter-spacing:.7px; text-transform:uppercase; color:var(--ink-3); margin-top:3px }
+  .kpi.good .v { color:var(--accent) } .kpi.warn .v { color:var(--warn) }
+  .path { font:11px ui-monospace,Consolas,monospace; color:var(--ink-3); margin:10px 0 0; word-break:break-all }
+
+  .flag { border:1px solid var(--line-2); border-left:3px solid var(--warn); background:var(--warn-soft);
+          border-radius:5px; padding:9px 12px; margin:12px 0; font-size:12.5px }
+  .flag b { font-weight:650 }
+
+  .tw { overflow:auto; border:1px solid var(--line); border-radius:6px; background:var(--panel) }
+  table { border-collapse:separate; border-spacing:0; width:100%; font-size:12px }
+  thead th { position:sticky; top:0; z-index:2; background:var(--sunk); text-align:left;
+             font-size:9.5px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-3);
+             padding:8px 10px; border-bottom:1px solid var(--line-2); font-weight:700; white-space:nowrap }
+  tbody td { padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; height:var(--row) }
+  tbody tr:last-child td { border-bottom:0 }
+  tbody tr:hover td { background:var(--sunk) }
+  tbody tr.dis td { background:var(--warn-soft) }
+  tbody tr.dis:hover td { filter:brightness(.98) }
+  .cid { font-weight:650 } .cw { font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.5px }
+  .qtext { color:var(--ink-2) }
+  .mark { display:inline-flex; align-items:center; gap:5px; font-weight:650; white-space:nowrap }
+  .dot { width:8px; height:8px; border-radius:50%; flex:none }
+  .direct .dot { background:var(--accent) } .direct { color:var(--accent) }
+  .inferred .dot { background:transparent; box-shadow:inset 0 0 0 2px var(--warn); } .inferred { color:var(--warn) }
+  .absent .dot { background:transparent; box-shadow:inset 0 0 0 1px var(--ink-3) } .absent { color:var(--ink-3) }
+  .basis { font-size:10px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.4px }
+  .src { display:block; font:10.5px ui-monospace,Consolas,monospace; color:var(--ink-3);
+         margin-top:3px; word-break:break-all }
+  .samp { display:block; font:10.5px/1.45 ui-monospace,Consolas,monospace; color:var(--ink-3);
+          margin-top:4px; max-height:2.9em; overflow:hidden }
+  select { font:inherit; font-size:11.5px; padding:4px 6px; min-height:30px; color:inherit;
+           background:var(--panel); border:1px solid var(--line-2); border-radius:4px }
+
+  .shots { display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:var(--gap) }
+  .shots button { padding:0; border:1px solid var(--line); border-radius:5px; overflow:hidden;
+                  background:var(--panel); cursor:zoom-in; display:block; line-height:0 }
+  .shots img { width:100%; display:block }
+  video { width:100%; max-width:940px; border:1px solid var(--line); border-radius:6px; background:#000 }
+
+  dialog { border:1px solid var(--line-2); border-radius:8px; padding:18px; max-width:540px;
+           background:var(--panel); color:var(--ink) }
+  dialog::backdrop { background:rgba(0,0,0,.5) }
+  dialog h3 { margin:0 0 6px; font-size:15px; letter-spacing:-.2px; text-transform:none; color:var(--ink) }
+  label { display:block; font-size:10.5px; letter-spacing:.6px; text-transform:uppercase;
+          color:var(--ink-3); margin:12px 0 4px; font-weight:600 }
+  input { font:inherit; width:100%; min-height:36px; padding:7px 9px; color:inherit;
+          background:var(--bg); border:1px solid var(--line-2); border-radius:5px }
+  .log { font:11.5px/1.6 ui-monospace,Consolas,monospace; background:#0c0e11; color:#8fe3b4;
+         border:1px solid var(--line-2); border-radius:6px; padding:12px; height:300px;
+         overflow:auto; white-space:pre-wrap }
+  .full { position:fixed; inset:0; background:rgba(0,0,0,.9); display:none; z-index:20; overflow:auto; padding:24px }
+  .full img { width:100%; max-width:1600px; margin:0 auto; display:block }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important } }
 </style>
 
 <aside>
-  <h1>The Surveyor</h1>
-  <p>Read a system. Answer the domain. Nothing is written, ever.</p>
+  <div class="brand"><h1>ProofMap</h1><span>survey</span></div>
+  <p class="rail-sub">Learns an unfamiliar FM system, read-only, and says what it can and cannot express.</p>
+
+  <div class="rail-h">Systems surveyed</div>
   <div id="systems"></div>
-  <button class="p" style="width:100%;margin-top:.7rem" onclick="newSurvey.showModal()">Survey a new system</button>
-  <p style="margin-top:1rem;font-size:.75rem;color:var(--muted)">
-    Attended sign-in only. Your password is never seen, typed or stored here.
-  </p>
+  <button class="act" onclick="newSurvey.showModal()">Survey a new system</button>
+
+  <div class="rail-foot">
+    Attended sign-in only — your password is never seen, typed or stored.
+    The session is destroyed when the walk ends.
+  </div>
 </aside>
 
-<main id="main"><p style="color:var(--muted)">Pick a system on the left.</p></main>
+<main id="main"></main>
 
 <dialog id="newSurvey">
-  <h3 style="margin:0 0 .3rem">Survey a new system</h3>
-  <p style="margin:0;color:var(--muted);font-size:.85rem">A browser opens. <b>You</b> sign in — this never sees the
-  password — and the walk starts once you are through. It follows links and opens menus. It presses nothing.</p>
-  <label>Short name (folder and id)</label><input id="nid" placeholder="joblogic">
-  <label>Display name</label><input id="nname" placeholder="Joblogic">
-  <label>Sign-in URL</label><input id="nurl" placeholder="https://…">
-  <label>Screens to visit</label><input id="nmax" value="20">
-  <div style="margin-top:1rem;display:flex;gap:.5rem;justify-content:flex-end">
-    <button onclick="newSurvey.close()">Cancel</button>
-    <button class="p" onclick="startSurvey()">Open the browser</button>
+  <h3>Survey a new system</h3>
+  <p style="margin:0;color:var(--ink-3);font-size:12px;line-height:1.6">
+    A browser opens and waits. <b>You</b> sign in — this never sees the password — and the walk starts
+    once you are through. It clicks to move and to reveal. It never chooses from an action menu.</p>
+  <label for="nid">Short name — becomes the folder and the id</label><input id="nid" placeholder="joblogic">
+  <label for="nname">Display name</label><input id="nname" placeholder="Joblogic">
+  <label for="nurl">Sign-in URL</label><input id="nurl" placeholder="https://…">
+  <label for="nmax">Screens to visit</label><input id="nmax" value="20">
+  <div style="margin-top:16px;display:flex;gap:6px;justify-content:flex-end">
+    <button class="act ghost" style="width:auto" onclick="newSurvey.close()">Cancel</button>
+    <button class="act" style="width:auto" onclick="startSurvey()">Open the browser</button>
   </div>
 </dialog>
 
-<div class="full" id="full" onclick="this.style.display='none'"><img id="fullimg"></div>
+<div class="full" id="full" onclick="this.style.display='none'"><img id="fullimg" alt="Captured screen, enlarged"></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
-let current = null, answers = {};
+const mark = (g) => `<span class="mark ${g}"><span class="dot"></span>${g === 'direct' ? 'stated' : g}</span>`;
+let DOMAIN = [];
 
 const loadSystems = async () => {
   const list = await (await fetch('/api/systems')).json();
   $('#systems').innerHTML = list.map((s) => `
-    <div class="sys" onclick="open_('${s.id}')" id="sys-${s.id}">
+    <button class="sys" id="sys-${s.id}" onclick="open_('${s.id}')" aria-current="false">
       <span class="pct">${s.missing ? '—' : s.score + '%'}</span>
       <b>${esc(s.name)}</b>
-      <small>${esc(s.vendor || '')}${s.missing ? ' · captures missing' : ' · ' + s.counts.stated + ' stated, ' + s.counts.inferred + ' inferred'}</small>
-    </div>`).join('');
+      <small>${esc(s.vendor || '')}${s.missing ? ' · captures missing'
+        : ' · ' + s.counts.stated + ' stated · ' + s.counts.inferred + ' inferred'}</small>
+    </button>`).join('');
 };
 
-const gradeCell = (g) => `<span class="g ${g.grade}">${g.grade}</span>`;
+/* ── the landing state: what this thing actually does ────────────────────── */
+const landing = async () => {
+  DOMAIN = await (await fetch('/api/domain')).json();
+  $('#main').innerHTML = `
+    <div class="lede">
+      <h2>It learns other people's software.</h2>
+      <p>Give it a login to a system it has never seen — no documentation, no API, nobody to ask —
+      and it comes back knowing how that business runs. <strong>Where the jobs are. What “urgent”
+      means here. Who is waiting on whom. What a person is allowed to do to a record, and whether
+      anyone can prove they did it.</strong></p>
+      <p>It asks the same <strong>${DOMAIN.length} questions</strong> of every system, because underneath the
+      badge every CAFM is answering the same ones — in different words, and half of them by omission.
+      One says <em>Parts On Order</em>. Another says <em>Service Incomplete</em> and lets a dead job
+      look alive for nineteen days.</p>
+      <p>Every answer has to point at a screen it captured. If it cannot, it is marked
+      <strong>unproven</strong> and counts for nothing. Where it looked and saw nothing it says
+      <strong>unobserved</strong> — never “your system cannot do that”.</p>
+    </div>
 
+    <h3>How a survey runs</h3>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><b>You sign in</b>
+        <p>A browser opens and waits. The password is yours; this never sees it. Ten minutes, then it gives up.</p></div>
+      <div class="step"><div class="n">02</div><b>It walks the system</b>
+        <p>Follows the menu, opens every screen, at human pace rather than machine pace.</p></div>
+      <div class="step"><div class="n">03</div><b>It captures twice</b>
+        <p>Once as a picture, once as structure — column headings, dropdown values, field names, action names.</p></div>
+      <div class="step"><div class="n">04</div><b>It opens a real job</b>
+        <p>Finds the queue, opens one record, reveals the action menu without choosing anything from it.</p></div>
+      <div class="step"><div class="n">05</div><b>It answers the ${DOMAIN.length}</b>
+        <p>Proposes a grade for each, pinned to the file it came from, and flags what a person should check.</p></div>
+    </div>
+
+    <h3>The ${DOMAIN.length} questions — bordered ones are blocking</h3>
+    <div class="qs">${DOMAIN.map((c) => `<span class="q ${c.weight === 'blocking' ? 'blocking' : ''}"
+      title="${esc(c.why)}"><b>${esc(c.id)}</b> <span>${esc(c.question)}</span></span>`).join('')}</div>
+
+    <h3>What it touches</h3>
+    <div class="contract">
+      <div class="does"><h4>It does press things</h4>
+        <ul>
+          <li>Clicks links, tabs and rows — to <b>move</b></li>
+          <li>Clicks menu toggles — to <b>reveal</b> what is inside</li>
+          <li>Presses Enter to open a record, Escape to close a menu</li>
+          <li>Scrolls, and moves the pointer to an element before clicking it</li>
+        </ul></div>
+      <div class="never"><h4>It never</h4>
+        <ul>
+          <li>Chooses an item <b>inside</b> an action menu</li>
+          <li>Presses anything that saves, submits, accepts, completes or approves</li>
+          <li>Opens a link whose name suggests creating, deleting or accepting</li>
+          <li>Sends a non-GET request that looks like a change — those are aborted in the browser</li>
+        </ul></div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:10px;max-width:70ch">
+      Every request is logged with its method, so a client can be <em>shown</em> what we did rather than
+      told. The line is between navigation and commitment: a system that only responds to clicks
+      cannot be read without clicking.</p>
+
+    <h3>Pick a system on the left</h3>
+    <p style="font-size:12.5px;color:var(--ink-3);max-width:70ch;margin-top:0">
+      Two are surveyed. A third is the real test of whether any of this generalises.</p>`;
+};
+
+/* ── one system ──────────────────────────────────────────────────────────── */
 const open_ = async (id) => {
-  document.querySelectorAll('.sys').forEach((e) => e.classList.remove('on'));
-  $('#sys-' + id)?.classList.add('on');
+  document.querySelectorAll('.sys').forEach((e) => e.setAttribute('aria-current', 'false'));
+  $('#sys-' + id)?.setAttribute('aria-current', 'true');
   const d = await (await fetch('/api/system?id=' + encodeURIComponent(id))).json();
-  current = d; answers = {};
-  const dis = d.rows.filter((r) => !r.agree).length;
+  const dis = d.rows.filter((r) => !r.agree);
+  const kpi = (v, k, cls = '') => `<div class="kpi ${cls}"><div class="v">${v}</div><div class="k">${k}</div></div>`;
   $('#main').innerHTML = `
     <div class="head"><h2>${esc(d.name)}</h2>
-      <span style="color:var(--muted)">${esc(d.vendor || '')} · ${esc(d.access || '')}</span></div>
-    <div class="stats">
-      <b style="color:var(--accent)">${d.score.pct}%</b> of the domain stated outright ·
-      ${d.counts.stated} stated, ${d.counts.inferred} inferred ·
-      ${d.counts.unobserved} unobserved <small>(looked, did not see — not proof of absence)</small> ·
-      ${d.counts.unproven} unproven ·
-      machine agreed with the human map on <b>${d.agreement}%</b>
-      ${d.blockingGaps.length ? ' · <b style="color:var(--warn)">blocking gaps: ' + d.blockingGaps.join(', ') + '</b>' : ''}
-      ${d.freeText.length ? '<br><b style="color:var(--warn)">seen only in free text:</b> ' + d.freeText.join(', ') +
-        ' <small>— somebody describing the concept, not the system expressing it</small>' : ''}
-      <br><code>${esc(d.captures)}</code>
+      <span class="meta">${esc(d.vendor || '')} · ${esc(d.access || '')}</span></div>
+    <div class="kpis">
+      ${kpi(d.score.pct + '%', 'stated outright', 'good')}
+      ${kpi(d.counts.stated, 'stated')}
+      ${kpi(d.counts.inferred, 'inferred', d.counts.inferred ? 'warn' : '')}
+      ${kpi(d.counts.unobserved, 'unobserved', d.counts.unobserved ? 'warn' : '')}
+      ${kpi(d.counts.unproven, 'unproven', d.counts.unproven ? 'warn' : '')}
+      ${kpi(d.agreement + '%', 'machine agrees')}
+      ${kpi(d.shots.length, 'screens')}
     </div>
-    ${dis ? `<div class="note"><b>${dis} row${dis > 1 ? 's' : ''} to confirm.</b> The machine and the human map
-      disagree on these, and those are the ones worth your minute — highlighted below.</div>` : ''}
-    <table><tr><th style="width:9rem">Concept</th><th>Question</th><th style="width:12rem">Machine says</th>
-      <th style="width:12rem">On record</th><th style="width:7rem">Confirm</th></tr>
-      ${d.rows.map((r) => `<tr class="${r.agree ? '' : 'dis'}">
-        <td><b>${r.id}</b><br><small style="color:var(--muted)">${r.weight}</small></td>
-        <td>${esc(r.question)}<span class="samp">${esc((r.machine.sample || '').slice(0, 150))}</span></td>
-        <td>${gradeCell(r.machine)} <small style="color:var(--muted)">${esc(r.machine.basis || '')}</small>
-            <span class="samp">${esc(r.machine.file || '')}</span></td>
-        <td>${gradeCell(r.human)}${r.human.contradicted ? ' <b style="color:var(--warn)">contradicted</b>' : ''}
-            ${r.human.proven ? '' : ' <b style="color:var(--warn)">unproven</b>'}
-            <span class="samp">${esc(r.human.file || '')}</span></td>
-        <td><select onchange="answers['${r.id}']={grade:this.value,changed:true}">
-            ${['direct','inferred','absent'].map((g) => `<option ${g === r.human.grade ? 'selected' : ''}>${g}</option>`).join('')}
-        </select></td></tr>`).join('')}
-    </table>
+    <p class="path">${esc(d.captures)}</p>
+    ${d.blockingGaps.length ? `<div class="flag"><b>Blocking gap: ${d.blockingGaps.join(', ')}.</b>
+      A concept an operator cannot work without, and this system does not state it. Not a fault —
+      a question for the vendor, and a cost line in any quote.</div>` : ''}
+    ${d.freeText.length ? `<div class="flag"><b>Seen only in free text: ${d.freeText.join(', ')}.</b>
+      Somebody typing “engineer attended” into a description is a person describing a concept, not
+      software expressing one.</div>` : ''}
+    ${dis.length ? `<div class="flag"><b>${dis.length} row${dis.length > 1 ? 's' : ''} to confirm.</b>
+      The machine read these differently from the record. They are highlighted below and they are
+      the ones worth your minute.</div>` : ''}
+
+    <h3>The ${d.rows.length} questions</h3>
+    <div class="tw"><table>
+      <thead><tr><th style="width:104px">Concept</th><th>Question</th>
+        <th style="width:190px">Machine reads</th><th style="width:190px">On record</th>
+        <th style="width:96px">Confirm</th></tr></thead>
+      <tbody>${d.rows.map((r) => `<tr class="${r.agree ? '' : 'dis'}">
+        <td><div class="cid">${r.id}</div><div class="cw">${r.weight}</div></td>
+        <td><div class="qtext">${esc(r.question)}</div>
+            <span class="samp">${esc((r.machine.sample || '').slice(0, 160))}</span></td>
+        <td>${mark(r.machine.grade)} <span class="basis">${esc(r.machine.basis || '')}</span>
+            <span class="src">${esc(r.machine.file || '—')}</span></td>
+        <td>${mark(r.human.grade)}${r.human.contradicted ? ' <b style="color:var(--warn)">contradicted</b>' : ''}
+            ${r.human.proven || r.human.grade === 'absent' ? '' : ' <b style="color:var(--warn)">unproven</b>'}
+            <span class="src">${esc(r.human.file || '—')}</span></td>
+        <td><select aria-label="Confirm ${r.id}">
+          ${['direct', 'inferred', 'absent'].map((g) => `<option ${g === r.human.grade ? 'selected' : ''}>${g}</option>`).join('')}
+        </select></td></tr>`).join('')}</tbody>
+    </table></div>
+
     ${d.video ? `<h3>The walkthrough</h3><video controls preload="metadata"
-        src="/file?p=${encodeURIComponent(d.captures + '\\\\' + d.video)}"></video>` : ''}
-    <h3>Screens <small style="color:var(--muted)">${d.shots.length}</small></h3>
-    <div class="shots">${d.shots.map((s) => `<img loading="lazy" src="/file?p=${encodeURIComponent(d.captures + '\\\\' + s)}"
-        title="${esc(s)}" onclick="zoom(this.src)">`).join('')}</div>`;
+      src="/file?p=${encodeURIComponent(d.captures + '\\\\' + d.video)}"></video>` : ''}
+
+    <h3>Screens captured — ${d.shots.length}</h3>
+    <div class="shots">${d.shots.map((s) => `<button onclick="zoom(this.querySelector('img').src)"
+      aria-label="Enlarge ${esc(s)}"><img loading="lazy" alt="${esc(s)}"
+      src="/file?p=${encodeURIComponent(d.captures + '\\\\' + s)}"></button>`).join('')}</div>`;
+  document.querySelector('main').scrollTop = 0;
 };
 
 const zoom = (src) => { $('#fullimg').src = src; $('#full').style.display = 'block'; };
+addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#full').style.display = 'none'; });
 
 const startSurvey = async () => {
   const id = $('#nid').value.trim(), startUrl = $('#nurl').value.trim();
@@ -141,17 +334,18 @@ const startSurvey = async () => {
   await fetch('/api/survey', { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ id, startUrl, max: Number($('#nmax').value) || 20 }) });
   newSurvey.close();
-  $('#main').innerHTML = '<h2>Surveying ' + esc($('#nname').value || id) + '</h2>' +
-    '<p style="color:var(--muted)">A browser has opened. Sign in there — nothing here sees your password. ' +
-    'The walk starts by itself once you are through.</p><div class="log" id="log"></div>';
+  $('#main').innerHTML = `<div class="lede"><h2>Surveying ${esc($('#nname').value || id)}</h2>
+    <p>A browser has opened and is waiting. Sign in there — nothing here sees your password —
+    and the walk starts by itself once you are through.</p></div>
+    <h3>Live</h3><div class="log" id="log" role="status" aria-live="polite"></div>`;
   const tick = async () => {
     const p = await (await fetch('/api/progress')).json();
     const log = $('#log'); if (!log) return;
-    log.textContent = p.lines.join('\\n'); log.scrollTop = log.scrollHeight;
+    log.textContent = p.lines.join('\n'); log.scrollTop = log.scrollHeight;
     if (p.running) setTimeout(tick, 1200); else loadSystems();
   };
   tick();
 };
 
-loadSystems();
+loadSystems(); landing();
 </script>
